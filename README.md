@@ -1,59 +1,241 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Shoppy Max - Laravel E-Commerce Application
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A modern e-commerce application built with Laravel 12, featuring comprehensive authentication and role-based access control (RBAC) system.
 
-## About Laravel
+## 🚀 Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Latest Laravel 12.39.0** - Modern PHP framework
+- **Laravel Breeze Authentication** - Complete authentication scaffolding with Blade templates
+- **Role-Based Access Control** - Powered by Spatie Laravel Permission
+- **User Management** - Full CRUD for user management
+- **Role Management** - Create and manage roles with custom permissions
+- **Permission Management** - Granular permission control
+- **Super Admin Panel** - Complete admin interface for managing users, roles, and permissions
+- **Responsive Design** - Built with Tailwind CSS
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 📋 Prerequisites
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP >= 8.2
+- Composer
+- Node.js & NPM
+- SQLite (default) or MySQL/PostgreSQL
 
-## Learning Laravel
+## 🛠️ Installation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/codezelat/shoppy-max.git
+   cd shoppy-max
+   ```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+2. **Install PHP dependencies**
+   ```bash
+   composer install
+   ```
 
-## Laravel Sponsors
+3. **Install Node dependencies**
+   ```bash
+   npm install
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+4. **Create environment file**
+   ```bash
+   cp .env.example .env
+   ```
 
-### Premium Partners
+5. **Generate application key**
+   ```bash
+   php artisan key:generate
+   ```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+6. **Run database migrations**
+   ```bash
+   php artisan migrate
+   ```
 
-## Contributing
+7. **Seed the database with default roles and permissions**
+   ```bash
+   php artisan db:seed
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+8. **Build assets**
+   ```bash
+   npm run build
+   ```
 
-## Code of Conduct
+9. **Start the development server**
+   ```bash
+   php artisan serve
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Visit `http://localhost:8000` in your browser.
 
-## Security Vulnerabilities
+## 👤 Default Credentials
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+After seeding the database, you can log in with:
 
-## License
+- **Email:** admin@shoppy-max.com
+- **Password:** password
+- **Role:** Super Admin
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 🎯 User Roles & Permissions
+
+### Default Roles
+
+1. **Super Admin** - Full access to all features
+2. **Admin** - Limited administrative access
+3. **User** - Basic user access
+
+### Default Permissions
+
+- `view users` - View user list
+- `create users` - Create new users
+- `edit users` - Edit existing users
+- `delete users` - Delete users
+- `view roles` - View roles
+- `create roles` - Create new roles
+- `edit roles` - Edit existing roles
+- `delete roles` - Delete roles
+- `view permissions` - View permissions
+- `assign permissions` - Assign permissions to users/roles
+
+## 📱 Admin Panel Features
+
+### User Management (`/admin/users`)
+- Create users with custom roles and permissions
+- Edit user details and reassign roles
+- Delete users (except self)
+- View all users with their assigned roles
+
+### Role Management (`/admin/roles`)
+- Create custom roles
+- Assign permissions to roles
+- Edit role permissions
+- Delete custom roles (default roles are protected)
+
+### Permission Management (`/admin/permissions`)
+- Create new permissions
+- Edit permission names
+- Delete permissions
+- View all available permissions
+
+## 🔐 Security Features
+
+- Password hashing with bcrypt
+- CSRF protection
+- SQL injection protection
+- XSS protection
+- Role-based middleware
+- Permission-based authorization
+
+## 🏗️ Project Structure
+
+```
+shoppy-max/
+├── app/
+│   ├── Http/
+│   │   └── Controllers/
+│   │       └── Admin/
+│   │           ├── UserManagementController.php
+│   │           ├── RoleManagementController.php
+│   │           └── PermissionManagementController.php
+│   └── Models/
+│       └── User.php (with HasRoles trait)
+├── database/
+│   ├── migrations/
+│   │   └── create_permission_tables.php
+│   └── seeders/
+│       └── RolesAndPermissionsSeeder.php
+├── resources/
+│   └── views/
+│       ├── admin/
+│       │   ├── users/
+│       │   ├── roles/
+│       │   └── permissions/
+│       └── auth/
+└── routes/
+    └── web.php
+```
+
+## 🧪 Testing
+
+Run the test suite:
+
+```bash
+php artisan test
+```
+
+## 📦 Packages Used
+
+- [Laravel Framework](https://laravel.com) - PHP Framework
+- [Laravel Breeze](https://laravel.com/docs/starter-kits) - Authentication scaffolding
+- [Spatie Laravel Permission](https://spatie.be/docs/laravel-permission) - Role and Permission management
+- [Tailwind CSS](https://tailwindcss.com) - Utility-first CSS framework
+
+## 🔧 Configuration
+
+### Database Configuration
+
+By default, the application uses SQLite. To use MySQL or PostgreSQL, update your `.env` file:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=shoppy_max
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+### Mail Configuration
+
+Configure your mail settings in `.env`:
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=your-username
+MAIL_PASSWORD=your-password
+```
+
+## 📖 Usage Examples
+
+### Creating a New User (Super Admin)
+
+1. Log in as super admin
+2. Navigate to "Users" in the navigation menu
+3. Click "Create User"
+4. Fill in the user details
+5. Select roles and permissions
+6. Click "Create User"
+
+### Assigning Permissions to a Role
+
+1. Navigate to "Roles" in the navigation menu
+2. Click "Edit" on the desired role
+3. Select the permissions to assign
+4. Click "Update Role"
+
+### Creating Custom Permissions
+
+1. Navigate to "Permissions" in the navigation menu
+2. Click "Create Permission"
+3. Enter the permission name (e.g., "edit products")
+4. Click "Create Permission"
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## 👥 Credits
+
+Built with ❤️ using Laravel and Spatie Permission package.
+
+## 📞 Support
+
+For support, email your-email@example.com or create an issue in the repository.
