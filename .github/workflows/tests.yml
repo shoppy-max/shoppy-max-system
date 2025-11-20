@@ -41,12 +41,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
 
       - name: Install NPM dependencies
         run: npm ci
 
       - name: Build assets
         run: npm run build
+
+      - name: Verify build artifacts
+        run: |
+          if [ ! -f public/build/manifest.json ]; then
+            echo "Error: Vite manifest not found!"
+            exit 1
+          fi
+          echo "Build artifacts verified successfully"
 
       - name: Copy environment file
         run: cp .env.example .env
