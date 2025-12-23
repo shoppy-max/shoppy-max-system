@@ -10,5 +10,6 @@ class City extends Model
         'city_name',
         'postal_code',
         'district',
+        'province',
     ];
 }

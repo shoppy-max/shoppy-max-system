@@ -17,8 +17,11 @@ class OrderItem extends Model
         'sku',
         'quantity',
         'unit_price',
+        'cost_price',
         'total_price',
     ];
+    
+
 
     protected $casts = [
         'unit_price' => 'decimal:2',

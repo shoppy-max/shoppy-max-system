@@ -112,13 +112,10 @@ class PurchaseController extends Controller
             foreach ($purchase->items as $item) {
                  $product = Product::find($item->product_id);
                  $product->quantity += $item->quantity; // Adding verifiable stock
-                 
-                 // Update product price if needed? Requirement said "Pricing: Only purchasing price can be edited here."
-                 // Likely implies we set the purchasing price record, but maybe not update the product master selling price.
-                 
                  $product->save();
                  
-                 // Update received qty to match ordered (assuming full receipt for now)
+                 // Enable FIFO tracking
+                 $item->remaining_quantity = $item->quantity;
                  $item->received_quantity = $item->quantity;
                  $item->save();
             }

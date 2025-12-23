@@ -157,17 +157,49 @@ class OrderController extends Controller
     /**
      * Update Status (e.g., confirm, cancel).
      */
-    public function updateStatus(Request $request, $id)
+    public function updateStatus(Request $request, $id, \App\Services\StockService $stockService)
     {
-        $order = Order::findOrFail($id);
-        $status = $request->input('status');
+        $order = Order::with('items.product')->findOrFail($id);
+        $oldStatus = $order->status;
+        $newStatus = $request->input('status');
         
-        // Basic workflow validation can be added here
+        // Stock Deduction Logic
+        if ($newStatus === 'dispatched' && $oldStatus !== 'dispatched' && $oldStatus !== 'delivered') {
+            DB::beginTransaction();
+            try {
+                foreach ($order->items as $item) {
+                     // Deduct using FIFO and get cost
+                     $costPrice = $stockService->deductStock($item->product, $item->quantity);
+                     
+                     // Update item with cost snapshot
+                     $item->cost_price = $costPrice;
+                     $item->save();
+                }
+                
+                $order->status = $newStatus;
+                $order->dispatched_at = now();
+                $order->save();
+                
+                $this->logAction($order->id, 'dispatched', "Order dispatched and stock deducted.");
+                
+                DB::commit();
+                return back()->with('success', 'Order dispatched and stock updated.');
+                
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return back()->with('error', 'Error dispatching order: ' . $e->getMessage());
+            }
+        }
         
-        $order->status = $status;
+        // Basic Status Update for other statuses
+        $order->status = $newStatus;
+        if ($newStatus === 'delivered') $order->delivered_at = now();
+        if ($newStatus === 'cancelled') $order->cancelled_at = now();
+        // If cancelling a dispatched order, we should theoretically add stock back. 
+        // For simplicity/safety, let's manual restock or handle via "Return" flow only.
+        
         $order->save();
-        
-        $this->logAction($order->id, 'status_updated', "Status changed to {$status}");
+        $this->logAction($order->id, 'status_updated', "Status changed to {$newStatus}");
         
         return back()->with('success', 'Order status updated.');
     }

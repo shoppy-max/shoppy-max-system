@@ -125,7 +125,15 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('courier-payments', \App\Http\Controllers\CourierPaymentController::class);
 });
 
-// Public Product View
-Route::get('/view-products', [\App\Http\Controllers\GuestProductController::class, 'index'])->name('guest.products');
+// Report Routes
+Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\ReportController::class, 'index'])->name('index');
+    Route::get('/province', [\App\Http\Controllers\ReportController::class, 'provinceSale'])->name('province');
+    Route::get('/profit-loss', [\App\Http\Controllers\ReportController::class, 'profitLoss'])->name('profit-loss');
+    Route::get('/stock', [\App\Http\Controllers\ReportController::class, 'stockReport'])->name('stock');
+    Route::get('/packet-count', [\App\Http\Controllers\ReportController::class, 'packetCount'])->name('packet-count');
+    Route::get('/product-sales', [\App\Http\Controllers\ReportController::class, 'productSales'])->name('product-sales');
+    Route::get('/user-sales', [\App\Http\Controllers\ReportController::class, 'userSales'])->name('user-sales');
+});
 
 require __DIR__.'/auth.php';
