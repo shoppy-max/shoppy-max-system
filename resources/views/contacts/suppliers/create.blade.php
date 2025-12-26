@@ -146,11 +146,12 @@
                         <!-- Province -->
                         <div>
                             <label for="province" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Province</label>
-                            <select name="province" id="province" x-model="province" @change="updateDistricts" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                            <select name="province" id="province" x-model="province" @change="handleProvinceChange" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                                 <option value="">Select Province</option>
-                                <template x-for="(dists, prov) in provinces" :key="prov">
-                                    <option :value="prov" x-text="prov"></option>
-                                </template>
+                                {{-- Render provinces server-side for stability --}}
+                                @foreach($slData as $prov => $dists)
+                                    <option value="{{ $prov }}">{{ $prov }}</option>
+                                @endforeach
                             </select>
                              @error('province') <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ $message }}</p> @enderror
                         </div>
@@ -197,42 +198,46 @@
         function supplierForm() {
             return {
                 country: '{{ old('country', 'Sri Lanka') }}',
-                province: '{{ old('province') }}',
+                province: '{{ $initialProvince }}',
                 district: '{{ old('district') }}',
                 city: '{{ old('city') }}',
                 provinces: @json($slData),
-                availableDistricts: [],
+                availableDistricts: @json($initialDistricts),
                 availableCities: [],
+                isDynamic: false,
 
                 init() {
                     if (this.country === 'Sri Lanka') {
-                        // Restore state
-                        if (this.province) this.updateDistricts();
-                        if (this.district) this.fetchCities();
-                    }
-                    
-                    this.$watch('country', value => {
-                        if (value !== 'Sri Lanka') {
-                            this.province = '';
-                            this.district = '';
-                            this.availableDistricts = [];
-                            this.availableCities = [];
-                        } else {
-                            this.province = ''; // Reset to force re-selection hierarchy
-                            this.district = '';
-                             this.availableCities = [];
-                        }
-                    });
-
-                     this.$watch('province', () => {
-                         this.updateDistricts();
-                         this.district = ''; // Clear district when province changes
-                         this.availableCities = []; // Clear cities
-                     });
-
-                     this.$watch('district', () => {
                          this.fetchCities();
-                     });
+                    }
+                },
+                
+                handleCountryChange() {
+                    if (this.country !== 'Sri Lanka') {
+                        this.province = '';
+                        this.district = '';
+                        this.city = '';
+                        this.availableDistricts = [];
+                        this.availableCities = [];
+                        this.isDynamic = true;
+                    } else {
+                         this.province = '';
+                         this.availableDistricts = [];
+                         this.isDynamic = true;
+                    }
+                },
+
+                handleProvinceChange() {
+                     this.updateDistricts();
+                     this.district = '';
+                     this.city = '';
+                     this.availableCities = [];
+                     this.isDynamic = true;
+                },
+
+                handleDistrictChange() {
+                     this.fetchCities();
+                     this.city = '';
                 },
 
                 updateDistricts() {
