@@ -122,20 +122,14 @@
                         <div>
                             <label for="city" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">City <span class="text-red-500">*</span></label>
                             
-                            <!-- Dynamic Dropdown for Sri Lanka -->
-                            <div x-show="country === 'Sri Lanka'">
-                                <select name="city" id="city_select" x-model="city" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" :required="country === 'Sri Lanka'">
-                                    <option value="">Select City</option>
-                                    <template x-for="c in availableCities" :key="c.city_name">
-                                        <option :value="c.city_name" x-text="c.city_name" :selected="c.city_name === city"></option>
-                                    </template>
-                                </select>
-                            </div>
-
-                            <!-- Standard Input for Other Countries -->
-                            <div x-show="country !== 'Sri Lanka'">
-                                <input type="text" name="city" id="city_input" x-model="city" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Enter City" :required="country !== 'Sri Lanka'">
-                            </div>
+                            <!-- Unified Input with Datalist -->
+                            <input list="city_options" type="text" name="city" id="city" x-model="city" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Enter or Select City" required>
+                            
+                            <datalist id="city_options">
+                                <template x-for="c in availableCities" :key="c.city_name">
+                                    <option :value="c.city_name"></option>
+                                </template>
+                            </datalist>
 
                              @error('city') <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ $message }}</p> @enderror
                         </div>
@@ -148,7 +142,6 @@
                             <label for="province" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Province</label>
                             <select name="province" id="province" x-model="province" @change="handleProvinceChange" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                                 <option value="">Select Province</option>
-                                {{-- Render provinces server-side for stability --}}
                                 @foreach($slData as $prov => $dists)
                                     <option value="{{ $prov }}">{{ $prov }}</option>
                                 @endforeach
@@ -159,26 +152,12 @@
                         <!-- District -->
                         <div>
                             <label for="district" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">District</label>
-                            
-                            <!-- Static Select for Initial Load (Blade) -->
-                            <template x-if="!isDynamic">
-                                <select name="district" id="district" x-model="district" @change="handleDistrictChange" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                                    <option value="">Select District</option>
-                                    @foreach($initialDistricts as $dist)
-                                        <option value="{{ $dist }}" {{ old('district') == $dist ? 'selected' : '' }}>{{ $dist }}</option>
-                                    @endforeach
-                                </select>
-                            </template>
-
-                            <!-- Dynamic Select for Updates (Alpine) -->
-                            <template x-if="isDynamic">
-                                <select name="district" id="district_dynamic" x-model="district" @change="handleDistrictChange" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                                    <option value="">Select District</option>
-                                    <template x-for="dist in availableDistricts" :key="dist">
-                                         <option :value="dist" x-text="dist" :selected="dist === district"></option>
-                                    </template>
-                                </select>
-                            </template>
+                            <select name="district" id="district" x-model="district" @change="handleDistrictChange" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                <option value="">Select District</option>
+                                <template x-for="dist in availableDistricts" :key="dist">
+                                     <option :value="dist" x-text="dist" :selected="dist === district"></option>
+                                </template>
+                            </select>
                              @error('district') <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -202,12 +181,14 @@
                 district: '{{ old('district') }}',
                 city: '{{ old('city') }}',
                 provinces: @json($slData),
-                availableDistricts: @json($initialDistricts),
+                // Flatten all districts for initial "All" view or specific logic
+                allDistricts: @json(collect($slData)->flatten()), 
+                availableDistricts: [],
                 availableCities: [],
-                isDynamic: false,
-
+                
                 init() {
-                    if (this.country === 'Sri Lanka') {
+                    this.updateDistricts();
+                    if (this.country === 'Sri Lanka' && this.district) {
                          this.fetchCities();
                     }
                 },
@@ -217,25 +198,22 @@
                         this.province = '';
                         this.district = '';
                         this.city = '';
-                        this.availableDistricts = [];
-                        this.availableCities = [];
-                        this.isDynamic = true;
-                    } else {
-                         this.province = '';
-                         this.availableDistricts = [];
-                         this.isDynamic = true;
                     }
                 },
 
                 handleProvinceChange() {
+                     // Filter districts based on province
                      this.updateDistricts();
-                     this.district = '';
+                     this.district = ''; // Reset district when province changes
                      this.city = '';
                      this.availableCities = [];
-                     this.isDynamic = true;
                 },
 
                 handleDistrictChange() {
+                     // If province is empty, try to find it from the selected district
+                     if (!this.province && this.district) {
+                         this.findProvinceByDistrict(this.district);
+                     }
                      this.fetchCities();
                      this.city = '';
                 },
@@ -244,21 +222,33 @@
                     if (this.province && this.provinces[this.province]) {
                         this.availableDistricts = this.provinces[this.province];
                     } else {
-                        this.availableDistricts = [];
+                        // If no province selected, show ALL districts
+                         this.availableDistricts = this.allDistricts;
+                    }
+                },
+                
+                findProvinceByDistrict(dist) {
+                    for (const [prov, dists] of Object.entries(this.provinces)) {
+                        if (dists.includes(dist)) {
+                            this.province = prov;
+                            this.availableDistricts = dists; // Narrow down the list now
+                            return;
+                        }
                     }
                 },
 
                 async fetchCities() {
-                    if (!this.district) {
-                        this.availableCities = [];
-                        return;
-                    }
+                    this.availableCities = [];
+                    if (!this.district) return;
+
                     try {
                         let response = await fetch(`/api/cities?district=${this.district}`);
-                        this.availableCities = await response.json();
+                        let data = await response.json();
+                        this.availableCities = data;
                     } catch (error) {
                         console.error('Failed to fetch cities:', error);
                     }
+                     // Keep user input if they typed something, or clear? Better keep.
                 }
             }
         }

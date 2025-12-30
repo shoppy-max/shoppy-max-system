@@ -7,9 +7,11 @@ use Illuminate\Http\Request;
 
 class GuestProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with(['category', 'unit'])->latest()->paginate(12);
-        return view('guest.products', compact('products'));
+        $products = Product::where('quantity', '>', 0) // Only available products
+                           ->latest()
+                           ->paginate(12);
+        return view('guest.products.index', compact('products'));
     }
 }

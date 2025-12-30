@@ -34,6 +34,7 @@ class ProductController extends Controller
             'selling_price' => 'required|numeric',
             'alert_quantity' => 'nullable|integer',
             'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         // Barcode generation logic: For now we assume the SKU IS the barcode data
@@ -41,6 +42,13 @@ class ProductController extends Controller
         // But the requirement says "barcode generated using SKU", so we store SKU as the reference.
         $validated['barcode_data'] = $request->sku; 
         
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('products'), $filename);
+            $validated['image'] = 'products/' . $filename;
+        }
+
         $product = Product::create($validated);
 
         return redirect()->route('products.index')->with('success', 'Product created successfully.');
@@ -61,12 +69,28 @@ class ProductController extends Controller
             'name' => 'required',
             'sku' => 'required|unique:products,sku,' . $product->id,
             'category_id' => 'required',
+            'sub_category_id' => 'nullable|exists:sub_categories,id', // Added
+            'unit_id' => 'nullable|exists:units,id', // Added
             'selling_price' => 'required|numeric',
+            'limit_price' => 'nullable|numeric', // Added
             'alert_quantity' => 'nullable|integer',
             'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
          $validated['barcode_data'] = $request->sku;
+
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($product->image && file_exists(public_path($product->image))) {
+                unlink(public_path($product->image));
+            }
+
+            $file = $request->file('image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('products'), $filename);
+            $validated['image'] = 'products/' . $filename;
+        }
 
         $product->update($validated);
 
@@ -75,7 +99,11 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        $product->delete();
-        return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+        try {
+            $product->delete();
+            return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error deleting product: ' . $e->getMessage());
+        }
     }
 }

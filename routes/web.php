@@ -74,12 +74,17 @@ Route::middleware(['auth'])->prefix('seller-management')->name('sellers.')->grou
 });
 
 // Product Management Routes
-Route::middleware(['auth'])->prefix('admin')->group(function () {
-    Route::resource('units', \App\Http\Controllers\UnitController::class);
+Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
+    Route::resource('products', \App\Http\Controllers\ProductController::class);
     Route::resource('categories', \App\Http\Controllers\CategoryController::class);
     Route::resource('sub-categories', \App\Http\Controllers\SubCategoryController::class);
+    Route::resource('units', \App\Http\Controllers\UnitController::class);
     Route::resource('attributes', \App\Http\Controllers\AttributeController::class);
-    Route::resource('products', \App\Http\Controllers\ProductController::class);
+
+    // Quick Create Routes (AJAX)
+    Route::post('/quick-create/category', [\App\Http\Controllers\QuickCreateController::class, 'storeCategory'])->name('quick.category.store');
+    Route::post('/quick-create/sub-category', [\App\Http\Controllers\QuickCreateController::class, 'storeSubCategory'])->name('quick.subcategory.store');
+    Route::post('/quick-create/unit', [\App\Http\Controllers\QuickCreateController::class, 'storeUnit'])->name('quick.unit.store');
 });
 
 // Order Management System (OMS) Routes

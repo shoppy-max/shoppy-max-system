@@ -40,7 +40,8 @@ class PurchaseController extends Controller
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'items' => 'required|array',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => 'nullable', // Can be null if creating new
+            'items.*.product_name' => 'nullable|string|max:255', // Required if product_id is null
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.purchasing_price' => 'required|numeric|min:0',
         ]);
@@ -53,27 +54,87 @@ class PurchaseController extends Controller
             $purchase->user_id = Auth::id();
             $purchase->status = 'pending';
             
-            // Calculate Total
+            // Calculate Total & Prepare Items
             $totalAmount = 0;
+            $purchaseItemsData = [];
+
             foreach ($validated['items'] as $item) {
-                $totalAmount += $item['quantity'] * $item['purchasing_price'];
+                // Determine Product ID (Existing or New)
+                $productId = $item['product_id'] ?? null;
+                $productName = $item['product_name'] ?? null;
+
+                if (!$productId && $productName) {
+                    // Create Draft Product
+                    $newProduct = Product::create([
+                        'name' => $productName,
+                        'sku' => 'SKU-' . strtoupper(Str::random(10)), // Temp SKU
+                        'selling_price' => 0, // Default for draft
+                        'category_id' => null, // Nullable now
+                        'quantity' => 0,
+                    ]);
+                    $productId = $newProduct->id;
+                } elseif (!$productId) {
+                    throw new \Exception("Product ID or Name is required for all items.");
+                }
+
+                $lineTotal = $item['quantity'] * $item['purchasing_price'];
+                $totalAmount += $lineTotal;
+
+                $purchaseItemsData[] = [
+                    'product_id' => $productId,
+                    'quantity' => $item['quantity'],
+                    'purchasing_price' => $item['purchasing_price'],
+                    'total_price' => $lineTotal,
+                ];
             }
+
             $purchase->total_amount = $totalAmount;
             $purchase->save();
 
+            $purchase->save();
+
             // Save Items
-            foreach ($validated['items'] as $item) {
+            foreach ($purchaseItemsData as $data) {
                 PurchaseItem::create([
                     'purchase_id' => $purchase->id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'purchasing_price' => $item['purchasing_price'],
-                    'total_price' => $item['quantity'] * $item['purchasing_price'],
+                    'product_id' => $data['product_id'],
+                    'quantity' => $data['quantity'],
+                    'purchasing_price' => $data['purchasing_price'],
+                    'total_price' => $data['total_price'],
                 ]);
             }
 
+            // Auto-Verify if requested
+            if ($request->has('auto_verify') && $request->auto_verify == '1') {
+                $purchase->status = 'verified';
+                $purchase->grn_number = 'GRN-' . $purchase->purchasing_number;
+                $purchase->verified_at = now();
+                $purchase->save();
+
+                // GRN Logic: Add stock immediately
+                foreach ($purchase->items as $item) {
+                     $product = Product::find($item->product_id);
+                     if($product) {
+                        $product->quantity += $item->quantity;
+                        $product->save();
+                     }
+                     
+                     // Enable FIFO tracking
+                     $item->remaining_quantity = $item->quantity;
+                     $item->received_quantity = $item->quantity;
+                     $item->save();
+                }
+
+                // Update Supplier Due Amount
+                $supplier = Supplier::find($validated['supplier_id']);
+                if($supplier) {
+                    $supplier->due_amount += $purchase->total_amount;
+                    $supplier->save();
+                }
+            }
+            
             DB::commit();
-            return redirect()->route('purchases.index')->with('success', 'Purchase Order created successfully.');
+            return redirect()->route('purchases.index')->with('success', 'Purchase Order created ' . ($request->has('auto_verify') ? 'and verified' : '') . ' successfully.');
 
         } catch (\Exception $e) {
             DB::rollBack();
