@@ -45,14 +45,73 @@
                     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">Purchase Details</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Supplier -->
-                        <div>
+                        <div x-data="{ 
+                            supplierSearch: '', 
+                            supplierOpen: false, 
+                            selectedSupplier: null,
+                            suppliers: {{ json_encode($suppliers->map(fn($s) => ['id' => $s->id, 'name' => $s->business_name ?? $s->name])) }},
+                            get filteredSuppliers() {
+                                if (!this.supplierSearch) return this.suppliers;
+                                return this.suppliers.filter(s => 
+                                    s.name.toLowerCase().includes(this.supplierSearch.toLowerCase())
+                                );
+                            },
+                            selectSupplier(supplier) {
+                                this.selectedSupplier = supplier;
+                                this.supplierSearch = supplier.name;
+                                this.supplierOpen = false;
+                            }
+                        }">
                             <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Supplier <span class="text-red-500">*</span></label>
-                            <select name="supplier_id" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" required>
-                                <option value="">Select Supplier</option>
-                                @foreach($suppliers as $supplier)
-                                    <option value="{{ $supplier->id }}">{{ $supplier->business_name ?? $supplier->name }}</option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                    </div>
+                                    <input type="text" 
+                                           x-model="supplierSearch"
+                                           @input="supplierOpen = true"
+                                           @focus="supplierOpen = true"
+                                           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" 
+                                           placeholder="Search supplier..."
+                                           required
+                                           autocomplete="off">
+                                </div>
+                                
+                                <!-- Dropdown Results -->
+                                <div x-show="supplierOpen" 
+                                     x-transition:enter="transition ease-out duration-200"
+                                     x-transition:enter-start="opacity-0 scale-95"
+                                     x-transition:enter-end="opacity-100 scale-100"
+                                     @click.outside="supplierOpen = false" 
+                                     class="absolute z-50 w-full bg-white dark:bg-gray-800 rounded-lg shadow-2xl border-2 border-blue-200 dark:border-blue-600 mt-2 max-h-64 overflow-y-auto">
+                                    
+                                    <div x-show="filteredSuppliers.length === 0" class="p-4 text-center">
+                                        <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">No suppliers found</p>
+                                    </div>
+
+                                    <ul x-show="filteredSuppliers.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
+                                        <template x-for="supplier in filteredSuppliers" :key="supplier.id">
+                                            <li @click="selectSupplier(supplier)" 
+                                                class="px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors group">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex items-center gap-3 flex-1">
+                                                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900 dark:to-purple-800 flex items-center justify-center flex-shrink-0">
+                                                            <svg class="w-5 h-5 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                                        </div>
+                                                        <div class="flex-1 min-w-0">
+                                                            <p class="font-semibold text-gray-900 dark:text-white truncate" x-text="supplier.name"></p>
+                                                        </div>
+                                                    </div>
+                                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                                </div>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </div>
+                                <input type="hidden" name="supplier_id" :value="selectedSupplier?.id" required>
+                            </div>
                         </div>
                         
                         <!-- Date -->
@@ -124,7 +183,7 @@
                                                        @input.debounce.300ms="
                                                             search = item.product_name;
                                                             if(search.length > 1) {
-                                                                fetch(`{{ route('orders.search-products') }}?query=${search}`)
+                                                                fetch(`{{ route('orders.search-products') }}?q=${search}`)
                                                                     .then(res => res.json())
                                                                     .then(data => { results = data; open = true; });
                                                             } else { open = false; }
@@ -331,10 +390,10 @@
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
 
-                            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-2">
+                            <div class="grid grid-cols-1 md:grid-cols-10 gap-4 mt-2">
                                 
                                 <!-- Amount -->
-                                <div class="md:col-span-3">
+                                <div class="md:col-span-2">
                                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
                                         <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                         Amount
@@ -355,7 +414,7 @@
                                 </div>
                                 
                                 <!-- Payment Method -->
-                                <div class="md:col-span-3">
+                                <div class="md:col-span-2">
                                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
                                         <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
                                         Method
@@ -371,8 +430,21 @@
                                     </select>
                                 </div>
                                 
+                                <!-- Date -->
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        Date
+                                    </label>
+                                    <input type="date" 
+                                           x-model="payment.date" 
+                                           :name="`payments[${index}][date]`" 
+                                           class="bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full p-3 transition-all" 
+                                           required>
+                                </div>
+                                
                                 <!-- Account/Reference -->
-                                <div class="md:col-span-3">
+                                <div class="md:col-span-2">
                                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
                                         <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                                         Account
@@ -385,7 +457,7 @@
                                 </div>
                                 
                                 <!-- Note -->
-                                <div class="md:col-span-3">
+                                <div class="md:col-span-2">
                                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
                                         <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
                                         Note/Ref
@@ -442,13 +514,17 @@
 
     <script>
         function purchaseForm() {
+            // Initialize with old values if form was submitted with errors
+            const oldItems = {!! json_encode(old('items')) !!};
+            const oldPayments = {!! json_encode(old('payments')) !!};
+            
             return {
-                items: [
+                items: oldItems && oldItems.length > 0 ? oldItems : [
                     { product_id: null, product_name: '', quantity: 1, purchase_price: 0 }
                 ],
-                payments: [],
-                discount_type: 'fixed',
-                discount_value: 0,
+                payments: oldPayments && oldPayments.length > 0 ? oldPayments : [],
+                discount_type: '{{ old("discount_type", "fixed") }}',
+                discount_value: {{ old('discount_value', 0) }},
                 
                 addItem() {
                     this.items.push({ product_id: null, product_name: '', quantity: 1, purchase_price: 0 });
@@ -461,7 +537,8 @@
                 },
                 
                 addPayment() {
-                    this.payments.push({ amount: 0, method: 'Cash', account: '', note: '' });
+                    const today = new Date().toISOString().split('T')[0];
+                    this.payments.push({ amount: 0, method: 'Cash', date: today, account: '', note: '' });
                 },
                 
                 removePayment(index) {

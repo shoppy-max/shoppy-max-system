@@ -79,27 +79,33 @@ class PurchaseController extends Controller
         DB::beginTransaction();
         try {
             // Calculate total paid amount from payments array
-            $paidAmount = 0;
-            if ($request->has('payments') && is_array($request->payments)) {
-                $paidAmount = collect($request->payments)->sum('amount');
+        $paidAmount = 0;
+        $paymentsData = [];
+        
+        if ($request->has('payments') && is_array($request->payments)) {
+            foreach ($request->payments as $payment) {
+                $paidAmount += floatval($payment['amount'] ?? 0);
             }
+            $paymentsData = $request->payments;
+        }
 
-            $purchase = Purchase::create([
-                'purchase_number' => $request->purchase_number,
-                'supplier_id' => $request->supplier_id,
-                'purchase_date' => $request->purchase_date,
-                'currency' => $request->currency ?? 'LKR',
-                'sub_total' => $request->sub_total,
-                'discount_type' => $request->discount_type,
-                'discount_value' => $request->discount_value ?? 0,
-                'discount_amount' => $request->discount_amount ?? 0,
-                'net_total' => $request->net_total,
-                'paid_amount' => $paidAmount,
-                'payment_method' => $request->has('payments') && count($request->payments) > 0 ? json_encode(collect($request->payments)->pluck('method')->toArray()) : null,
-                'payment_reference' => $request->payment_reference,
-                'payment_account' => $request->has('payments') && count($request->payments) > 0 ? json_encode(collect($request->payments)->pluck('account')->toArray()) : null,
-                'payment_note' => $request->has('payments') && count($request->payments) > 0 ? json_encode(collect($request->payments)->pluck('note')->toArray()) : null,
-            ]);
+        $purchase = Purchase::create([
+            'purchase_number' => $request->purchase_number,
+            'supplier_id' => $request->supplier_id,
+            'purchase_date' => $request->purchase_date,
+            'currency' => $request->currency ?? 'LKR',
+            'sub_total' => $request->sub_total,
+            'discount_type' => $request->discount_type,
+            'discount_value' => $request->discount_value ?? 0,
+            'discount_amount' => $request->discount_amount ?? 0,
+            'net_total' => $request->net_total,
+            'paid_amount' => $paidAmount,
+            'payments_data' => json_encode($paymentsData),
+            'payment_method' => null, // Deprecated, keeping for backward compatibility
+            'payment_reference' => $request->payment_reference,
+            'payment_account' => null, // Deprecated
+            'payment_note' => null, // Deprecated
+        ]);
 
             foreach ($request->items as $item) {
                 PurchaseItem::create([
@@ -131,6 +137,15 @@ class PurchaseController extends Controller
     }
 
     /**
+     * Generate PDF/Print view for the purchase.
+     */
+    public function pdf(Purchase $purchase)
+    {
+        $purchase->load(['items', 'supplier']);
+        return view('purchases.pdf', compact('purchase'));
+    }
+
+    /**
      * Show the form for editing the specified resource.
      */
     public function edit(Purchase $purchase)
@@ -158,6 +173,17 @@ class PurchaseController extends Controller
 
         DB::beginTransaction();
         try {
+            // Calculate total paid amount from payments array
+            $paidAmount = 0;
+            $paymentsData = [];
+            
+            if ($request->has('payments') && is_array($request->payments)) {
+                foreach ($request->payments as $payment) {
+                    $paidAmount += floatval($payment['amount'] ?? 0);
+                }
+                $paymentsData = $request->payments;
+            }
+
             $purchase->update([
                 'purchase_number' => $request->purchase_number,
                 'supplier_id' => $request->supplier_id,
@@ -168,11 +194,12 @@ class PurchaseController extends Controller
                 'discount_value' => $request->discount_value ?? 0,
                 'discount_amount' => $request->discount_amount ?? 0,
                 'net_total' => $request->net_total,
-                'paid_amount' => $request->paid_amount ?? 0,
-                'payment_method' => $request->payment_method,
+                'paid_amount' => $paidAmount,
+                'payments_data' => json_encode($paymentsData),
+                'payment_method' => null, // Deprecated
                 'payment_reference' => $request->payment_reference,
-                'payment_account' => $request->payment_account,
-                'payment_note' => $request->payment_note,
+                'payment_account' => null, // Deprecated
+                'payment_note' => null, // Deprecated
             ]);
 
             // Sync Items: Delete old and create new

@@ -120,6 +120,8 @@ Route::middleware(['auth'])->get('reseller-dues/{id}', [\App\Http\Controllers\Re
 Route::middleware(['auth'])->group(function () {
     Route::resource('couriers', \App\Http\Controllers\CourierController::class);
     Route::resource('courier-payments', \App\Http\Controllers\CourierPaymentController::class);
+    // Purchases
+    Route::get('/purchases/{purchase}/pdf', [\App\Http\Controllers\PurchaseController::class, 'pdf'])->name('purchases.pdf');
     Route::resource('purchases', \App\Http\Controllers\PurchaseController::class);
 });
 

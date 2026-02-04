@@ -42,7 +42,7 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                     Edit Purchase
                 </a>
-                <button onclick="window.print()" class="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700 flex items-center">
+                <button onclick="window.open('{{ route('purchases.pdf', $purchase) }}', '_blank').print();" class="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700 flex items-center">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                     Print
                 </button>
@@ -145,7 +145,7 @@
                         </div>
                         
                         <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 pt-2">
-                             <span>Paid Amount ({{ $purchase->payment_method }})</span>
+                             <span>Paid Amount</span>
                              <span>{{ number_format($purchase->paid_amount, 2) }}</span>
                         </div>
                         
@@ -156,26 +156,42 @@
                     </div>
                 </div>
 
-                <!-- Additional Details -->
-                @if($purchase->payment_note || $purchase->payment_account || $purchase->payment_reference)
+
+                <!-- Payment Details Section -->
+                @if($purchase->payments_data && is_array($purchase->payments_data) && count($purchase->payments_data) > 0)
                 <div class="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-2">Payment Details</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-400">
-                         @if($purchase->payment_account)
-                         <div>
-                             <span class="font-medium">Account:</span> {{ $purchase->payment_account }}
-                         </div>
-                         @endif
-                         @if($purchase->payment_reference)
-                         <div>
-                             <span class="font-medium">Ref:</span> {{ $purchase->payment_reference }}
-                         </div>
-                         @endif
-                         @if($purchase->payment_note)
-                         <div>
-                             <span class="font-medium">Note:</span> {{ $purchase->payment_note }}
-                         </div>
-                         @endif
+                    <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Payment Details</h4>
+                    <div class="space-y-3">
+                        @foreach($purchase->payments_data as $index => $payment)
+                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                                <div>
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase block mb-1">Payment #{{ $index + 1 }}</span>
+                                    <span class="font-bold text-green-700 dark:text-green-300">Rs. {{ number_format($payment['amount'] ?? 0, 2) }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase block mb-1">Method</span>
+                                    <span class="text-gray-900 dark:text-white">{{ $payment['method'] ?? 'N/A' }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase block mb-1">Date</span>
+                                    <span class="text-gray-900 dark:text-white">{{ isset($payment['date']) ? \Carbon\Carbon::parse($payment['date'])->format('d M Y') : 'N/A' }}</span>
+                                </div>
+                                @if(!empty($payment['account']))
+                                <div>
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase block mb-1">Account</span>
+                                    <span class="text-gray-900 dark:text-white">{{ $payment['account'] }}</span>
+                                </div>
+                                @endif
+                                @if(!empty($payment['note']))
+                                <div>
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase block mb-1">Note/Ref</span>
+                                    <span class="text-gray-900 dark:text-white">{{ $payment['note'] }}</span>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        @endforeach
                     </div>
                 </div>
                 @endif
