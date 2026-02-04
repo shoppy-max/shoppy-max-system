@@ -75,6 +75,10 @@ Route::middleware(['auth'])->prefix('orders')->name('orders.')->group(function (
     Route::post('/', [\App\Http\Controllers\OrderController::class, 'store'])->name('store');
     Route::get('/call-list', [\App\Http\Controllers\OrderController::class, 'callList'])->name('call-list');
     
+    // Search APIs
+    Route::get('/search-products', [\App\Http\Controllers\OrderController::class, 'searchProducts'])->name('search-products');
+    Route::get('/search-resellers', [\App\Http\Controllers\OrderController::class, 'searchResellers'])->name('search-resellers');
+    
     // Status update
     Route::post('/{id}/status', [\App\Http\Controllers\OrderController::class, 'updateStatus'])->name('status.update');
 

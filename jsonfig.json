@@ -1,0 +1,14 @@
+{
+    "exclude": [
+        "**/vendor/**",
+        "**/node_modules/**",
+        "**/storage/**",
+        "**/bootstrap/cache/**",
+        "**/public/build/**",
+        "**/public/hot/**",
+        "**/.vite/**",
+        "**/.git/**",
+        "**/.idea/**",
+        "**/.vscode/**"
+    ]
+}

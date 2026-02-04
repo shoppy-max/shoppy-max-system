@@ -12,10 +12,10 @@ class Order extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'order_number',
-        'user_id',
-        'reseller_id',
-        'customer_name',
+        'order_date',
+        'order_type',
+        'customer_id', // Linked customer
+        'customer_name', // Snapshot (Legacy/Backup)
         'customer_phone',
         'customer_address',
         'city_id',
@@ -23,6 +23,8 @@ class Order extends Model
         'payment_method',
         'payment_status',
         'total_amount',
+        'total_cost',       // New
+        'total_commission', // New
         'sales_note',
         'waybill_number',
         'courier_id',
@@ -37,7 +39,10 @@ class Order extends Model
     ];
 
     protected $casts = [
+        'order_date' => 'date',
         'total_amount' => 'decimal:2',
+        'total_cost' => 'decimal:2',
+        'total_commission' => 'decimal:2',
         'courier_cost' => 'decimal:2',
         'delivery_fee' => 'decimal:2',
         'dispatched_at' => 'datetime',
@@ -59,6 +64,11 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     public function reseller()
