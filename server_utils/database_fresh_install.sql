@@ -1,8 +1,9 @@
 -- ============================================
 -- ShoppyMax Database Schema
 -- Database: lbccompa_shoppymax
--- Generated: 2026-01-06
--- Description: Fresh database structure for ShoppyMax (Updated)
+-- Generated: 2026-02-05
+-- Description: Complete fresh database structure for ShoppyMax
+-- Includes all migrations up to 2026_02_04_231214
 -- ============================================
 
 -- Create database if not exists
@@ -271,6 +272,8 @@ CREATE TABLE `suppliers` (
 CREATE TABLE `couriers` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
+  `address` text DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
   `phone` varchar(255) DEFAULT NULL,
   `rates` text DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
@@ -337,7 +340,7 @@ CREATE TABLE `attribute_values` (
   CONSTRAINT `attribute_values_attribute_id_foreign` FOREIGN KEY (`attribute_id`) REFERENCES `attributes` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Products Table (UPDATED: Removed variant fields)
+-- Products Table (Updated: variant fields moved to product_variants, warranty fields added)
 CREATE TABLE `products` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -345,6 +348,8 @@ CREATE TABLE `products` (
   `category_id` bigint(20) UNSIGNED DEFAULT NULL,
   `sub_category_id` bigint(20) UNSIGNED DEFAULT NULL,
   `description` text DEFAULT NULL,
+  `warranty_period` int(11) DEFAULT NULL,
+  `warranty_period_type` enum('years','months','days') DEFAULT NULL,
   `image` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -356,7 +361,7 @@ CREATE TABLE `products` (
   CONSTRAINT `products_sub_category_id_foreign` FOREIGN KEY (`sub_category_id`) REFERENCES `sub_categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Product Variants Table (NEW)
+-- Product Variants Table
 CREATE TABLE `product_variants` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `product_id` bigint(20) UNSIGNED NOT NULL,
@@ -399,7 +404,7 @@ CREATE TABLE `product_attributes` (
 -- TARGET & PAYMENT TABLES
 -- ============================================
 
--- Reseller Targets Table (UPDATED: Matches migration)
+-- Reseller Targets Table
 CREATE TABLE `reseller_targets` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `reseller_id` bigint(20) UNSIGNED NOT NULL,
@@ -440,7 +445,7 @@ CREATE TABLE `seller_targets` (
   CONSTRAINT `seller_targets_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Reseller Payments Table (UPDATED: Matches migration)
+-- Reseller Payments Table
 CREATE TABLE `reseller_payments` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `reseller_id` bigint(20) UNSIGNED NOT NULL,
@@ -463,6 +468,8 @@ CREATE TABLE `courier_payments` (
   `user_id` bigint(20) UNSIGNED DEFAULT NULL,
   `amount` decimal(10,2) NOT NULL,
   `payment_date` date NOT NULL,
+  `payment_method` varchar(255) DEFAULT NULL,
+  `payment_note` text DEFAULT NULL,
   `reference_number` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -477,22 +484,32 @@ CREATE TABLE `courier_payments` (
 -- ORDERS TABLES
 -- ============================================
 
--- Orders Table (UPDATED: reseller_id now references resellers)
+-- Orders Table (Updated with Feb 2026 changes)
 CREATE TABLE `orders` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `order_number` varchar(255) NOT NULL,
+  `order_date` date NOT NULL,
+  `order_type` varchar(255) NOT NULL DEFAULT 'direct',
   `user_id` bigint(20) UNSIGNED DEFAULT NULL,
   `reseller_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `customer_id` bigint(20) UNSIGNED DEFAULT NULL,
   `customer_name` varchar(255) DEFAULT NULL,
   `customer_phone` varchar(255) DEFAULT NULL,
   `customer_address` text DEFAULT NULL,
+  `customer_city` varchar(255) DEFAULT NULL,
+  `customer_district` varchar(255) DEFAULT NULL,
+  `customer_province` varchar(255) DEFAULT NULL,
   `city_id` bigint(20) UNSIGNED DEFAULT NULL,
   `status` varchar(255) NOT NULL DEFAULT 'pending',
-  `payment_method` varchar(255) NOT NULL DEFAULT 'cod',
+  `payment_method` varchar(255) DEFAULT NULL,
   `payment_status` varchar(255) NOT NULL DEFAULT 'pending',
   `total_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `total_cost` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `total_commission` decimal(15,2) NOT NULL DEFAULT 0.00,
   `courier_cost` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `courier_charge` decimal(10,2) NOT NULL DEFAULT 0.00,
   `delivery_fee` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `call_status` varchar(255) DEFAULT NULL,
   `sales_note` text DEFAULT NULL,
   `waybill_number` varchar(255) DEFAULT NULL,
   `courier_id` bigint(20) UNSIGNED DEFAULT NULL,
@@ -509,36 +526,43 @@ CREATE TABLE `orders` (
   UNIQUE KEY `orders_order_number_unique` (`order_number`),
   KEY `orders_user_id_foreign` (`user_id`),
   KEY `orders_reseller_id_foreign` (`reseller_id`),
+  KEY `orders_customer_id_foreign` (`customer_id`),
   KEY `orders_city_id_foreign` (`city_id`),
   KEY `orders_packed_by_foreign` (`packed_by`),
   KEY `orders_courier_id_foreign` (`courier_id`),
   KEY `orders_courier_payment_id_foreign` (`courier_payment_id`),
   CONSTRAINT `orders_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `orders_reseller_id_foreign` FOREIGN KEY (`reseller_id`) REFERENCES `resellers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `orders_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE SET NULL,
   CONSTRAINT `orders_city_id_foreign` FOREIGN KEY (`city_id`) REFERENCES `cities` (`id`) ON DELETE SET NULL,
   CONSTRAINT `orders_packed_by_foreign` FOREIGN KEY (`packed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `orders_courier_id_foreign` FOREIGN KEY (`courier_id`) REFERENCES `couriers` (`id`) ON DELETE SET NULL,
   CONSTRAINT `orders_courier_payment_id_foreign` FOREIGN KEY (`courier_payment_id`) REFERENCES `courier_payments` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Order Items Table
+-- Order Items Table (Updated with product_variant_id and pricing fields)
 CREATE TABLE `order_items` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `order_id` bigint(20) UNSIGNED NOT NULL,
   `product_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `product_variant_id` bigint(20) UNSIGNED DEFAULT NULL,
   `product_name` varchar(255) NOT NULL,
   `sku` varchar(255) DEFAULT NULL,
   `quantity` int(11) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
+  `base_price` decimal(15,2) NOT NULL DEFAULT 0.00,
   `cost_price` decimal(10,2) NOT NULL DEFAULT 0.00,
   `total_price` decimal(10,2) NOT NULL,
+  `subtotal` decimal(15,2) NOT NULL DEFAULT 0.00,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `order_items_order_id_foreign` (`order_id`),
   KEY `order_items_product_id_foreign` (`product_id`),
+  KEY `order_items_product_variant_id_foreign` (`product_variant_id`),
   CONSTRAINT `order_items_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `order_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL
+  CONSTRAINT `order_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `order_items_product_variant_id_foreign` FOREIGN KEY (`product_variant_id`) REFERENCES `product_variants` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Order Logs Table
@@ -558,86 +582,49 @@ CREATE TABLE `order_logs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
--- PURCHASE TABLES
+-- PURCHASE TABLES (Completely redesigned Feb 2026)
 -- ============================================
 
 -- Purchases Table
 CREATE TABLE `purchases` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `purchasing_number` varchar(255) NOT NULL,
+  `purchase_number` varchar(255) NOT NULL,
   `supplier_id` bigint(20) UNSIGNED NOT NULL,
-  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'pending',
-  `total_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `grn_number` varchar(255) DEFAULT NULL,
-  `verified_at` timestamp NULL DEFAULT NULL,
+  `purchase_date` date NOT NULL,
+  `currency` varchar(255) NOT NULL DEFAULT 'LKR',
+  `sub_total` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `discount_type` varchar(255) NOT NULL DEFAULT 'fixed',
+  `discount_value` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `discount_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `net_total` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `paid_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `payments_data` json DEFAULT NULL,
+  `payment_method` varchar(255) DEFAULT NULL,
+  `payment_reference` varchar(255) DEFAULT NULL,
+  `payment_account` varchar(255) DEFAULT NULL,
+  `payment_note` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
-  `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `purchases_purchasing_number_unique` (`purchasing_number`),
-  UNIQUE KEY `purchases_grn_number_unique` (`grn_number`),
+  UNIQUE KEY `purchases_purchase_number_unique` (`purchase_number`),
   KEY `purchases_supplier_id_foreign` (`supplier_id`),
-  KEY `purchases_user_id_foreign` (`user_id`),
-  CONSTRAINT `purchases_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `purchases_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+  CONSTRAINT `purchases_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Purchase Items Table
+-- Purchase Items Table (No FK constraint on product_id)
 CREATE TABLE `purchase_items` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `purchase_id` bigint(20) UNSIGNED NOT NULL,
-  `product_id` bigint(20) UNSIGNED NOT NULL,
-  `quantity` int(11) NOT NULL,
-  `remaining_quantity` int(11) NOT NULL DEFAULT 0,
-  `received_quantity` int(11) NOT NULL DEFAULT 0,
-  `purchasing_price` decimal(10,2) NOT NULL,
-  `total_price` decimal(10,2) NOT NULL,
+  `product_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `product_name` varchar(255) NOT NULL,
+  `quantity` int(11) NOT NULL DEFAULT 1,
+  `purchase_price` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `total` decimal(12,2) NOT NULL DEFAULT 0.00,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `purchase_items_purchase_id_foreign` (`purchase_id`),
-  KEY `purchase_items_product_id_foreign` (`product_id`),
-  CONSTRAINT `purchase_items_purchase_id_foreign` FOREIGN KEY (`purchase_id`) REFERENCES `purchases` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `purchase_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Purchase Payments Table
-CREATE TABLE `purchase_payments` (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `purchase_id` bigint(20) UNSIGNED NOT NULL,
-  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `payment_date` date NOT NULL,
-  `payment_method` varchar(255) NOT NULL DEFAULT 'cash',
-  `reference_number` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `purchase_payments_purchase_id_foreign` (`purchase_id`),
-  KEY `purchase_payments_user_id_foreign` (`user_id`),
-  CONSTRAINT `purchase_payments_purchase_id_foreign` FOREIGN KEY (`purchase_id`) REFERENCES `purchases` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `purchase_payments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Purchase Returns Table
-CREATE TABLE `purchase_returns` (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `purchase_id` bigint(20) UNSIGNED NOT NULL,
-  `product_id` bigint(20) UNSIGNED NOT NULL,
-  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `quantity` int(11) NOT NULL,
-  `reason` text DEFAULT NULL,
-  `returned_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `purchase_returns_purchase_id_foreign` (`purchase_id`),
-  KEY `purchase_returns_product_id_foreign` (`product_id`),
-  KEY `purchase_returns_user_id_foreign` (`user_id`),
-  CONSTRAINT `purchase_returns_purchase_id_foreign` FOREIGN KEY (`purchase_id`) REFERENCES `purchases` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `purchase_returns_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `purchase_returns_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+  CONSTRAINT `purchase_items_purchase_id_foreign` FOREIGN KEY (`purchase_id`) REFERENCES `purchases` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
@@ -651,7 +638,7 @@ CREATE TABLE `migrations` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Insert migration records
+-- Insert all migration records
 INSERT INTO `migrations` (`migration`, `batch`) VALUES
 ('0001_01_01_000000_create_users_table', 1),
 ('0001_01_01_000001_create_cache_table', 1),
@@ -695,7 +682,16 @@ INSERT INTO `migrations` (`migration`, `batch`) VALUES
 ('2026_01_03_122955_update_orders_reseller_id_fk', 1),
 ('2026_01_03_124150_add_status_to_reseller_payments_table', 1),
 ('2026_01_03_133335_create_product_variants_table', 1),
-('2026_01_03_135921_add_unit_value_to_product_variants_table', 1);
+('2026_01_03_135921_add_unit_value_to_product_variants_table', 1),
+('2026_01_05_120000_add_details_to_couriers_table', 1),
+('2026_02_04_194259_upgrade_orders_structure', 1),
+('2026_02_04_210320_add_fulfillment_details_to_orders_table', 1),
+('2026_02_04_213316_create_purchase_items_table', 1),
+('2026_02_04_213316_create_purchases_table', 1),
+('2026_02_04_220941_update_purchase_items_product_id_constraint', 1),
+('2026_02_04_222205_add_payments_json_to_purchases_table', 1),
+('2026_02_04_225751_add_payment_fields_to_courier_payments_table', 1),
+('2026_02_04_231214_add_warranty_fields_to_products_table', 1);
 
 -- ============================================
 -- SEED DATA - ROLES, PERMISSIONS & SUPER ADMIN
@@ -731,7 +727,7 @@ INSERT INTO `role_has_permissions` (`permission_id`, `role_id`) VALUES
 -- Create Super Admin User
 -- Email: admin@shoppy-max.com
 -- Password: password
--- Hash generated with: bcrypt('password', ['rounds' => 12])
+-- Hash: bcrypt('password', ['rounds' => 12])
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `user_type`, `created_at`, `updated_at`) VALUES
 (1, 'Super Admin', 'admin@shoppy-max.com', NOW(), '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', NOW(), NOW());
 
@@ -741,4 +737,15 @@ INSERT INTO `model_has_roles` (`role_id`, `model_type`, `model_id`) VALUES
 
 -- ============================================
 -- END OF SCHEMA & SEED DATA
+-- ============================================
+-- 
+-- LOGIN CREDENTIALS:
+-- Email: admin@shoppy-max.com
+-- Password: password
+-- 
+-- ⚠️ SECURITY WARNING:
+-- Change the default password immediately after first login!
+-- Navigate to your profile settings or use Laravel Tinker:
+-- php artisan tinker
+-- User::find(1)->update(['password' => Hash::make('YourNewPassword')]);
 -- ============================================

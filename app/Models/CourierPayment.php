@@ -15,6 +15,8 @@ class CourierPayment extends Model
         'user_id',
         'amount',
         'payment_date',
+        'payment_method',
+        'payment_note',
         'reference_number',
     ];
 

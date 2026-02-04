@@ -17,6 +17,8 @@ class Product extends Model
         'sub_category_id',
         'description',
         'image',
+        'warranty_period',
+        'warranty_period_type',
     ];
 
     protected $appends = ['total_quantity', 'price_display'];

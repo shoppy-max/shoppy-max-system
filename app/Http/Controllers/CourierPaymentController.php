@@ -4,132 +4,115 @@ namespace App\Http\Controllers;
 
 use App\Models\Courier;
 use App\Models\CourierPayment;
-use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class CourierPaymentController extends Controller
 {
     /**
      * Display a listing of courier payments.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $payments = CourierPayment::with('courier', 'orders')->latest()->paginate(20);
-        return view('couriers.payments.index', compact('payments'));
-    }
+        $query = CourierPayment::with('courier');
 
-    /**
-     * Show the form for creating a new courier payment (Selecting Orders).
-     */
-    public function create(Request $request)
-    {
-        $couriers = Courier::where('is_active', true)->get();
-        $selectedCourierId = $request->query('courier_id');
-        
-        $orders = collect();
-        if ($selectedCourierId) {
-            // Fetch orders delivered by this courier that haven't been "paid" (linked to payment) yet.
-            // Assumption: Payment to courier is for "Delivered" orders usually? 
-            // Or maybe "Dispatched" if checking remittance?
-            // Requirement says "Receive Courier Payment" -> Form to log payments RECEIVED FROM couriers (COD Remittance).
-            // So status should generally be 'delivered' (or whichever status implies COD money is collected).
-            // For now, let's fetch 'delivered' or 'dispatched' orders not yet reconciled.
-            
-             $orders = Order::where('courier_id', $selectedCourierId)
-                           ->whereNull('courier_payment_id')
-                           ->whereIn('status', ['dispatched', 'delivered']) 
-                           ->where('payment_method', 'cod') // Remittance usually only for COD
-                           ->orderBy('created_at')
-                           ->get();
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->whereHas('courier', function($cq) use ($search) {
+                    $cq->where('name', 'like', "%{$search}%");
+                })
+                ->orWhere('reference_number', 'like', "%{$search}%");
+            });
         }
 
-        return view('couriers.payments.create', compact('couriers', 'selectedCourierId', 'orders'));
+        // Filter by payment method
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        // Filter by date range
+        if ($request->filled('start_date')) {
+            $query->whereDate('payment_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('payment_date', '<=', $request->end_date);
+        }
+
+        $payments = $query->latest('payment_date')->paginate(20);
+        
+        return view('courier-payments.index', compact('payments'));
     }
 
     /**
-     * Store a newly created courier payment and update orders.
+     * Show the form for creating a new courier payment.
+     */
+    public function create()
+    {
+        $couriers = Courier::where('is_active', true)->orderBy('name')->get();
+        return view('courier-payments.create', compact('couriers'));
+    }
+
+    /**
+     * Store a newly created courier payment.
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'courier_id' => 'required|exists:couriers,id',
-            'amount' => 'required|numeric',
+            'amount' => 'required|numeric|min:0',
             'payment_date' => 'required|date',
-            'reference_number' => 'nullable|string',
-            'orders' => 'required|array', // Selected orders
-            'orders.*.id' => 'required|exists:orders,id',
-            'orders.*.courier_cost' => 'nullable|numeric', // Real cost input
-            'orders.*.delivery_fee' => 'nullable|numeric', // Charged cost input
+            'payment_method' => 'nullable|string',
+            'reference_number' => 'nullable|string|max:255',
+            'payment_note' => 'nullable|string',
         ]);
 
-        DB::beginTransaction();
-        try {
-            // Create Payment Record
-            $payment = CourierPayment::create([
-                'courier_id' => $validated['courier_id'],
-                'user_id' => Auth::id(),
-                'amount' => $validated['amount'],
-                'payment_date' => $validated['payment_date'],
-                'reference_number' => $validated['reference_number'],
-            ]);
+        $validated['user_id'] = Auth::id();
 
-            // Update Orders
-            foreach ($validated['orders'] as $orderData) {
-                $order = Order::find($orderData['id']);
-                
-                // Allow entering/correcting costs at this stage
-                if (isset($orderData['courier_cost'])) {
-                    $order->courier_cost = $orderData['courier_cost'];
-                }
-                if (isset($orderData['delivery_fee'])) {
-                    $order->delivery_fee = $orderData['delivery_fee'];
-                }
-                
-                $order->courier_payment_id = $payment->id;
-                
-                // If this is remittance, maybe update payment_status to 'paid'?
-                // Implicit logic: receiving money from courier means order is paid.
-                if ($order->payment_method == 'cod') {
-                    $order->payment_status = 'paid';
-                }
-                
-                $order->save();
-            }
+        CourierPayment::create($validated);
 
-            DB::commit();
-            return redirect()->route('courier-payments.index')->with('success', 'Courier payment recorded and orders updated.');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Error recording payment: ' . $e->getMessage());
-        }
+        return redirect()->route('courier-payments.index')
+            ->with('success', 'Courier payment recorded successfully.');
     }
 
     /**
-     * Remove the specified payment (Rollback).
+     * Show the form for editing the specified courier payment.
+     */
+    public function edit(CourierPayment $courierPayment)
+    {
+        $couriers = Courier::where('is_active', true)->orderBy('name')->get();
+        return view('courier-payments.edit', compact('courierPayment', 'couriers'));
+    }
+
+    /**
+     * Update the specified courier payment.
+     */
+    public function update(Request $request, CourierPayment $courierPayment)
+    {
+        $validated = $request->validate([
+            'courier_id' => 'required|exists:couriers,id',
+            'amount' => 'required|numeric|min:0',
+            'payment_date' => 'required|date',
+            'payment_method' => 'nullable|string',
+            'reference_number' => 'nullable|string|max:255',
+            'payment_note' => 'nullable|string',
+        ]);
+
+        $courierPayment->update($validated);
+
+        return redirect()->route('courier-payments.index')
+            ->with('success', 'Courier payment updated successfully.');
+    }
+
+    /**
+     * Remove the specified courier payment.
      */
     public function destroy(CourierPayment $courierPayment)
     {
-        DB::beginTransaction();
-        try {
-            // Unlink orders
-            foreach ($courierPayment->orders as $order) {
-                $order->courier_payment_id = null;
-                // Optional: Revert payment status? might be risky if paid elsewhere, leaving as is for now or clarify.
-                // Safest is to just unlink so they reappear in the list.
-                $order->save();
-            }
-            
-            $courierPayment->delete();
-            
-            DB::commit();
-            return redirect()->route('courier-payments.index')->with('success', 'Payment deleted and orders unlinked.');
+        $courierPayment->delete();
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Error deleting payment: ' . $e->getMessage());
-        }
+        return redirect()->route('courier-payments.index')
+            ->with('success', 'Courier payment deleted successfully.');
     }
 }

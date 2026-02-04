@@ -62,6 +62,8 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'sub_category_id' => 'nullable|exists:sub_categories,id',
             'description' => 'nullable|string',
+            'warranty_period' => 'nullable|integer|min:0',
+            'warranty_period_type' => 'nullable|in:years,months,days',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             
             // Variants Validation
@@ -87,6 +89,8 @@ class ProductController extends Controller
             'category_id' => $validated['category_id'],
             'sub_category_id' => $validated['sub_category_id'] ?? null,
             'description' => $validated['description'] ?? null,
+            'warranty_period' => $validated['warranty_period'] ?? null,
+            'warranty_period_type' => $validated['warranty_period_type'] ?? null,
             'image' => $validated['image'] ?? null,
             'barcode_data' => null, // Or derive from first variant SKU?
         ]);
@@ -130,6 +134,8 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'sub_category_id' => 'nullable|exists:sub_categories,id',
             'description' => 'nullable|string',
+            'warranty_period' => 'nullable|integer|min:0',
+            'warranty_period_type' => 'nullable|in:years,months,days',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
 
             'variants' => 'required|array|min:1',
@@ -158,6 +164,8 @@ class ProductController extends Controller
             'category_id' => $validated['category_id'],
             'sub_category_id' => $validated['sub_category_id'] ?? null,
             'description' => $validated['description'] ?? null,
+            'warranty_period' => $validated['warranty_period'] ?? null,
+            'warranty_period_type' => $validated['warranty_period_type'] ?? null,
             'image' => $validated['image'] ?? $product->image,
         ]);
 
