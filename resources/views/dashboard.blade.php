@@ -41,7 +41,7 @@
                         {{ __('Admin Access Granted') }}
                     </h3>
                     <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-400">
-                        <p>{{ __('You have elevated privileges. Toggle between user and admin views as needed.') }}</p>
+                        <p>{{ __('You have elevated privileges.') }}</p>
                     </div>
                 </div>
             </div>

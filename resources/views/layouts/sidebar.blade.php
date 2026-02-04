@@ -108,6 +108,25 @@
 
 
 
+
+            <!-- Couriers -->
+            <li>
+                <button type="button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-couriers" data-collapse-toggle="dropdown-couriers">
+                    <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span class="flex-1 ms-3 text-left rtl:text-right whitespace-nowrap">Couriers</span>
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
+                    </svg>
+                </button>
+                <ul id="dropdown-couriers" class="{{ request()->routeIs('couriers.*') ? '' : 'hidden' }} py-2 space-y-2">
+                    <li>
+                         <a href="{{ route('couriers.index') }}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 {{ request()->routeIs('couriers.index') ? 'text-primary-600 dark:text-primary-400' : '' }}">Couriers List</a>
+                    </li>
+                    <li>
+                         <a href="{{ route('couriers.create') }}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 {{ request()->routeIs('couriers.create') ? 'text-primary-600 dark:text-primary-400' : '' }}">Add Courier</a>
+                    </li>
+                </ul>
+            </li>
                 
                 <!-- User Section -->
                 <li>
@@ -136,12 +155,8 @@
                         @endcan
                     </ul>
                 </li>
-            </ul>
-            
-            <!-- Rest of sidebar (Products, Couriers, Order, Reports, Settings) would follow same pattern. 
-                 Formatted for brevity but should be fully implemented if specific instructions given. 
-                 Assuming keeping it concise for this step to verify style first.
-                 For now, adding Products, Courier, Order... -->
+
+
 
             <ul class="pt-4 mt-4 space-y-2 font-medium border-t border-gray-200 dark:border-gray-700">
                 <!-- Reports -->
