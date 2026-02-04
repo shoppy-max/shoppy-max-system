@@ -38,12 +38,9 @@
 
     <form method="POST" action="{{ route('purchases.store') }}" x-data="purchaseForm()" @submit.prevent="submitForm">
         @csrf
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+        <div class="max-w-7xl mx-auto p-6 space-y-6">
             
-            <!-- Left Column: Details & Items -->
-            <div class="lg:col-span-2 space-y-6">
-                
-                <!-- Basic Info Card -->
+            <!-- Basic Info Card -->
                 <div class="p-6 bg-white rounded-lg shadow dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">Purchase Details</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -83,31 +80,45 @@
 
                 <!-- Product Items -->
                 <div class="p-6 bg-white rounded-lg shadow dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                    <div class="flex justify-between items-center mb-4 border-b pb-2 dark:border-gray-700">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Items</h3>
-                        <button type="button" @click="addItem()" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Purchase Items</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Add products to this purchase order</p>
+                        </div>
+                        <button type="button" @click="addItem()" class="text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                             Add Item
                         </button>
                     </div>
 
-                    <div class="relative overflow-x-auto lg:overflow-visible">
-                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                                <tr>
-                                    <th class="px-4 py-3 min-w-[250px]">Product / Description</th>
-                                    <th class="px-4 py-3 w-24">Qty</th>
-                                    <th class="px-4 py-3 w-32">Unit Price</th>
-                                    <th class="px-4 py-3 w-32 text-right">Total</th>
-                                    <th class="px-4 py-3 w-10"></th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                                <template x-for="(item, index) in items" :key="index">
-                                    <tr class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                        <!-- Product Search -->
-                                        <td class="px-4 py-3 align-top relative">
-                                            <div class="relative" x-data="{ search: '', open: false, results: [] }">
+                    <!-- Items List -->
+                    <div class="space-y-4">
+                        <template x-for="(item, index) in items" :key="index">
+                            <div class="relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-5 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 shadow-sm hover:shadow-md">
+                                
+                                <!-- Item Number Badge -->
+                                <div class="absolute -top-3 -left-3 bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg">
+                                    <span x-text="index + 1"></span>
+                                </div>
+
+                                <!-- Remove Button -->
+                                <button type="button" @click="removeItem(index)" class="absolute -top-3 -right-3 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+
+                                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-2">
+                                    
+                                    <!-- Product Search - Takes more space -->
+                                    <div class="md:col-span-6">
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                            Product
+                                        </label>
+                                        <div class="relative" x-data="{ search: '', open: false, results: [] }">
+                                            <div class="relative">
+                                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                                </div>
                                                 <input type="text" 
                                                        x-model="item.product_name" 
                                                        @input.debounce.300ms="
@@ -119,170 +130,312 @@
                                                             } else { open = false; }
                                                        "
                                                        @focus="if(item.product_name.length > 1) open = true"
-                                                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" 
-                                                       placeholder="Type product name..."
+                                                       class="bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-3 transition-all" 
+                                                       placeholder="Search by name or SKU..."
                                                        required
                                                        autocomplete="off"
                                                 >
+                                            </div>
+                                            
+                                            <!-- Dropdown Results -->
+                                            <div x-show="open" 
+                                                 x-transition:enter="transition ease-out duration-200"
+                                                 x-transition:enter-start="opacity-0 scale-95"
+                                                 x-transition:enter-end="opacity-100 scale-100"
+                                                 @click.outside="open = false" 
+                                                 class="absolute z-50 w-full bg-white dark:bg-gray-800 rounded-lg shadow-2xl border-2 border-blue-200 dark:border-blue-600 mt-2 max-h-64 overflow-y-auto">
                                                 
-                                                <!-- Dropdown Results -->
-                                                <div x-show="open" 
-                                                     @click.outside="open = false" 
-                                                     class="absolute z-50 w-[400px] bg-white rounded-lg shadow-2xl border border-gray-200 dark:border-gray-600 dark:bg-gray-800 mt-1 max-h-60 overflow-y-auto left-0 transform transition-all duration-200 origin-top-left">
-                                                    
-                                                    <div x-show="results.length === 0" class="p-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                                                        No products found.
-                                                    </div>
+                                                <div x-show="results.length === 0" class="p-4 text-center">
+                                                    <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    <p class="text-sm text-gray-500 dark:text-gray-400">No products found</p>
+                                                </div>
 
-                                                    <ul x-show="results.length > 0" class="py-1">
-                                                        <template x-for="res in results" :key="res.id">
-                                                            <li @click="
-                                                                item.product_id = res.id;
-                                                                item.product_name = res.name;
-                                                                open = false;
-                                                            " class="px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-700 last:border-0 flex justify-between items-center group transition-colors">
-                                                                
-                                                                <div class="flex items-center gap-3">
-                                                                    <!-- Optional Image/Icon Placeholder -->
-                                                                    <div class="w-8 h-8 rounded bg-gray-100 dark:bg-gray-600 flex items-center justify-center text-gray-400">
-                                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                <ul x-show="results.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
+                                                    <template x-for="res in results" :key="res.id">
+                                                        <li @click="
+                                                            item.product_id = res.id;
+                                                            item.product_name = res.name;
+                                                            open = false;
+                                                        " class="px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors group">
+                                                            <div class="flex items-center justify-between">
+                                                                <div class="flex items-center gap-3 flex-1">
+                                                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 flex items-center justify-center flex-shrink-0">
+                                                                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                                                                     </div>
-                                                                    <div class="flex flex-col">
-                                                                        <span x-text="res.name" class="font-semibold text-sm"></span>
-                                                                        <span class="text-xs text-gray-500 dark:text-gray-400" x-text="'SKU: ' + res.sku"></span>
+                                                                    <div class="flex-1 min-w-0">
+                                                                        <p class="font-semibold text-gray-900 dark:text-white truncate" x-text="res.name"></p>
+                                                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                                                            <span class="font-mono bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded" x-text="'SKU: ' + res.sku"></span>
+                                                                        </p>
                                                                     </div>
                                                                 </div>
-                                                                
-                                                                <span class="text-xs font-mono bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    Select
-                                                                </span>
-                                                            </li>
-                                                        </template>
-                                                    </ul>
-                                                </div>
-                                                <input type="hidden" :name="`items[${index}][product_id]`" x-model="item.product_id">
-                                                <input type="hidden" :name="`items[${index}][product_name]`" x-model="item.product_name">
+                                                                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                                            </div>
+                                                        </li>
+                                                    </template>
+                                                </ul>
                                             </div>
-                                        </td>
-                                        
-                                        <!-- Qty -->
-                                        <td class="px-4 py-3 align-top">
-                                            <input type="number" step="1" min="1" x-model="item.quantity" :name="`items[${index}][quantity]`" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white text-center" required>
-                                        </td>
-                                        
-                                        <!-- Price -->
-                                        <td class="px-4 py-3 align-top">
-                                            <input type="number" step="0.01" min="0" x-model="item.purchase_price" :name="`items[${index}][purchase_price]`" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white text-right" required>
-                                        </td>
-                                        
-                                        <!-- Total -->
-                                        <td class="px-4 py-3 text-right font-bold text-gray-900 dark:text-white align-middle">
-                                            <span x-text="(item.quantity * item.purchase_price).toFixed(2)"></span>
-                                        </td>
-                                        
-                                        <!-- Remove -->
-                                        <td class="px-4 py-3 align-middle text-center">
-                                            <button type="button" @click="removeItem(index)" class="text-gray-400 hover:text-red-500 transition-colors p-1 hover:bg-red-50 rounded-full dark:hover:bg-gray-700">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                            <tfoot>
-                                <tr class="bg-gray-50 dark:bg-gray-700 font-semibold text-gray-900 dark:text-white">
-                                    <td colspan="3" class="px-4 py-3 text-right">Total Items Cost:</td>
-                                    <td class="px-4 py-3 text-right" x-text="subTotal.toFixed(2)"></td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
+                                            <input type="hidden" :name="`items[${index}][product_id]`" x-model="item.product_id">
+                                            <input type="hidden" :name="`items[${index}][product_name]`" x-model="item.product_name">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Quantity -->
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
+                                            Quantity
+                                        </label>
+                                        <div class="relative">
+                                            <input type="number" 
+                                                   step="1" 
+                                                   min="1" 
+                                                   x-model="item.quantity" 
+                                                   :name="`items[${index}][quantity]`" 
+                                                   class="bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-3 text-center font-semibold transition-all" 
+                                                   required>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Unit Price -->
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            Unit Price
+                                        </label>
+                                        <div class="relative">
+                                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                                <span class="text-gray-500 dark:text-gray-400 font-semibold">Rs.</span>
+                                            </div>
+                                            <input type="number" 
+                                                   step="0.01" 
+                                                   min="0" 
+                                                   x-model="item.purchase_price" 
+                                                   :name="`items[${index}][purchase_price]`" 
+                                                   class="bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-3 text-right font-semibold transition-all" 
+                                                   required>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Total -->
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                            Total
+                                        </label>
+                                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-3 text-right">
+                                            <p class="text-lg font-bold text-blue-700 dark:text-blue-300">
+                                                Rs. <span x-text="(item.quantity * item.purchase_price).toFixed(2)">0.00</span>
+                                            </p>
+                                        </div>
+                                    </div>
 
-                <!-- Payment Info -->
-                <div class="p-6 bg-white rounded-lg shadow dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">Payment Details</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                             <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Amount Paid</label>
-                             <div class="relative">
-                                <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-                                    <span class="text-gray-500 dark:text-gray-400 text-sm">Rs.</span>
                                 </div>
-                                <input type="number" step="0.01" name="paid_amount" x-model="paid_amount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" placeholder="0.00">
+                            </div>
+                        </template>
+
+                        <!-- Empty State -->
+                        <div x-show="items.length === 0" class="text-center py-12 bg-gray-50 dark:bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                            <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                            <p class="text-gray-500 dark:text-gray-400 font-medium mb-2">No items added yet</p>
+                            <p class="text-sm text-gray-400 dark:text-gray-500">Click "Add Item" to start building your purchase order</p>
+                        </div>
+                    </div>
+
+                    <!-- Summary Footer -->
+                    <div x-show="items.length > 0" class="mt-6 pt-6 border-t-2 border-gray-200 dark:border-gray-700">
+                        <div class="flex justify-between items-center bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg p-4">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    Total Items: <span class="text-blue-600 dark:text-blue-400" x-text="items.length"></span>
+                                </span>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Subtotal (before discount)</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                                    Rs. <span x-text="subTotal.toFixed(2)">0.00</span>
+                                </p>
                             </div>
                         </div>
-                        <div>
-                             <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Payment Method</label>
-                             <select name="payment_method" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
-                                <option value="Cash">Cash</option>
-                                <option value="Card">Card</option>
-                                <option value="Cheque">Cheque</option>
-                                <option value="Bank Transfer">Bank Transfer</option>
-                             </select>
-                        </div>
-                         <div>
-                             <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Payment Account</label>
-                             <input type="text" name="payment_account" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" placeholder="e.g. Bank Acc No">
-                        </div>
-                        <div>
-                             <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Note / Cheque No</label>
-                             <input type="text" name="payment_note" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
-                        </div>
                     </div>
                 </div>
 
+
+            <!-- Financial Summary & Discount -->
+            <div class="p-6 bg-white rounded-lg shadow dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 border-b pb-2 dark:border-gray-700">Financial Summary</h3>
+                
+                <div class="flex justify-between mb-3 text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
+                    <span class="font-medium text-gray-900 dark:text-white" x-text="'Rs. ' + subTotal.toFixed(2)"></span>
+                    <input type="hidden" name="sub_total" :value="subTotal">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Discount</label>
+                    <div class="flex gap-2">
+                        <input type="number" x-model="discount_value" name="discount_value" placeholder="0" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-right">
+                        <select x-model="discount_type" name="discount_type" class="w-1/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="fixed">Rs.</option>
+                            <option value="percentage">%</option>
+                        </select>
+                    </div>
+                    <p class="text-xs text-green-600 mt-1 text-right italic" x-show="discountAmount > 0">
+                        - Rs. <span x-text="discountAmount.toFixed(2)"></span>
+                    </p>
+                    <input type="hidden" name="discount_amount" :value="discountAmount">
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xl font-bold text-gray-900 dark:text-white">Net Total</span>
+                        <span class="text-2xl font-extrabold text-blue-600" x-text="'Rs. ' + netTotal.toFixed(2)"></span>
+                        <input type="hidden" name="net_total" :value="netTotal">
+                    </div>
+                </div>
+                
+                <!-- Balance Indicator -->
+                <div class="p-3 rounded-md text-sm font-medium flex justify-between items-center" 
+                     :class="paid_amount >= netTotal ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'">
+                    <span>Balance Due:</span>
+                    <span x-text="'Rs. ' + Math.max(0, netTotal - paid_amount).toFixed(2)"></span>
+                </div>
             </div>
-            
-            <!-- Right Column: Totals -->
-            <div class="space-y-6">
-                <div class="p-6 bg-white rounded-lg shadow dark:bg-gray-800 border border-gray-200 dark:border-gray-700 sticky top-6">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 border-b pb-2 dark:border-gray-700">Financial Summary</h3>
-                    
-                    <div class="flex justify-between mb-3 text-sm">
-                        <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
-                        <span class="font-medium text-gray-900 dark:text-white" x-text="'Rs. ' + subTotal.toFixed(2)"></span>
-                        <input type="hidden" name="sub_total" :value="subTotal">
+
+            <!-- Payment Details -->
+            <div class="p-6 bg-white rounded-lg shadow dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Payment Details</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Add one or more payments for this purchase</p>
                     </div>
-                    
-                    <div class="mb-4">
-                        <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Discount</label>
-                        <div class="flex gap-2">
-                            <input type="number" x-model="discount_value" name="discount_value" placeholder="0" class="w-2/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-right">
-                            <select x-model="discount_type" name="discount_type" class="w-1/3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                <option value="fixed">Rs.</option>
-                                <option value="percentage">%</option>
-                            </select>
+                    <button type="button" @click="addPayment()" class="text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800 flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Add Payment
+                    </button>
+                </div>
+
+                <!-- Payments List -->
+                <div class="space-y-4">
+                    <template x-for="(payment, index) in payments" :key="index">
+                        <div class="relative bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-5 border-2 border-green-200 dark:border-green-700 hover:border-green-400 dark:hover:border-green-500 transition-all duration-200 shadow-sm hover:shadow-md">
+                            
+                            <!-- Payment Number Badge -->
+                            <div class="absolute -top-3 -left-3 bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg">
+                                <span x-text="index + 1"></span>
+                            </div>
+
+                            <!-- Remove Button -->
+                            <button type="button" @click="removePayment(index)" class="absolute -top-3 -right-3 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-2">
+                                
+                                <!-- Amount -->
+                                <div class="md:col-span-3">
+                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Amount
+                                    </label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                            <span class="text-gray-500 dark:text-gray-400 font-semibold">Rs.</span>
+                                        </div>
+                                        <input type="number" 
+                                               step="0.01" 
+                                               min="0"
+                                               x-model="payment.amount" 
+                                               :name="`payments[${index}][amount]`" 
+                                               class="bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-3 text-right font-semibold transition-all" 
+                                               placeholder="0.00"
+                                               required>
+                                    </div>
+                                </div>
+                                
+                                <!-- Payment Method -->
+                                <div class="md:col-span-3">
+                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                                        Method
+                                    </label>
+                                    <select x-model="payment.method" 
+                                            :name="`payments[${index}][method]`" 
+                                            class="bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full p-3 transition-all"
+                                            required>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Card">Card</option>
+                                        <option value="Cheque">Cheque</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Account/Reference -->
+                                <div class="md:col-span-3">
+                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                        Account
+                                    </label>
+                                    <input type="text" 
+                                           x-model="payment.account" 
+                                           :name="`payments[${index}][account]`" 
+                                           class="bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full p-3 transition-all" 
+                                           placeholder="Bank/Account">
+                                </div>
+                                
+                                <!-- Note -->
+                                <div class="md:col-span-3">
+                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                                        Note/Ref
+                                    </label>
+                                    <input type="text" 
+                                           x-model="payment.note" 
+                                           :name="`payments[${index}][note]`" 
+                                           class="bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 block w-full p-3 transition-all" 
+                                           placeholder="Cheque #, Ref">
+                                </div>
+
+                            </div>
                         </div>
-                        <p class="text-xs text-green-600 mt-1 text-right italic" x-show="discountAmount > 0">
-                            - Rs. <span x-text="discountAmount.toFixed(2)"></span>
-                        </p>
-                        <input type="hidden" name="discount_amount" :value="discountAmount">
+                    </template>
+
+                    <!-- Empty State -->
+                    <div x-show="payments.length === 0" class="text-center py-12 bg-gray-50 dark:bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                        <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <p class="text-gray-500 dark:text-gray-400 font-medium mb-2">No payments added yet</p>
+                        <p class="text-sm text-gray-400 dark:text-gray-500">Click "Add Payment" to record payment details</p>
                     </div>
 
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4 flex justify-between items-center mb-6">
-                        <span class="text-lg font-bold text-gray-900 dark:text-white">Net Total</span>
-                        <span class="text-xl font-extrabold text-blue-600" x-text="'Rs. ' + netTotal.toFixed(2)"></span>
-                         <input type="hidden" name="net_total" :value="netTotal">
-                    </div>
-                    
-                    <!-- Balance Indicator -->
-                    <div class="mb-6 p-3 rounded-md text-sm font-medium flex justify-between items-center" 
-                         :class="paid_amount >= netTotal ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                        <span>Balance Due:</span>
-                        <span x-text="'Rs. ' + Math.max(0, netTotal - paid_amount).toFixed(2)"></span>
-                    </div>
-
-                    <div class="flex flex-col gap-3">
-                        <button type="submit" class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-3 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 shadow-md">
-                            Save Purchase
-                        </button>
-                        <a href="{{ route('purchases.index') }}" class="w-full text-center text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 shadow-sm">
-                            Cancel
-                        </a>
+                    <!-- Total Paid Summary -->
+                    <div x-show="payments.length > 0" class="mt-6 pt-6 border-t-2 border-gray-200 dark:border-gray-700">
+                        <div class="flex justify-between items-center bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-800 dark:to-emerald-800 rounded-lg p-4">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span class="text-sm font-semibold text-green-800 dark:text-green-200">
+                                    Total Payments: <span class="text-green-600 dark:text-green-300" x-text="payments.length"></span>
+                                </span>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-green-600 dark:text-green-400 mb-1">Total Paid</p>
+                                <p class="text-2xl font-bold text-green-800 dark:text-green-200">
+                                    Rs. <span x-text="paid_amount.toFixed(2)">0.00</span>
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button type="submit" class="flex-1 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-3 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 shadow-md">
+                    Save Purchase
+                </button>
+                <a href="{{ route('purchases.index') }}" class="flex-1 text-center text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-3 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 shadow-sm">
+                    Cancel
+                </a>
             </div>
         </div>
     </form>
@@ -293,9 +446,9 @@
                 items: [
                     { product_id: null, product_name: '', quantity: 1, purchase_price: 0 }
                 ],
+                payments: [],
                 discount_type: 'fixed',
                 discount_value: 0,
-                paid_amount: 0,
                 
                 addItem() {
                     this.items.push({ product_id: null, product_name: '', quantity: 1, purchase_price: 0 });
@@ -305,6 +458,14 @@
                     if(this.items.length > 1) {
                         this.items.splice(index, 1);
                     }
+                },
+                
+                addPayment() {
+                    this.payments.push({ amount: 0, method: 'Cash', account: '', note: '' });
+                },
+                
+                removePayment(index) {
+                    this.payments.splice(index, 1);
                 },
                 
                 get subTotal() {
@@ -321,6 +482,10 @@
                 get netTotal() {
                     let total = this.subTotal - this.discountAmount;
                     return total > 0 ? total : 0;
+                },
+                
+                get paid_amount() {
+                    return this.payments.reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
                 },
 
                 submitForm(e) {

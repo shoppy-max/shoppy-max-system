@@ -78,6 +78,12 @@ class PurchaseController extends Controller
 
         DB::beginTransaction();
         try {
+            // Calculate total paid amount from payments array
+            $paidAmount = 0;
+            if ($request->has('payments') && is_array($request->payments)) {
+                $paidAmount = collect($request->payments)->sum('amount');
+            }
+
             $purchase = Purchase::create([
                 'purchase_number' => $request->purchase_number,
                 'supplier_id' => $request->supplier_id,
@@ -88,11 +94,11 @@ class PurchaseController extends Controller
                 'discount_value' => $request->discount_value ?? 0,
                 'discount_amount' => $request->discount_amount ?? 0,
                 'net_total' => $request->net_total,
-                'paid_amount' => $request->paid_amount ?? 0,
-                'payment_method' => $request->payment_method,
+                'paid_amount' => $paidAmount,
+                'payment_method' => $request->has('payments') && count($request->payments) > 0 ? json_encode(collect($request->payments)->pluck('method')->toArray()) : null,
                 'payment_reference' => $request->payment_reference,
-                'payment_account' => $request->payment_account,
-                'payment_note' => $request->payment_note,
+                'payment_account' => $request->has('payments') && count($request->payments) > 0 ? json_encode(collect($request->payments)->pluck('account')->toArray()) : null,
+                'payment_note' => $request->has('payments') && count($request->payments) > 0 ? json_encode(collect($request->payments)->pluck('note')->toArray()) : null,
             ]);
 
             foreach ($request->items as $item) {
