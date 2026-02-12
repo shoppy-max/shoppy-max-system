@@ -142,10 +142,10 @@
                     </button>
                 <ul id="dropdown-orders" class="{{ request()->routeIs('orders.*') ? '' : 'hidden' }} py-2 space-y-2">
                     <li>
-                         <a href="{{ route('orders.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Order List</a>
+                         <a href="{{ route('orders.create') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.create') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Add Order</a>
                     </li>
                     <li>
-                         <a href="{{ route('orders.create') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.create') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Create Order</a>
+                         <a href="{{ route('orders.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Order List</a>
                     </li>
                     <li>
                          <a href="{{ route('orders.call-list') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.call-list') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Call List</a>
