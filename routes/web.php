@@ -118,6 +118,13 @@ Route::middleware(['auth'])->get('reseller-dues/{id}', [\App\Http\Controllers\Re
 
 // Courier Management Routes
 Route::middleware(['auth'])->group(function () {
+    // Receive Courier
+    Route::get('receive-courier', [\App\Http\Controllers\CourierReceiveController::class, 'index'])->name('courier-receive.index');
+    Route::get('receive-courier/search-order', [\App\Http\Controllers\CourierReceiveController::class, 'searchOrder'])->name('courier-receive.search-order');
+    Route::get('receive-courier/{courier}', [\App\Http\Controllers\CourierReceiveController::class, 'show'])->name('courier-receive.show');
+    Route::post('receive-courier/{courier}/import', [\App\Http\Controllers\CourierReceiveController::class, 'import'])->name('courier-receive.import'); // For Excel preview/process
+    Route::post('receive-courier/{courier}/store', [\App\Http\Controllers\CourierReceiveController::class, 'store'])->name('courier-receive.store');   // Final store
+
     Route::resource('couriers', \App\Http\Controllers\CourierController::class);
     Route::resource('courier-payments', \App\Http\Controllers\CourierPaymentController::class);
     // Purchases

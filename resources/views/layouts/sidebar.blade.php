@@ -123,7 +123,7 @@
                          <a href="{{ route('couriers.index') }}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 {{ request()->routeIs('couriers.index') ? 'text-primary-600 dark:text-primary-400' : '' }}">Couriers List</a>
                     </li>
                     <li>
-                         <a href="{{ route('couriers.create') }}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 {{ request()->routeIs('couriers.create') ? 'text-primary-600 dark:text-primary-400' : '' }}">Add Courier</a>
+                         <a href="{{ route('courier-receive.index') }}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 {{ request()->routeIs('courier-receive.*') ? 'text-primary-600 dark:text-primary-400' : '' }}">Receive Courier Payment</a>
                     </li>
                     <li>
                          <a href="{{ route('courier-payments.index') }}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 {{ request()->routeIs('courier-payments.*') ? 'text-primary-600 dark:text-primary-400' : '' }}">Courier Payments</a>

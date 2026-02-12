@@ -63,12 +63,14 @@ class RolesAndPermissionsSeeder extends Seeder
             [
                 'name' => 'Super Admin',
                 'password' => 'password', // 'hashed' cast in User model handles hashing
+                'email_verified_at' => now(), // Auto-verify email for seeded admin
             ]
         );
 
         // Ensure password is correct if user already existed
         if (!$superAdmin->wasRecentlyCreated) {
              $superAdmin->password = 'password';
+             $superAdmin->email_verified_at = now();
              $superAdmin->save();
         }
 
