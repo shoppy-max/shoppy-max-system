@@ -1,7 +1,7 @@
 -- ============================================
 -- ShoppyMax Database Schema
 -- Database: lbccompa_shoppymax
--- Generated: 2026-02-05
+-- Generated: 2026-02-13
 -- Description: Complete fresh database structure for ShoppyMax
 -- Includes all migrations up to 2026_02_04_231214
 -- ============================================
@@ -340,7 +340,7 @@ CREATE TABLE `attribute_values` (
   CONSTRAINT `attribute_values_attribute_id_foreign` FOREIGN KEY (`attribute_id`) REFERENCES `attributes` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Products Table (Updated: variant fields moved to product_variants, warranty fields added)
+-- Products Table
 CREATE TABLE `products` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -484,7 +484,7 @@ CREATE TABLE `courier_payments` (
 -- ORDERS TABLES
 -- ============================================
 
--- Orders Table (Updated with Feb 2026 changes)
+-- Orders Table
 CREATE TABLE `orders` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `order_number` varchar(255) NOT NULL,
@@ -540,7 +540,7 @@ CREATE TABLE `orders` (
   CONSTRAINT `orders_courier_payment_id_foreign` FOREIGN KEY (`courier_payment_id`) REFERENCES `courier_payments` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Order Items Table (Updated with product_variant_id and pricing fields)
+-- Order Items Table
 CREATE TABLE `order_items` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `order_id` bigint(20) UNSIGNED NOT NULL,
@@ -582,7 +582,7 @@ CREATE TABLE `order_logs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
--- PURCHASE TABLES (Completely redesigned Feb 2026)
+-- PURCHASE TABLES
 -- ============================================
 
 -- Purchases Table
@@ -611,7 +611,7 @@ CREATE TABLE `purchases` (
   CONSTRAINT `purchases_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Purchase Items Table (No FK constraint on product_id)
+-- Purchase Items Table
 CREATE TABLE `purchase_items` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `purchase_id` bigint(20) UNSIGNED NOT NULL,
@@ -737,15 +737,4 @@ INSERT INTO `model_has_roles` (`role_id`, `model_type`, `model_id`) VALUES
 
 -- ============================================
 -- END OF SCHEMA & SEED DATA
--- ============================================
--- 
--- LOGIN CREDENTIALS:
--- Email: admin@shoppy-max.com
--- Password: password
--- 
--- ⚠️ SECURITY WARNING:
--- Change the default password immediately after first login!
--- Navigate to your profile settings or use Laravel Tinker:
--- php artisan tinker
--- User::find(1)->update(['password' => Hash::make('YourNewPassword')]);
 -- ============================================
