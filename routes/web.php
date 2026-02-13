@@ -79,6 +79,11 @@ Route::middleware(['auth'])->prefix('orders')->name('orders.')->group(function (
     Route::get('/search-products', [\App\Http\Controllers\OrderController::class, 'searchProducts'])->name('search-products');
     Route::get('/search-resellers', [\App\Http\Controllers\OrderController::class, 'searchResellers'])->name('search-resellers');
     
+    // Waybill (Must be before /{order} wildcard)
+    Route::get('/waybill', [\App\Http\Controllers\WaybillController::class, 'index'])->name('waybill.index');
+    Route::get('/waybill/{courier}', [\App\Http\Controllers\WaybillController::class, 'show'])->name('waybill.show');
+    Route::post('/waybill/print', [\App\Http\Controllers\WaybillController::class, 'print'])->name('waybill.print');
+    
     // CRUD & PDF
     Route::get('/{order}', [\App\Http\Controllers\OrderController::class, 'show'])->name('show');
     Route::get('/{order}/edit', [\App\Http\Controllers\OrderController::class, 'edit'])->name('edit');
@@ -89,9 +94,7 @@ Route::middleware(['auth'])->prefix('orders')->name('orders.')->group(function (
     // Status update
     Route::post('/{id}/status', [\App\Http\Controllers\OrderController::class, 'updateStatus'])->name('status.update');
 
-    // Waybill
-    Route::get('/waybill', [\App\Http\Controllers\WaybillController::class, 'index'])->name('waybill.index');
-    Route::post('/waybill/print', [\App\Http\Controllers\WaybillController::class, 'print'])->name('waybill.print');
+
 
     // Packing
     Route::get('/packing', [\App\Http\Controllers\PackingController::class, 'index'])->name('packing.index');

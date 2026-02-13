@@ -150,6 +150,9 @@
                     <li>
                          <a href="{{ route('orders.call-list') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.call-list') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Call List</a>
                     </li>
+                    <li>
+                         <a href="{{ route('orders.waybill.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.waybill.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Waybill Print</a>
+                    </li>
                 </ul>
             </li>
 

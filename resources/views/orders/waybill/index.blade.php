@@ -1,78 +1,52 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Print Waybills') }}
-        </h2>
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                {{ __('Waybill Print - Select Courier') }}
+            </h2>
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                            <svg class="w-3 h-3 me-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"/>
+                            </svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li aria-current="page">
+                         <div class="flex items-center">
+                            <svg class="w-3 h-3 text-gray-400 mx-1 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                            </svg>
+                            <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">Waybill Print</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+        </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    
-                    <form action="{{ route('orders.waybill.print') }}" method="POST" target="_blank">
-                        @csrf
-                        
-                        <div class="mb-4 flex justify-between items-center">
-                            <h3 class="text-lg font-medium">Select Orders to Print</h3>
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-6 rounded">
-                                Print Selected (4-up A4)
-                            </button>
-                        </div>
+    <div class="p-6 overflow-hidden bg-white rounded-md shadow-md dark:bg-gray-800">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-6">Choose a Courier</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            @foreach($couriers as $courier)
+                <a href="{{ route('orders.waybill.show', $courier) }}" class="block p-6 bg-white border border-gray-200 rounded-lg shadow hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 transition duration-150 ease-in-out text-center group">
 
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left">
-                                        <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">City</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @forelse($orders as $order)
-                                    <tr>
-                                        <td class="px-6 py-4">
-                                            <input type="checkbox" name="order_ids[]" value="{{ $order->id }}" class="order-checkbox rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                        </td>
-                                        <td class="px-6 py-4 font-bold">{{ $order->order_number }}</td>
-                                        <td class="px-6 py-4">{{ $order->customer_name }}</td>
-                                        <td class="px-6 py-4">{{ $order->city->name ?? 'N/A' }}</td>
-                                        <td class="px-6 py-4">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                {{ ucfirst($order->status) }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">{{ $order->created_at->format('Y-m-d') }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">No confirmed orders ready for printing.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                        
-                        <div class="mt-4">
-                            {{ $orders->links() }}
-                        </div>
-
-                    </form>
-                </div>
-            </div>
+                    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400">{{ $courier->name }}</h5>
+                    <p class="font-normal text-gray-500 dark:text-gray-400">
+                        Click to view orders
+                    </p>
+                </a>
+            @endforeach
         </div>
+        
+        @if($couriers->isEmpty())
+            <div class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+                <svg class="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <p class="text-lg font-medium">No active couriers found.</p>
+            </div>
+        @endif
     </div>
-
-    <script>
-        document.getElementById('selectAll').addEventListener('change', function() {
-            var checkboxes = document.querySelectorAll('.order-checkbox');
-            for (var checkbox of checkboxes) {
-                checkbox.checked = this.checked;
-            }
-        });
-    </script>
 </x-app-layout>
