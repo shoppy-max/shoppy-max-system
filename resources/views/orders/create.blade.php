@@ -204,7 +204,7 @@
                                         <template x-for="product in productResults" :key="product.id">
                                             <li @click="addItem(product)" class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer flex items-center border-b border-gray-100 dark:border-gray-600 last:border-0 transition duration-150">
                                                 <div class="flex-shrink-0 h-10 w-10 mr-4">
-                                                    <img :src="product.image ? '/storage/' + product.image : 'https://ui-avatars.com/api/?name=' + product.name" class="h-10 w-10 rounded-lg object-cover bg-gray-100 dark:bg-gray-600">
+                                                    <img :src="product.image ? (product.image.startsWith('http') ? product.image : '/storage/' + product.image) : 'https://ui-avatars.com/api/?name=' + product.name" class="h-10 w-10 rounded-lg object-cover bg-gray-100 dark:bg-gray-600">
                                                 </div>
                                                 <div class="flex-1">
                                                     <div class="font-semibold text-gray-900 dark:text-white text-sm" x-text="product.name"></div>
@@ -240,7 +240,7 @@
                                         <template x-for="(item, index) in form.items" :key="item.id">
                                             <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
                                                 <td class="px-4 py-3">
-                                                    <img :src="item.image ? '/storage/' + item.image : 'https://ui-avatars.com/api/?name=' + item.name" class="h-10 w-10 rounded-md object-cover bg-gray-100 dark:bg-gray-600">
+                                                    <img :src="item.image ? (item.image.startsWith('http') ? item.image : '/storage/' + item.image) : 'https://ui-avatars.com/api/?name=' + item.name" class="h-10 w-10 rounded-md object-cover bg-gray-100 dark:bg-gray-600">
                                                 </td>
                                                 <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
                                                     <div x-text="item.name"></div>
@@ -258,9 +258,14 @@
                                                     <div x-show="item.quantity > item.max_stock" class="text-xs text-red-500 mt-1">Max: <span x-text="item.max_stock"></span></div>
                                                 </td>
                                                 <td class="px-4 py-3 text-right">
-                                                    <input type="number" x-model="item.selling_price" class="w-24 text-right bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-1.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" step="0.01">
-                                                    <div x-show="isResellerOrder" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                                        Comm: <span x-text="(item.selling_price - item.limit_price).toFixed(2)"></span>
+                                                    <div class="flex flex-col items-end gap-1">
+                                                        <div class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-400 rounded w-24 text-center font-mono" title="Minimum Price">
+                                                            <span x-text="parseFloat(item.limit_price).toFixed(2)"></span>
+                                                        </div>
+                                                        <input type="number" x-model="item.selling_price" class="w-24 text-right bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-1.5 dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white font-bold" step="0.01">
+                                                        <div class="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-xs text-blue-600 dark:text-blue-400 rounded w-24 text-center font-mono" title="Commission">
+                                                            <span x-text="(parseFloat(item.selling_price || 0) - parseFloat(item.limit_price || 0)).toFixed(2)"></span>
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td class="px-4 py-3 text-right font-bold text-gray-900 dark:text-white">

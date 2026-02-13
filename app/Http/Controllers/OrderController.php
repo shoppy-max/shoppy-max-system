@@ -105,7 +105,10 @@ class OrderController extends Controller
         
         $products = Product::with(['variants.unit'])
             ->where('name', 'like', "%{$query}%")
-            ->orWhere('description', 'like', "%{$query}%") // Optional: Search description too
+            ->orWhere('description', 'like', "%{$query}%")
+            ->orWhereHas('variants', function ($q) use ($query) {
+                $q->where('sku', 'like', "%{$query}%");
+            })
             ->limit(20)
             ->get();
             

@@ -57,6 +57,17 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        // Log file details for debugging
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            \Illuminate\Support\Facades\Log::info('Product Image Upload:', [
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType(),
+                'client_mime_type' => $file->getClientMimeType(),
+                'extension' => $file->getClientOriginalExtension(),
+            ]);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
@@ -64,7 +75,7 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'warranty_period' => 'nullable|integer|min:0',
             'warranty_period_type' => 'nullable|in:years,months,days',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
             
             // Variants Validation
             'variants' => 'required|array|min:1',
@@ -75,7 +86,7 @@ class ProductController extends Controller
             'variants.*.limit_price' => 'nullable|numeric|min:0|lte:variants.*.selling_price',
             'variants.*.quantity' => 'required|integer|min:0',
             'variants.*.alert_quantity' => 'nullable|integer|min:0',
-            'variants.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'variants.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
         ]);
 
         // 1. Handle Product Image
@@ -129,6 +140,16 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        // Log file details for debugging
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            \Illuminate\Support\Facades\Log::info('Product Update - Image Upload:', [
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType(),
+                'client_mime_type' => $file->getClientMimeType(),
+            ]);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
@@ -136,7 +157,7 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'warranty_period' => 'nullable|integer|min:0',
             'warranty_period_type' => 'nullable|in:years,months,days',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
 
             'variants' => 'required|array|min:1',
             'variants.*.id' => 'nullable|exists:product_variants,id',
@@ -151,7 +172,7 @@ class ProductController extends Controller
             'variants.*.limit_price' => 'nullable|numeric|min:0',
             'variants.*.quantity' => 'required|integer|min:0', // Allowing manual update here for now
             'variants.*.alert_quantity' => 'nullable|integer|min:0',
-            'variants.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'variants.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
         ]);
 
         // Update Product Image
