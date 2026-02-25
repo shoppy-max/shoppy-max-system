@@ -35,6 +35,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('customers', \App\Http\Controllers\CustomerController::class);
     Route::resource('suppliers', \App\Http\Controllers\SupplierController::class);
     Route::resource('resellers', \App\Http\Controllers\ResellerController::class);
+    Route::resource('direct-resellers', \App\Http\Controllers\DirectResellerController::class)
+        ->parameters(['direct-resellers' => 'directReseller']);
     Route::resource('cities', \App\Http\Controllers\CityController::class);
 });
 
@@ -147,5 +149,4 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
 });
 
 require __DIR__.'/auth.php';
-
 

@@ -17,7 +17,7 @@ class ResellerOrderController extends OrderController
     {
         $products = Product::select('id', 'name', 'sku', 'selling_price', 'quantity')->get();
         // Get only resellers
-        $resellers = Reseller::all();
+        $resellers = Reseller::regular()->orderBy('name')->get();
         $cities = \App\Models\City::all();
         
         return view('orders.reseller_create', compact('products', 'resellers', 'cities'));

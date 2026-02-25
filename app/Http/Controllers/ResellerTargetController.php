@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Reseller;
 use App\Models\ResellerTarget;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ResellerTargetController extends Controller
 {
@@ -13,15 +14,17 @@ class ResellerTargetController extends Controller
      */
     public function index(Request $request)
     {
-        $query = ResellerTarget::query()->with('reseller');
+        $query = ResellerTarget::query()
+            ->with('reseller')
+            ->whereHas('reseller', fn ($q) => $q->regular());
 
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('ref_id', 'like', "%{$search}%")
-                  ->orWhereHas('reseller', function ($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('business_name', 'like', "%{$search}%");
+                  ->orWhereHas('reseller', function ($resellerQuery) use ($search) {
+                      $resellerQuery->where('name', 'like', "%{$search}%")
+                          ->orWhere('business_name', 'like', "%{$search}%");
                   });
             });
         }
@@ -40,7 +43,8 @@ class ResellerTargetController extends Controller
      */
     public function create()
     {
-        $resellers = Reseller::orderBy('name')->get();
+        $resellers = Reseller::regular()->orderBy('name')->get();
+
         return view('resellers.targets.create', compact('resellers'));
     }
 
@@ -50,7 +54,10 @@ class ResellerTargetController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'reseller_id' => 'required|exists:resellers,id',
+            'reseller_id' => [
+                'required',
+                Rule::exists('resellers', 'id')->where('reseller_type', Reseller::TYPE_RESELLER),
+            ],
             'target_type' => 'required|in:daily,weekly,monthly',
             'target_pcs_qty' => 'required|integer|min:1',
             'target_completed_price' => 'nullable|numeric|min:0',
@@ -72,7 +79,10 @@ class ResellerTargetController extends Controller
      */
     public function edit(ResellerTarget $resellerTarget)
     {
-        $resellers = Reseller::orderBy('name')->get();
+        $this->ensureRegularTarget($resellerTarget);
+
+        $resellers = Reseller::regular()->orderBy('name')->get();
+
         return view('resellers.targets.edit', compact('resellerTarget', 'resellers'));
     }
 
@@ -81,8 +91,13 @@ class ResellerTargetController extends Controller
      */
     public function update(Request $request, ResellerTarget $resellerTarget)
     {
+        $this->ensureRegularTarget($resellerTarget);
+
         $validated = $request->validate([
-            'reseller_id' => 'required|exists:resellers,id',
+            'reseller_id' => [
+                'required',
+                Rule::exists('resellers', 'id')->where('reseller_type', Reseller::TYPE_RESELLER),
+            ],
             'target_type' => 'required|in:daily,weekly,monthly',
             'target_pcs_qty' => 'required|integer|min:1',
             'target_completed_price' => 'nullable|numeric|min:0',
@@ -104,9 +119,19 @@ class ResellerTargetController extends Controller
      */
     public function destroy(ResellerTarget $resellerTarget)
     {
+        $this->ensureRegularTarget($resellerTarget);
+
         $resellerTarget->delete();
 
         return redirect()->route('reseller-targets.index')
             ->with('success', 'Target deleted successfully.');
+    }
+
+    private function ensureRegularTarget(ResellerTarget $resellerTarget): void
+    {
+        abort_unless(
+            $resellerTarget->reseller && $resellerTarget->reseller->reseller_type === Reseller::TYPE_RESELLER,
+            404
+        );
     }
 }

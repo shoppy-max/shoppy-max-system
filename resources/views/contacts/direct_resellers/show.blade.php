@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-bold text-2xl text-gray-800 dark:text-gray-100 leading-tight">
-                {{ __('Reseller Profile') }}
+                {{ __('Direct Reseller Profile') }}
             </h2>
             <nav class="flex" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
@@ -17,7 +17,7 @@
                             <svg class="w-3 h-3 text-gray-400 mx-1 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
                                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
                             </svg>
-                            <a href="{{ route('resellers.index') }}" class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Resellers</a>
+                            <a href="{{ route('direct-resellers.index') }}" class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Direct Resellers</a>
                         </div>
                     </li>
                     <li aria-current="page">
@@ -53,11 +53,11 @@
                     </div>
                     
                     <div class="flex space-x-3">
-                         <a href="{{ route('resellers.edit', $reseller) }}" class="flex items-center justify-center text-white bg-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:focus:ring-yellow-900 shadow-md transition-transform transform hover:scale-105">
+                         <a href="{{ route('direct-resellers.edit', $reseller) }}" class="flex items-center justify-center text-white bg-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:focus:ring-yellow-900 shadow-md transition-transform transform hover:scale-105">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             Edit
                         </a>
-                        <form action="{{ route('resellers.destroy', $reseller) }}" method="POST" data-confirm-message="Delete this reseller?" class="inline">
+                        <form action="{{ route('direct-resellers.destroy', $reseller) }}" method="POST" data-confirm-message="Delete this direct reseller?" class="inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="flex items-center justify-center text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900 shadow-md transition-transform transform hover:scale-105">

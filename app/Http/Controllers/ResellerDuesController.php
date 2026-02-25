@@ -15,12 +15,14 @@ class ResellerDuesController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
-        $query = Reseller::query();
+        $query = Reseller::regular();
 
         if ($search) {
-            $query->where('name', 'like', "%{$search}%")
-                  ->orWhere('business_name', 'like', "%{$search}%")
-                  ->orWhere('mobile', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('business_name', 'like', "%{$search}%")
+                    ->orWhere('mobile', 'like', "%{$search}%");
+            });
         }
         
         // Default sort by name, but allow sorting by due_amount
@@ -43,7 +45,7 @@ class ResellerDuesController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $reseller = Reseller::findOrFail($id);
+        $reseller = Reseller::regular()->findOrFail($id);
         
         // --- 1. Filter Parameters ---
         $startDate = $request->input('start_date');

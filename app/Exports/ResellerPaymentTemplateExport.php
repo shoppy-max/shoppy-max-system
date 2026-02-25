@@ -15,7 +15,7 @@ class ResellerPaymentTemplateExport implements FromCollection, WithHeadings, Wit
     */
     public function collection()
     {
-        return Reseller::select('id', 'name', 'due_amount')->orderBy('name')->get();
+        return Reseller::regular()->select('id', 'name', 'due_amount')->orderBy('name')->get();
     }
 
     public function headings(): array

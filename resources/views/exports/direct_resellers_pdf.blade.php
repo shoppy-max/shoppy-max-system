@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>{{ $reportTitle ?? 'Reseller List' }}</title>
+    <title>Direct Reseller List</title>
     <style>
         body {
             font-family: sans-serif;
@@ -39,7 +39,7 @@
     </style>
 </head>
 <body>
-    <h1>{{ $reportTitle ?? 'Reseller List' }}</h1>
+    <h1>Direct Reseller List</h1>
     <div class="meta">
         Generated on: {{ now()->format('Y-m-d H:i:s') }}
     </div>

@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
@@ -145,9 +146,12 @@ class OrderController extends Controller
     {
         $query = $request->get('q');
         
-        $resellers = Reseller::where('name', 'like', "%{$query}%")
-            ->orWhere('business_name', 'like', "%{$query}%")
-            ->orWhere('mobile', 'like', "%{$query}%")
+        $resellers = Reseller::regular()
+            ->where(function ($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                    ->orWhere('business_name', 'like', "%{$query}%")
+                    ->orWhere('mobile', 'like', "%{$query}%");
+            })
             ->limit(20)
             ->get(['id', 'name', 'business_name', 'mobile']);
             
@@ -162,7 +166,11 @@ class OrderController extends Controller
         $validated = $request->validate([
             'order_type' => 'required|in:reseller,direct',
             'order_date' => 'required|date',
-            'reseller_id' => 'required_if:order_type,reseller|nullable|exists:resellers,id',
+            'reseller_id' => [
+                'required_if:order_type,reseller',
+                'nullable',
+                Rule::exists('resellers', 'id')->where('reseller_type', Reseller::TYPE_RESELLER),
+            ],
             
             // Customer Details
             'customer.name' => 'required|string|max:255',
@@ -399,7 +407,11 @@ class OrderController extends Controller
         $validated = $request->validate([
             'order_type' => 'required|in:reseller,direct',
             'order_date' => 'required|date',
-            'reseller_id' => 'required_if:order_type,reseller|nullable|exists:resellers,id',
+            'reseller_id' => [
+                'required_if:order_type,reseller',
+                'nullable',
+                Rule::exists('resellers', 'id')->where('reseller_type', Reseller::TYPE_RESELLER),
+            ],
             
             // Customer Details
             'customer.name' => 'required|string|max:255',

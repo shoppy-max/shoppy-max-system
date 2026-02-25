@@ -8,15 +8,15 @@ use Illuminate\Http\Request;
 use App\Rules\SriLankaMobile;
 use App\Rules\SriLankaLandline;
 
-class ResellerController extends Controller
+class DirectResellerController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of direct resellers.
      */
     public function index(Request $request)
     {
         $search = $request->input('search');
-        $query = Reseller::regular();
+        $query = Reseller::direct();
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -40,40 +40,40 @@ class ResellerController extends Controller
             $resellers = $query->get();
 
             if ($request->input('export') === 'excel') {
-                return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\ResellersExport($resellers), 'resellers.xlsx');
+                return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\DirectResellersExport($resellers), 'direct_resellers.xlsx');
             }
 
             if ($request->input('export') === 'pdf') {
-                $reportTitle = 'Reseller List';
-                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.resellers_pdf', compact('resellers', 'reportTitle'));
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.direct_resellers_pdf', compact('resellers'));
                 $pdf->setPaper('a4', 'landscape');
-                return $pdf->stream('resellers.pdf');
+                return $pdf->stream('direct_resellers.pdf');
             }
         }
 
         $resellers = $query->paginate(10);
 
         // Stats for Dashboard Cards
-        $totalResellers = Reseller::regular()->count();
-        $totalDue = Reseller::regular()->sum('due_amount');
-        $activeResellers = Reseller::regular()->where('due_amount', '>', 0)->count(); // Example metric
+        $totalResellers = Reseller::direct()->count();
+        $totalDue = Reseller::direct()->sum('due_amount');
+        $activeResellers = Reseller::direct()->where('due_amount', '>', 0)->count();
 
-        return view('contacts.resellers.index', compact('resellers', 'totalResellers', 'totalDue', 'activeResellers'));
+        return view('contacts.direct_resellers.index', compact('resellers', 'totalResellers', 'totalDue', 'activeResellers'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new direct reseller.
      */
     public function create()
     {
         $countries = config('locations.countries');
         $slData = config('locations.sri_lanka');
         $couriers = Courier::orderBy('name')->get(['id', 'name', 'phone']);
-        return view('contacts.resellers.create', compact('countries', 'slData', 'couriers'));
+
+        return view('contacts.direct_resellers.create', compact('countries', 'slData', 'couriers'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created direct reseller in storage.
      */
     public function store(Request $request)
     {
@@ -98,44 +98,48 @@ class ResellerController extends Controller
         unset($validated['couriers']);
 
         $data = $validated;
-        $data['reseller_type'] = Reseller::TYPE_RESELLER;
+        $data['reseller_type'] = Reseller::TYPE_DIRECT_RESELLER;
 
         $reseller = Reseller::create($data);
         $reseller->couriers()->sync($courierIds);
 
-        return redirect()->route('resellers.index')->with('success', 'Reseller created successfully.');
+        return redirect()->route('direct-resellers.index')->with('success', 'Direct reseller created successfully.');
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified direct reseller.
      */
-    public function show(Reseller $reseller)
+    public function show(Reseller $directReseller)
     {
-        $this->ensureRegularReseller($reseller);
-        $reseller->load('couriers');
+        $this->ensureDirectReseller($directReseller);
+        $directReseller->load('couriers');
 
-        return view('contacts.resellers.show', compact('reseller'));
+        $reseller = $directReseller;
+
+        return view('contacts.direct_resellers.show', compact('reseller'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the specified direct reseller.
      */
-    public function edit(Reseller $reseller)
+    public function edit(Reseller $directReseller)
     {
-        $this->ensureRegularReseller($reseller);
+        $this->ensureDirectReseller($directReseller);
 
+        $reseller = $directReseller;
         $countries = config('locations.countries');
         $slData = config('locations.sri_lanka');
         $couriers = Courier::orderBy('name')->get(['id', 'name', 'phone']);
-        return view('contacts.resellers.edit', compact('reseller', 'countries', 'slData', 'couriers'));
+
+        return view('contacts.direct_resellers.edit', compact('reseller', 'countries', 'slData', 'couriers'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified direct reseller in storage.
      */
-    public function update(Request $request, Reseller $reseller)
+    public function update(Request $request, Reseller $directReseller)
     {
-        $this->ensureRegularReseller($reseller);
+        $this->ensureDirectReseller($directReseller);
 
         $validated = $request->validate([
             'business_name' => 'required|string|max:255',
@@ -157,28 +161,28 @@ class ResellerController extends Controller
         unset($validated['couriers']);
 
         $data = $validated;
-        $data['reseller_type'] = Reseller::TYPE_RESELLER;
+        $data['reseller_type'] = Reseller::TYPE_DIRECT_RESELLER;
 
-        $reseller->update($data);
-        $reseller->couriers()->sync($courierIds);
+        $directReseller->update($data);
+        $directReseller->couriers()->sync($courierIds);
 
-        return redirect()->route('resellers.index')->with('success', 'Reseller updated successfully.');
+        return redirect()->route('direct-resellers.index')->with('success', 'Direct reseller updated successfully.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified direct reseller from storage.
      */
-    public function destroy(Reseller $reseller)
+    public function destroy(Reseller $directReseller)
     {
-        $this->ensureRegularReseller($reseller);
+        $this->ensureDirectReseller($directReseller);
 
-        $reseller->delete();
+        $directReseller->delete();
 
-        return redirect()->route('resellers.index')->with('success', 'Reseller deleted successfully.');
+        return redirect()->route('direct-resellers.index')->with('success', 'Direct reseller deleted successfully.');
     }
 
-    private function ensureRegularReseller(Reseller $reseller): void
+    private function ensureDirectReseller(Reseller $reseller): void
     {
-        abort_unless($reseller->reseller_type === Reseller::TYPE_RESELLER, 404);
+        abort_unless($reseller->reseller_type === Reseller::TYPE_DIRECT_RESELLER, 404);
     }
 }

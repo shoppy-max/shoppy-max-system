@@ -21,7 +21,7 @@
                             <svg class="w-3 h-3 text-gray-400 mx-1 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
                                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
                             </svg>
-                            <a href="{{ route('resellers.index') }}" class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Resellers</a>
+                            <a href="{{ route('direct-resellers.index') }}" class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Direct Resellers</a>
                         </div>
                     </li>
                     <li aria-current="page">
@@ -34,10 +34,10 @@
                     </li>
                 </ol>
             </nav>
-            <h2 class="mt-4 text-2xl font-bold text-gray-900 dark:text-white">Edit Reseller</h2>
+            <h2 class="mt-4 text-2xl font-bold text-gray-900 dark:text-white">Edit Direct Reseller</h2>
         </div>
 
-        <form action="{{ route('resellers.update', $reseller) }}" method="POST" x-data="resellerForm()">
+        <form action="{{ route('direct-resellers.update', $reseller) }}" method="POST" x-data="resellerForm()">
             @csrf
             @method('PUT')
             
@@ -191,7 +191,7 @@
                     @include('contacts.partials.courier-allowlist', [
                         'couriers' => $couriers,
                         'selectedCouriers' => old('couriers', $reseller->couriers->pluck('id')->all()),
-                        'entityLabel' => 'reseller'
+                        'entityLabel' => 'direct reseller'
                     ])
                 </div>
                 
@@ -242,9 +242,9 @@
                     <div class="flex flex-col gap-4">
                         <button type="submit" class="w-full text-white bg-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:focus:ring-yellow-900 shadow-lg hover:shadow-xl transition-shadow flex justify-center items-center">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                            Update Reseller
+                            Update Direct Reseller
                         </button>
-                        <a href="{{ route('resellers.index') }}" class="w-full py-2.5 px-5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 text-center">
+                        <a href="{{ route('direct-resellers.index') }}" class="w-full py-2.5 px-5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 text-center">
                             Cancel
                         </a>
                     </div>

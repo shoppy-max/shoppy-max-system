@@ -43,17 +43,19 @@ class ResellerPaymentImportController extends Controller
         foreach ($rows as $index => $row) {
             // Expected columns: 0=ID, 1=Name, 2=Due, 3=Amount, 4=Method, 5=Ref, 6=Date
             $amount = isset($row[3]) ? (float) $row[3] : 0;
-            
+
             // Skip rows with no payment amount
-            if ($amount <= 0) continue;
+            if ($amount <= 0) {
+                continue;
+            }
 
             $resellerId = isset($row[0]) ? $row[0] : null;
             $method = isset($row[4]) ? strtolower($row[4]) : 'cash';
             $reference = isset($row[5]) ? $row[5] : null;
             $dateStr = isset($row[6]) ? $row[6] : date('Y-m-d');
-            
+
             // Validate Reseller
-            $reseller = Reseller::find($resellerId);
+            $reseller = Reseller::regular()->find($resellerId);
             $errors = [];
 
             if (!$reseller) {
@@ -62,21 +64,24 @@ class ResellerPaymentImportController extends Controller
             if (!in_array($method, ['cash', 'bank', 'other'])) {
                 $errors[] = "Invalid Method: $method (Use cash, bank, or other)";
             }
-            
+
             try {
                 // Excel dates are sometimes integers (days since 1900-01-01)
                 if (is_numeric($dateStr)) {
                     $date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($dateStr)->format('Y-m-d');
                 } else {
-                     $date = Carbon::parse($dateStr)->format('Y-m-d');
+                    $date = Carbon::parse($dateStr)->format('Y-m-d');
                 }
             } catch (\Exception $e) {
                 $errors[] = "Invalid Date: $dateStr";
                 $date = null;
             }
 
-            if (!empty($errors)) $hasErrors = true;
-            else $validRowsCount++;
+            if (!empty($errors)) {
+                $hasErrors = true;
+            } else {
+                $validRowsCount++;
+            }
 
             $previewData[] = [
                 'reseller_id' => $resellerId,
@@ -86,14 +91,11 @@ class ResellerPaymentImportController extends Controller
                 'method' => $method,
                 'reference' => $reference,
                 'date' => $date,
-                'errors' => $errors
+                'errors' => $errors,
             ];
         }
-        
-        // Cache the valid data for processing? Or just send to view and re-submit file?
-        // Re-submitting file is stateless but user might lose selection.
-        // Better: Encode data in hidden field or use session.
-        // Session is easier for now.
+
+        // Cache data in session for final import.
         session(['import_preview_data' => $previewData]);
 
         return view('resellers.payments.import', compact('previewData', 'validRowsCount', 'hasErrors'));
@@ -108,10 +110,12 @@ class ResellerPaymentImportController extends Controller
         }
 
         $count = 0;
-        
+
         DB::transaction(function () use ($previewData, &$count) {
             foreach ($previewData as $row) {
-                if (!empty($row['errors'])) continue;
+                if (!empty($row['errors'])) {
+                    continue;
+                }
 
                 // Create Payment
                 ResellerPayment::create([
@@ -124,12 +128,12 @@ class ResellerPaymentImportController extends Controller
                 ]);
 
                 // Update Reseller Due
-                $reseller = Reseller::find($row['reseller_id']);
+                $reseller = Reseller::regular()->find($row['reseller_id']);
                 if ($reseller) {
                     $reseller->due_amount -= $row['amount'];
                     $reseller->save();
                 }
-                
+
                 $count++;
             }
         });
