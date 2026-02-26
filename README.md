@@ -50,9 +50,13 @@ A modern inventory and contact management application built with Laravel 12. Thi
 5. **Database Setup**
    Ensure your database configuration in `.env` is correct. Then run migrations and seeds:
    ```bash
-   php artisan migrate
-   php artisan db:seed
+   php artisan migrate:fresh --seed
    ```
+   This seeds:
+   - RBAC roles/permissions
+   - Default Super Admin user
+   - Core master data (units, categories, sub categories, cities, couriers, bank accounts)
+   - Linked demo transactional data (products/variants, resellers/direct resellers, suppliers, orders, payments, purchases)
 
 6. **Build Assets**
    ```bash
@@ -71,6 +75,11 @@ A modern inventory and contact management application built with Laravel 12. Thi
 - **Email:** `admin@shoppy-max.com`
 - **Password:** `password`
 - **Role:** Super Admin
+
+Optional demo manager user:
+- **Email:** `manager@shoppy-max.com`
+- **Password:** `password`
+- **Role:** Admin
 
 ## 📱 Application Modules
 

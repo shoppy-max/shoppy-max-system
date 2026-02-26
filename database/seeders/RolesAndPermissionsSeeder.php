@@ -34,25 +34,40 @@ class RolesAndPermissionsSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
         }
 
         // Create roles
-        $superAdminRole = Role::create(['name' => 'super admin']);
-        $adminRole = Role::create(['name' => 'admin']);
-        $userRole = Role::create(['name' => 'user']);
+        $superAdminRole = Role::firstOrCreate([
+            'name' => 'super admin',
+            'guard_name' => 'web',
+        ]);
+        $adminRole = Role::firstOrCreate([
+            'name' => 'admin',
+            'guard_name' => 'web',
+        ]);
+        $userRole = Role::firstOrCreate([
+            'name' => 'user',
+            'guard_name' => 'web',
+        ]);
 
         // Assign all permissions to super admin
-        $superAdminRole->givePermissionTo(Permission::all());
+        $superAdminRole->syncPermissions(Permission::all());
 
         // Assign some permissions to admin
-        $adminRole->givePermissionTo([
+        $adminRole->syncPermissions([
             'view users',
             'create users',
             'edit users',
             'view roles',
             'view permissions',
         ]);
+
+        // User role intentionally receives no elevated permissions.
+        $userRole->syncPermissions([]);
 
         // Create super admin user
         // NOTE: For security, change this password immediately after first login in production
@@ -74,7 +89,7 @@ class RolesAndPermissionsSeeder extends Seeder
              $superAdmin->save();
         }
 
-        $superAdmin->assignRole('super admin');
+        $superAdmin->syncRoles(['super admin']);
         
         // Display warning in console
         $this->command->warn('⚠️  WARNING: Default super admin created with password "password"');
