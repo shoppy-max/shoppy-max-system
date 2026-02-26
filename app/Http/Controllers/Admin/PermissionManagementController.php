@@ -8,9 +8,15 @@ use Spatie\Permission\Models\Permission;
 
 class PermissionManagementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $permissions = Permission::paginate(10);
+        $query = Permission::query();
+        
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+        
+        $permissions = $query->paginate(10);
         return view('admin.permissions.index', compact('permissions'));
     }
 

@@ -9,9 +9,15 @@ use Spatie\Permission\Models\Permission;
 
 class RoleManagementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $roles = Role::with('permissions')->paginate(10);
+        $query = Role::with('permissions');
+        
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+        
+        $roles = $query->paginate(10);
         return view('admin.roles.index', compact('roles'));
     }
 

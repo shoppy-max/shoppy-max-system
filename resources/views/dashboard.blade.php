@@ -14,7 +14,7 @@
                     <div class="flex flex-col md:flex-row md:items-center justify-between">
                         <div>
                             <h3 class="text-2xl font-bold mb-2">{{ __("Welcome back, ") }}<span class="text-primary-600 dark:text-primary-400">{{ Auth::user()->name }}</span>! 👋</h3>
-                            <p class="text-gray-600 dark:text-gray-400">{{ __("Here's what's happening with your store today.") }}</p>
+                            <p class="text-gray-600 dark:text-gray-400">{{ __("Here is an overview of your account today.") }}</p>
                         </div>
                         <div class="mt-4 md:mt-0 flex flex-wrap gap-2">
                             @forelse(Auth::user()->roles as $role)
