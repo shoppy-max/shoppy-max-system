@@ -218,7 +218,7 @@
                         'pending' => 'badge-pending',
                         'confirm' => 'badge-confirm',
                         'hold' => 'badge-hold',
-                        'cancelled' => 'badge-cancelled',
+                        'cancel' => 'badge-cancelled',
                         default => 'badge-other',
                     };
                 @endphp

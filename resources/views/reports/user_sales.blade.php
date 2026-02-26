@@ -39,7 +39,7 @@
         
          <div class="mb-4">
              <h3 class="font-bold text-lg text-gray-800 dark:text-white mb-2">Sales by Staff/Reseller</h3>
-             <p class="text-sm text-gray-500 dark:text-gray-400">Contribution to delivered revenue.</p>
+             <p class="text-sm text-gray-500 dark:text-gray-400">Contribution to confirmed revenue.</p>
         </div>
 
         <div class="relative overflow-x-auto sm:rounded-lg">
@@ -48,8 +48,8 @@
                     <tr>
                         <th scope="col" class="px-6 py-3">User / Reseller</th>
                         <th scope="col" class="px-6 py-3">Role</th>
-                        <th scope="col" class="px-6 py-3 text-right">Total Revenue (Delivered)</th>
-                        <th scope="col" class="px-6 py-3 text-center">Orders Delivered</th>
+                        <th scope="col" class="px-6 py-3 text-right">Total Revenue (Confirmed)</th>
+                        <th scope="col" class="px-6 py-3 text-center">Orders Confirmed</th>
                     </tr>
                 </thead>
                 <tbody>

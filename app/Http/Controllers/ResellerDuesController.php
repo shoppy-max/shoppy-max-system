@@ -66,7 +66,7 @@ class ResellerDuesController extends Controller
                 'id as original_id' // for linking
             )
             ->where('reseller_id', $id)
-            ->where('status', '!=', 'cancelled'); // Matches previous logic
+            ->where('status', '!=', 'cancel'); // Matches previous logic
 
         // Payments Query
         $paymentsQuery = \DB::table('reseller_payments')
@@ -91,7 +91,7 @@ class ResellerDuesController extends Controller
         // Formula: Adj = API_Due - (All_Orders - All_Payments)
         // If the system is perfect, Adj is 0. If imported data exists, Adj is the initial balance.
         
-        $allOrdersSum = $reseller->orders()->where('status', '!=', 'cancelled')->sum('total_amount');
+        $allOrdersSum = $reseller->orders()->where('status', '!=', 'cancel')->sum('total_amount');
         $allPaymentsSum = $reseller->payments()->where('status', '!=', 'cancelled')->sum('amount');
         $globalAdjustment = $reseller->due_amount - ($allOrdersSum - $allPaymentsSum);
         
@@ -100,7 +100,7 @@ class ResellerDuesController extends Controller
         
         if ($startDate) {
             $ordersBefore = $reseller->orders()
-                ->where('status', '!=', 'cancelled')
+                ->where('status', '!=', 'cancel')
                 ->where('created_at', '<', $startDate)
                 ->sum('total_amount');
                 
@@ -148,7 +148,7 @@ class ResellerDuesController extends Controller
         // Total Balance at End of Filtered Selection = BalanceForward + Sum(All Visible Items in Range)
         
         // Let's get the sum of all items in the filtered range (Orders - Payments)
-        $ordersInRange = \DB::table('orders')->where('reseller_id', $id)->where('status', '!=', 'cancelled');
+        $ordersInRange = \DB::table('orders')->where('reseller_id', $id)->where('status', '!=', 'cancel');
         $paymentsInRange = \DB::table('reseller_payments')->where('reseller_id', $id);
         
         if ($startDate) {

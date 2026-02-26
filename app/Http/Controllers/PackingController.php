@@ -10,11 +10,11 @@ use Illuminate\Support\Facades\Auth;
 class PackingController extends Controller
 {
     /**
-     * List orders for packing (Status: Confirmed or Packing).
+     * List orders for packing.
      */
     public function index()
     {
-        $orders = Order::whereIn('status', ['confirmed', 'packing'])
+        $orders = Order::where('status', 'confirm')
                        ->orderBy('created_at', 'asc')
                        ->get();
         return view('orders.packing.index', compact('orders'));
@@ -30,12 +30,12 @@ class PackingController extends Controller
     }
     
     /**
-     * Mark as Packed / Create Waybill if not exists.
+     * Mark as packed.
      */
     public function markPacked(Request $request, $id)
     {
         $order = Order::findOrFail($id);
-        $order->status = 'dispatched'; // Or 'ready_for_dispatch' depending on flow
+        $order->status = 'confirm';
         $order->packed_by = Auth::id();
         $order->dispatched_at = now();
         $order->save();
@@ -43,8 +43,8 @@ class PackingController extends Controller
         OrderLog::create([
             'order_id' => $order->id,
             'user_id' => Auth::id(),
-            'action' => 'packed_dispatched',
-            'description' => 'Order packed and marked dispatched.',
+            'action' => 'packed_confirm',
+            'description' => 'Order packed and marked confirm.',
         ]);
         
         return redirect()->route('orders.packing.index')->with('success', 'Order packed successfully.');

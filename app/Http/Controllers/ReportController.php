@@ -18,10 +18,10 @@ class ReportController extends Controller
     public function index()
     {
         // General Metrics
-        $totalSales = Order::where('status', 'delivered')->sum('total_amount');
+        $totalSales = Order::where('status', 'confirm')->sum('total_amount');
         $totalOrders = Order::count();
         $pendingOrders = Order::where('status', 'pending')->count();
-        $todaySales = Order::where('status', 'delivered')->whereDate('created_at', Carbon::today())->sum('total_amount');
+        $todaySales = Order::where('status', 'confirm')->whereDate('created_at', Carbon::today())->sum('total_amount');
         
         // Month-wise Sales for Chart
         $monthlySales = Order::select(
@@ -44,7 +44,7 @@ class ReportController extends Controller
         $provinceSales = DB::table('orders')
             ->join('cities', 'orders.city_id', '=', 'cities.id')
             ->select('cities.province', DB::raw('sum(orders.total_amount) as total_sales'), DB::raw('count(orders.id) as order_count'))
-            ->where('orders.status', 'delivered')
+            ->where('orders.status', 'confirm')
             ->groupBy('cities.province')
             ->orderBy('total_sales', 'desc')
             ->get();
@@ -58,7 +58,7 @@ class ReportController extends Controller
     public function profitLoss(Request $request)
     {
         $query = Order::with(['items', 'courierPayment'])
-            ->where('status', 'delivered');
+            ->where('status', 'confirm');
             
         if ($request->has('start_date') && $request->has('end_date')) {
             $query->whereBetween('created_at', [$request->input('start_date'), $request->input('end_date')]);
@@ -130,8 +130,7 @@ class ReportController extends Controller
     public function packetCount()
     {
         $packers = User::withCount(['packedOrders' => function($q){
-             // Count dispatched orders packed by user
-             $q->where('status', 'dispatched')->orWhere('status', 'delivered');
+             $q->where('status', 'confirm');
         }])->get(); // Filter by role if needed
         
         return view('reports.packet_count', compact('packers'));
@@ -151,7 +150,7 @@ class ReportController extends Controller
                 DB::raw('sum(order_items.total_price) as total_revenue'),
                 'orders.status'
             )
-            ->whereIn('orders.status', ['confirmed', 'dispatched', 'delivered', 'returned']) // "how/when sold + statuses"
+            ->whereIn('orders.status', ['confirm', 'pending', 'hold', 'cancel'])
             ->groupBy('order_items.product_id', 'order_items.product_name', 'order_items.sku', 'orders.status')
             ->orderBy('total_qty', 'desc')
             ->get();
@@ -166,10 +165,10 @@ class ReportController extends Controller
     {
         // Assuming 'user_id' on order is the creator/sales rep
         $userSales = User::withSum(['orders' => function($q) {
-            $q->where('status', 'delivered');
+            $q->where('status', 'confirm');
         }], 'total_amount')
         ->withCount(['orders' => function($q) {
-            $q->where('status', 'delivered');
+            $q->where('status', 'confirm');
         }])
         ->get();
         

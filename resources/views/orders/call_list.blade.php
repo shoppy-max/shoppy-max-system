@@ -253,7 +253,7 @@
                                 <span class="font-medium capitalize" :class="{
                                     'text-yellow-600': selectedOrder?.status === 'pending',
                                     'text-green-600': selectedOrder?.status === 'confirm',
-                                    'text-red-600': selectedOrder?.status === 'cancelled',
+                                    'text-red-600': selectedOrder?.status === 'cancel',
                                     'text-orange-600': selectedOrder?.status === 'hold'
                                 }" x-text="selectedOrder?.status"></span>
                              </div>

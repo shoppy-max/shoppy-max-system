@@ -25,10 +25,10 @@ class CourierReceiveController extends Controller
      */
     public function show(Courier $courier)
     {
-        // Get orders that are "Dispatched" via this courier and NOT yet paid/reconciled
+        // Get confirmed orders via this courier and NOT yet paid/reconciled
         // This logic might need adjustment based on specific business rules for "Receive"
         $orders = Order::where('courier_id', $courier->id)
-            ->where('status', 'Dispatched') // Assuming Dispatched orders are the ones to be received
+            ->where('status', 'confirm')
             ->whereNull('courier_payment_id')
             ->latest()
             ->take(50) // Limit for initial load

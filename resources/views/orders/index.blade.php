@@ -59,6 +59,7 @@
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="hold" {{ request('status') == 'hold' ? 'selected' : '' }}>Hold</option>
                         <option value="confirm" {{ request('status') == 'confirm' ? 'selected' : '' }}>Confirm</option>
+                        <option value="cancel" {{ request('status') == 'cancel' ? 'selected' : '' }}>Cancel</option>
                     </select>
                 </div>
                 
@@ -183,12 +184,13 @@
                                         'pending' => 'text-yellow-800 bg-yellow-100 border-yellow-300',
                                         'hold' => 'text-orange-800 bg-orange-100 border-orange-300',
                                         'confirm' => 'text-green-800 bg-green-100 border-green-300',
-                                        'cancelled' => 'text-red-800 bg-red-100 border-red-300',
+                                        'cancel' => 'text-red-800 bg-red-100 border-red-300',
                                     ];
                                     $callColors = [
                                         'pending' => 'text-gray-600 bg-gray-100',
                                         'confirm' => 'text-blue-600 bg-blue-100',
                                         'hold' => 'text-orange-700 bg-orange-100',
+                                        'cancel' => 'text-red-700 bg-red-100',
                                     ];
                                 @endphp
                                 <div class="flex flex-col gap-1">

@@ -295,6 +295,7 @@
 
     function updateSidebarSystemClock() {
         const now = new Date();
+        const englishLocale = 'en-GB';
         const dateElement = document.getElementById('sidebar-system-date');
         const timeElement = document.getElementById('sidebar-system-time');
         const zoneElement = document.getElementById('sidebar-system-zone');
@@ -303,14 +304,14 @@
             return;
         }
 
-        dateElement.textContent = now.toLocaleDateString(undefined, {
+        dateElement.textContent = now.toLocaleDateString(englishLocale, {
             weekday: 'short',
             year: 'numeric',
             month: 'short',
             day: '2-digit'
         });
 
-        timeElement.textContent = now.toLocaleTimeString(undefined, {
+        timeElement.textContent = now.toLocaleTimeString(englishLocale, {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',

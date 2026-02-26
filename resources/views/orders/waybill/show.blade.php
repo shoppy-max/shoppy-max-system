@@ -98,9 +98,6 @@
                             <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
                             <option value="hold" {{ request('status') === 'hold' ? 'selected' : '' }}>Hold</option>
                             <option value="confirm" {{ request('status') === 'confirm' ? 'selected' : '' }}>Confirm</option>
-                            <option value="confirmed" {{ request('status') === 'confirmed' ? 'selected' : '' }}>Confirmed (Legacy)</option>
-                            <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Processing (Legacy)</option>
-                            <option value="shipped" {{ request('status') === 'shipped' ? 'selected' : '' }}>Shipped</option>
                         </select>
                     </div>
                     <div class="lg:col-span-2">
@@ -171,9 +168,6 @@
                                         'pending' => 'bg-yellow-100 text-yellow-800 border-yellow-300',
                                         'hold' => 'bg-orange-100 text-orange-800 border-orange-300',
                                         'confirm' => 'bg-green-100 text-green-800 border-green-300',
-                                        'confirmed' => 'bg-green-100 text-green-800 border-green-300',
-                                        'processing' => 'bg-blue-100 text-blue-800 border-blue-300',
-                                        'shipped' => 'bg-indigo-100 text-indigo-800 border-indigo-300',
                                     ];
                                 @endphp
                                 <tr class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">

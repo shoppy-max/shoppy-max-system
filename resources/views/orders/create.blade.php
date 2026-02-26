@@ -521,11 +521,19 @@
                                     </div>
                                     <div>
                                         <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Call Status</label>
-                                        <select x-model="form.call_status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                                        <select
+                                            x-model="form.call_status"
+                                            :disabled="form.order_status === 'cancel'"
+                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
+                                        >
                                             <option value="pending">Pending</option>
                                             <option value="confirm">Confirm</option>
                                             <option value="hold">Hold</option>
+                                            <option value="cancel" x-show="form.call_status === 'cancel'">Cancel (Auto)</option>
                                         </select>
+                                        <p x-show="form.order_status === 'cancel'" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                                            Call status is auto-set to Cancel when order status is Cancel.
+                                        </p>
                                     </div>
                                     <div x-show="form.order_type === 'reseller'">
                                         <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Commission</label>
@@ -860,6 +868,7 @@
                     });
                     this.$watch('form.discount_amount', () => this.syncOrderStatusLock());
                     this.$watch('form.items', () => this.syncOrderStatusLock());
+                    this.$watch('form.order_status', () => this.syncCallStatusFromOrderStatus());
                     this.$watch('form.customer.mobile', (value) => {
                         if (this.selectedCustomer && String(value || '') !== String(this.selectedCustomer.mobile || '')) {
                             this.selectedCustomer = null;
@@ -870,6 +879,7 @@
                     }
                     this.filterCities();
                     this.syncOrderStatusLock();
+                    this.syncCallStatusFromOrderStatus();
                 },
 
                 currentDate() {
@@ -1162,6 +1172,17 @@
                         this.form.order_status = 'pending';
                     }
                 },
+
+                syncCallStatusFromOrderStatus() {
+                    if (this.form.order_status === 'cancel') {
+                        this.form.call_status = 'cancel';
+                        return;
+                    }
+
+                    if (this.form.call_status === 'cancel') {
+                        this.form.call_status = 'pending';
+                    }
+                },
                 
                 get totalCommission() {
                     if (this.form.order_type !== 'reseller') return '0.00';
@@ -1173,6 +1194,7 @@
                 
                 async submitOrder() {
                     this.syncOrderStatusLock();
+                    this.syncCallStatusFromOrderStatus();
                     if (this.form.order_type === 'reseller' && !this.form.reseller_id) {
                         this.notify('warning', 'Please select a reseller.');
                         return;

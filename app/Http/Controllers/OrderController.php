@@ -346,9 +346,9 @@ class OrderController extends Controller
             'payments.*.amount' => 'required_with:payments|numeric|min:0.01',
             'payments.*.date' => 'required_with:payments|date',
             'payments.*.note' => 'nullable|string|max:255',
-            'call_status' => 'nullable|in:pending,confirm,hold',
+            'call_status' => 'nullable|in:pending,confirm,hold,cancel',
             'sales_note' => 'nullable|string',
-            'order_status' => 'nullable|in:pending,hold,confirm,shipped,delivered,cancelled',
+            'order_status' => 'nullable|in:pending,hold,confirm,cancel',
             'customer.district' => 'nullable|string',
             'customer.province' => 'nullable|string',
         ]);
@@ -413,7 +413,10 @@ class OrderController extends Controller
             $order->courier_charge = $validated['courier_charge'] ?? 0;
             $order->discount_amount = $validated['discount_amount'] ?? 0;
             $order->payment_method = $validated['payment_method'] ?? 'COD';
-            $order->call_status = $validated['call_status'] ?? 'pending';
+            $requestedCallStatus = $validated['call_status'] ?? 'pending';
+            $order->call_status = $order->status === 'cancel'
+                ? 'cancel'
+                : ($requestedCallStatus === 'cancel' ? 'pending' : $requestedCallStatus);
             $order->sales_note = $validated['sales_note'] ?? null;
             
             // Capture Address Snapshot
@@ -698,9 +701,9 @@ class OrderController extends Controller
             'payments.*.amount' => 'required_with:payments|numeric|min:0.01',
             'payments.*.date' => 'required_with:payments|date',
             'payments.*.note' => 'nullable|string|max:255',
-            'call_status' => 'nullable|in:pending,confirm,hold',
+            'call_status' => 'nullable|in:pending,confirm,hold,cancel',
             'sales_note' => 'nullable|string',
-            'order_status' => 'nullable|in:pending,hold,confirm,shipped,delivered,cancelled',
+            'order_status' => 'nullable|in:pending,hold,confirm,cancel',
             'customer.district' => 'nullable|string',
             'customer.province' => 'nullable|string',
         ]);
@@ -758,16 +761,15 @@ class OrderController extends Controller
             $order->customer_address = $customer->address;
             
              // Create/Update Logic for New Fields
-            $order->status = $this->resolveOrderStatus(
-                $validated['order_status'] ?? $order->status,
-                (float) ($validated['discount_amount'] ?? 0),
-                $validated['payment_method'] ?? $order->payment_method
-            );
+            $order->status = $validated['order_status'] ?? $order->status;
             $order->courier_id = $validated['courier_id'] ?? null;
             $order->courier_charge = $validated['courier_charge'] ?? 0;
             $order->discount_amount = $validated['discount_amount'] ?? 0;
             $order->payment_method = $validated['payment_method'] ?? 'COD';
-            $order->call_status = $validated['call_status'] ?? 'pending';
+            $requestedCallStatus = $validated['call_status'] ?? $order->call_status;
+            $order->call_status = $order->status === 'cancel'
+                ? 'cancel'
+                : (($requestedCallStatus === 'cancel' || empty($requestedCallStatus)) ? 'pending' : $requestedCallStatus);
             $order->sales_note = $validated['sales_note'] ?? null;
              // Capture Address Snapshot
             $order->customer_city = $selectedCity->city_name;
@@ -898,7 +900,8 @@ class OrderController extends Controller
      */
     public function callList(Request $request)
     {
-        $query = Order::with(['customer', 'reseller', 'items']);
+        $query = Order::with(['customer', 'reseller', 'items'])
+            ->where('status', '!=', 'cancel');
         
         // Default to 'pending' call status if not specified, 
         // OR user might want to see all. Let's start with all but maybe sort by pending.
@@ -939,19 +942,25 @@ class OrderController extends Controller
         $order = Order::findOrFail($id);
         
         $validated = $request->validate([
-            'status' => 'nullable|in:pending,hold,confirm,shipped,delivered,cancelled',
+            'status' => 'nullable|in:pending,hold,confirm,cancel',
             'call_status' => 'nullable|in:pending,confirm,hold',
             'sales_note' => 'nullable|string',
         ]);
 
+        $statusChanged = false;
         if (array_key_exists('status', $validated)) {
-            $order->status = $this->mustKeepOrderPending($order->discount_amount, $order->payment_method)
-                ? 'pending'
-                : $validated['status'];
+            $order->status = $validated['status'];
+            $statusChanged = true;
         }
-        
-        if (array_key_exists('call_status', $validated)) {
+
+        if ($order->status === 'cancel') {
+            // Call status is system-driven for canceled orders.
+            $order->call_status = 'cancel';
+        } elseif (array_key_exists('call_status', $validated)) {
             $order->call_status = $validated['call_status'];
+        } elseif ($statusChanged && $order->call_status === 'cancel') {
+            // If order moved away from cancel and no explicit call status was provided, reset to pending.
+            $order->call_status = 'pending';
         }
         
         if (array_key_exists('sales_note', $validated)) {

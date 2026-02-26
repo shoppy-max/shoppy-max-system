@@ -745,7 +745,7 @@ class DemoSystemSeeder extends Seeder
                 'order_number' => 'DEMO-ORD-0004',
                 'order_date' => now()->subDays(2)->toDateString(),
                 'order_type' => 'direct',
-                'status' => 'cancelled',
+                'status' => 'cancel',
                 'call_status' => 'hold',
                 'payment_method' => 'COD',
                 'customer' => 'Ruwan Maduranga',
@@ -1073,7 +1073,7 @@ class DemoSystemSeeder extends Seeder
         foreach ($resellers as $reseller) {
             $orderTotal = (float) Order::query()
                 ->where('reseller_id', $reseller->id)
-                ->where('status', '!=', 'cancelled')
+                ->where('status', '!=', 'cancel')
                 ->sum('total_amount');
 
             $paidTotal = (float) ResellerPayment::query()

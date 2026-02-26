@@ -71,8 +71,17 @@
                                 {{ number_format($row->total_revenue, 2) }}
                             </td>
                             <td class="px-6 py-4 text-center">
+                                @php
+                                    $statusBadge = match ($row->status) {
+                                        'confirm' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+                                        'pending' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+                                        'hold' => 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+                                        'cancel' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+                                        default => 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+                                    };
+                                @endphp
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full 
-                                    {{ $row->status == 'delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' }}">
+                                    {{ $statusBadge }}">
                                     {{ ucfirst($row->status) }}
                                 </span>
                             </td>

@@ -83,7 +83,7 @@ class WaybillController extends Controller
             'total' => (clone $statsBaseQuery)->count(),
             'pending' => (clone $statsBaseQuery)->where('status', 'pending')->count(),
             'hold' => (clone $statsBaseQuery)->where('status', 'hold')->count(),
-            'confirm' => (clone $statsBaseQuery)->whereIn('status', ['confirm', 'confirmed'])->count(),
+            'confirm' => (clone $statsBaseQuery)->where('status', 'confirm')->count(),
             'with_waybill' => (clone $statsBaseQuery)->whereNotNull('waybill_number')->count(),
         ];
 
@@ -116,6 +116,6 @@ class WaybillController extends Controller
 
     private function printableStatuses(): array
     {
-        return ['pending', 'hold', 'confirm', 'confirmed', 'processing', 'shipped'];
+        return ['pending', 'hold', 'confirm'];
     }
 }
