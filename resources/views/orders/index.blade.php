@@ -39,13 +39,26 @@
         
         <!-- Filter bar -->
         <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-             <div class="flex justify-end mb-4">
+            <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="inline-flex w-full rounded-lg border border-gray-300 bg-gray-50 p-1 dark:border-gray-600 dark:bg-gray-700 lg:w-auto">
+                    <a href="{{ route('orders.index', array_merge(request()->except(['page', 'view']), ['view' => 'active'])) }}"
+                       class="inline-flex flex-1 items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors lg:flex-none {{ $viewMode === 'active' ? 'bg-white text-blue-700 shadow-sm dark:bg-gray-800 dark:text-blue-300' : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white' }}">
+                        Orders
+                    </a>
+                    <a href="{{ route('orders.index', array_merge(request()->except(['page', 'view']), ['view' => 'cancelled'])) }}"
+                       class="inline-flex flex-1 items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors lg:flex-none {{ $viewMode === 'cancelled' ? 'bg-red-50 text-red-700 shadow-sm dark:bg-red-900/30 dark:text-red-300' : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white' }}">
+                        Cancelled Orders
+                    </a>
+                </div>
+
                 <a href="{{ route('orders.create') }}" class="w-full sm:w-64 inline-flex items-center justify-center px-8 py-2.5 text-sm font-medium text-white transition-colors bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 shadow-md">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Add Order
                 </a>
-             </div>
+            </div>
+
              <form method="GET" action="{{ route('orders.index') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <input type="hidden" name="view" value="{{ $viewMode }}">
                         
                 <!-- Search -->
                 <div class="relative">
@@ -54,13 +67,19 @@
 
                 <!-- Order Status -->
                 <div>
+                    @if($viewMode === 'cancelled')
+                        <input type="hidden" name="status" value="cancel">
+                        <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg block w-full p-2.5 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300">
+                            Status: Cancel (Fixed)
+                        </div>
+                    @else
                         <select name="status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
-                        <option value="">All Order Status</option>
+                        <option value="">All Active Status</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="hold" {{ request('status') == 'hold' ? 'selected' : '' }}>Hold</option>
                         <option value="confirm" {{ request('status') == 'confirm' ? 'selected' : '' }}>Confirm</option>
-                        <option value="cancel" {{ request('status') == 'cancel' ? 'selected' : '' }}>Cancel</option>
                     </select>
+                    @endif
                 </div>
                 
                 <!-- Call Status -->
@@ -70,6 +89,9 @@
                         <option value="pending" {{ request('call_status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="confirm" {{ request('call_status') == 'confirm' ? 'selected' : '' }}>Confirm</option>
                         <option value="hold" {{ request('call_status') == 'hold' ? 'selected' : '' }}>Hold</option>
+                        @if($viewMode === 'cancelled')
+                            <option value="cancel" {{ request('call_status') == 'cancel' ? 'selected' : '' }}>Cancel</option>
+                        @endif
                     </select>
                 </div>
 
@@ -107,7 +129,7 @@
                     <button type="submit" class="flex-1 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
                         Filter
                     </button>
-                    <a href="{{ route('orders.index') }}" class="flex-1 flex items-center justify-center px-5 py-2.5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
+                    <a href="{{ route('orders.index', ['view' => $viewMode]) }}" class="flex-1 flex items-center justify-center px-5 py-2.5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
                         Reset
                     </a>
                 </div>

@@ -24,7 +24,18 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
+        $viewMode = $request->input('view', 'active');
+        if (!in_array($viewMode, ['active', 'cancelled'], true)) {
+            $viewMode = 'active';
+        }
+
         $query = Order::with(['user', 'reseller', 'customer', 'items', 'courier']); 
+
+        if ($viewMode === 'cancelled') {
+            $query->where('status', 'cancel');
+        } else {
+            $query->where('status', '!=', 'cancel');
+        }
 
         // 1. Search (Order Number, Customer Name, Mobile)
         if ($request->filled('search')) {
@@ -42,7 +53,13 @@ class OrderController extends Controller
 
         // 2. Filter by Order Status
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $status = (string) $request->status;
+
+            if ($viewMode === 'cancelled') {
+                $query->where('status', 'cancel');
+            } elseif (in_array($status, ['pending', 'hold', 'confirm'], true)) {
+                $query->where('status', $status);
+            }
         }
 
         // 3. Filter by Call Status
@@ -71,7 +88,7 @@ class OrderController extends Controller
         $orders = $query->latest()->paginate(20)->withQueryString();
         $couriers = Courier::all();
 
-        return view('orders.index', compact('orders', 'couriers'));
+        return view('orders.index', compact('orders', 'couriers', 'viewMode'));
     }
 
     /**
