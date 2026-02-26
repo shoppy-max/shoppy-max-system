@@ -75,7 +75,7 @@
                                         <div x-show="filteredOptions.length === 0" class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">No results found</div>
                                     </div>
                                 </div>
-                                <p class="text-xs text-yellow-600 mt-1">Warning: Changing the reseller will affect balances of both parties.</p>
+                                <p class="text-xs text-yellow-600 mt-1">Warning: Changing the direct reseller will affect balances of both parties.</p>
                                 @error('reseller_id') <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ $message }}</p> @enderror
                             </div>
 
@@ -130,7 +130,7 @@
                             </div>
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                             The reseller's due amount will be adjusted by the difference.
+                             The direct reseller due amount will be adjusted by the difference.
                         </p>
                     </x-form-section>
 

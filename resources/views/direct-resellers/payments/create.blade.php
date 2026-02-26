@@ -38,7 +38,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Left Column (2/3) -->
                 <div class="lg:col-span-2 space-y-6">
-                    <x-form-section title="Payment Details" description="Enter payment information to update reseller balance.">
+                    <x-form-section title="Payment Details" description="Enter payment information to update direct reseller balance.">
                         <div class="space-y-6">
                             <!-- Reseller Select (Searchable) -->
                             <div class="relative" x-data="searchableSelect({
@@ -126,7 +126,7 @@
                             </div>
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                             The reseller's due amount will be automatically updated upon saving.
+                             The direct reseller due amount will be automatically updated upon saving.
                         </p>
                     </x-form-section>
 
