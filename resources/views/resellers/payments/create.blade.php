@@ -42,7 +42,7 @@
                         <div class="space-y-6">
                             <!-- Reseller Select (Searchable) -->
                             <div class="relative" x-data="searchableSelect({
-                                options: @js($resellers->map(fn($r) => ['id' => $r->id, 'text' => $r->name . ' (' . $r->business_name . ')', 'due' => $r->due_amount])),
+                                options: @js($resellers->map(fn($r) => ['id' => $r->id, 'text' => $r->business_name . ' (' . $r->name . ')', 'due' => $r->due_amount])),
                                 selected: '{{ old('reseller_id') }}',
                                 name: 'reseller_id'
                             })" x-on:selected-reseller.window="updateDue($event.detail)">

@@ -31,14 +31,12 @@
         
         <!-- Advanced Header & Search -->
         <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-            <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                <!-- Left: Search & Filters -->
-                <div class="w-full xl:flex-1">
-                    <form method="GET" action="{{ route('products.index') }}" class="space-y-3">
-                        <!-- Row 1: Core Filters -->
-                        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-12">
+            <div class="space-y-4">
+                <form method="GET" action="{{ route('products.index') }}" class="space-y-3">
+                    <!-- Row 1: Core Filters -->
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-12">
                             <!-- Search -->
-                            <div class="relative xl:col-span-5">
+                            <div class="relative xl:col-span-4">
                                 <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                     <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
                                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 1 1 14 0Z"/>
@@ -109,7 +107,7 @@
                             </div>
 
                             <!-- Unit + Value (In-Stock Only) -->
-                            <div class="xl:col-span-2" x-data="searchableFilterSelect({
+                            <div class="xl:col-span-3" x-data="searchableFilterSelect({
                                 name: 'variant_unit',
                                 placeholder: 'All Units / Values',
                                 selected: @js((string) request('variant_unit', '')),
@@ -135,31 +133,30 @@
                                     </div>
                                 </div>
                             </div>
+                    </div>
+
+                    <!-- Row 2: Apply / Clear -->
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 md:items-center">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Filter order: category, sub category, then value + unit.
+                        </p>
+                        <div class="flex flex-wrap items-center gap-2 md:justify-end">
+                            <button type="submit" class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition-colors">
+                                Apply Filters
+                            </button>
+
+                            @if(request('search') || request('category_id') || request('sub_category_id') || request('variant_unit') || request('unit_id'))
+                                <a href="{{ route('products.index') }}" class="flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500 transition-colors">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    Clear
+                                </a>
+                            @endif
                         </div>
+                    </div>
+                </form>
 
-                        <!-- Row 2: Actions -->
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                Filter order: category, sub category, then value + unit.
-                            </p>
-                            <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-                                <button type="submit" class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition-colors">
-                                    Apply Filters
-                                </button>
-
-                                @if(request('search') || request('category_id') || request('sub_category_id') || request('variant_unit') || request('unit_id'))
-                                    <a href="{{ route('products.index') }}" class="flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500 transition-colors">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                        Clear
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Right: Actions -->
-                <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
+                <!-- Page Actions -->
+                <div class="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 dark:border-gray-700 pt-3">
                     <div class="inline-flex rounded-md shadow-sm" role="group">
                         <a href="{{ route('products.import.show') }}" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-blue-500 dark:focus:text-white">
                             <svg class="w-3 h-3 me-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>

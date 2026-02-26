@@ -45,7 +45,7 @@
                             <!-- Note: Changing reseller in edit mode is complex because we need to revert due on old reseller and apply to new. Controller logic currently assumes reseller_id in request helps find the reseller. If reseller changes, the controller logic: $reseller = Reseller::find($request->reseller_id); might trigger only on the new one. The simple controller logic I wrote handles amount diff on the SAME reseller. Correcting controller logic for reseller change is hard. Let's make reseller read-only in Edit or handle simple case of same reseller. For now, let's keep it editable but typically users usually just want to fix amount/date. -->
                             
                             <div class="relative" x-data="searchableSelect({
-                                options: @js($resellers->map(fn($r) => ['id' => $r->id, 'text' => $r->name . ' (' . $r->business_name . ')', 'due' => $r->due_amount])),
+                                options: @js($resellers->map(fn($r) => ['id' => $r->id, 'text' => $r->business_name . ' (' . $r->name . ')', 'due' => $r->due_amount])),
                                 selected: '{{ old('reseller_id', $resellerPayment->reseller_id) }}',
                                 name: 'reseller_id'
                             })" x-on:selected-reseller.window="updateDue($event.detail)">
