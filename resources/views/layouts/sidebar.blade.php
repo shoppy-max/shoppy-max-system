@@ -117,14 +117,14 @@
 
             <!-- Couriers -->
             <li>
-                <button type="button" class="flex items-center w-full p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('couriers.*') || request()->routeIs('courier-receive.*') || request()->routeIs('courier-payments.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}" aria-controls="dropdown-couriers" data-collapse-toggle="dropdown-couriers">
-                    <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('couriers.*') || request()->routeIs('courier-receive.*') || request()->routeIs('courier-payments.*') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <button type="button" class="flex items-center w-full p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('couriers.*') || request()->routeIs('courier-receive.*') || request()->routeIs('courier-payments.*') || request()->routeIs('bank-accounts.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}" aria-controls="dropdown-couriers" data-collapse-toggle="dropdown-couriers">
+                    <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('couriers.*') || request()->routeIs('courier-receive.*') || request()->routeIs('courier-payments.*') || request()->routeIs('bank-accounts.*') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     <span class="flex-1 ms-3 text-left rtl:text-right whitespace-nowrap">Couriers</span>
                     <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
                     </svg>
                 </button>
-                <ul id="dropdown-couriers" class="{{ request()->routeIs('couriers.*') || request()->routeIs('courier-receive.*') || request()->routeIs('courier-payments.*') ? '' : 'hidden' }} py-2 space-y-2">
+                <ul id="dropdown-couriers" class="{{ request()->routeIs('couriers.*') || request()->routeIs('courier-receive.*') || request()->routeIs('courier-payments.*') || request()->routeIs('bank-accounts.*') ? '' : 'hidden' }} py-2 space-y-2">
                     <li>
                          <a href="{{ route('couriers.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('couriers.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Couriers List</a>
                     </li>
@@ -136,6 +136,12 @@
                     </li>
                     <li>
                          <a href="{{ route('courier-payments.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('courier-payments.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Courier Payments</a>
+                    </li>
+                    <li>
+                         <a href="{{ route('bank-accounts.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('bank-accounts.index') || request()->routeIs('bank-accounts.edit') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Bank Accounts</a>
+                    </li>
+                    <li>
+                         <a href="{{ route('bank-accounts.create') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('bank-accounts.create') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Add Bank Account</a>
                     </li>
                 </ul>
             </li>

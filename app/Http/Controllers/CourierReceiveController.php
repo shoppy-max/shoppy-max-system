@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Courier;
 use App\Models\Order;
 use App\Models\CourierPayment;
+use App\Models\BankAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -33,7 +34,11 @@ class CourierReceiveController extends Controller
             ->take(50) // Limit for initial load
             ->get();
 
-        return view('couriers.receive.show', compact('courier', 'orders'));
+        $bankAccounts = BankAccount::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('couriers.receive.show', compact('courier', 'orders', 'bankAccounts'));
     }
 
     /**
@@ -132,13 +137,15 @@ class CourierReceiveController extends Controller
     {
         $request->validate([
             'payment_date' => 'required|date',
-            'payment_account' => 'required|string',
+            'payment_account_id' => 'required|exists:bank_accounts,id',
             'order_ids' => 'required|array',
             'order_ids.*' => 'exists:orders,id',
         ]);
 
         try {
             DB::transaction(function() use ($request, $courier) {
+                $selectedAccount = BankAccount::findOrFail($request->payment_account_id);
+
                 // 1. Calculate Total Amount from Orders
                 // Note: In a real scenario, we might want to sum up specific fields or use a user-provided total.
                 // Here we sum 'total_amount' of the selected orders.
@@ -150,7 +157,8 @@ class CourierReceiveController extends Controller
                     'user_id' => auth()->id(),
                     'amount' => $totalAmount,
                     'payment_date' => $request->payment_date,
-                    'payment_method' => $request->payment_account, // Mapping Account to Method
+                    'payment_method' => $selectedAccount->display_label,
+                    'bank_account_id' => $selectedAccount->id,
                     'reference_number' => null, // Or generated
                     'payment_note' => 'Received via Receive Courier Payment module',
                 ]);

@@ -1,118 +1,149 @@
 <x-app-layout>
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            
-            <!-- Breadcrumb & Header -->
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">
-                    {{ $courier->name }} Domestic Payment
-                </h2>
-                <nav class="flex" aria-label="Breadcrumb">
-                    <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                        <li class="inline-flex items-center">
-                            <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-400 dark:hover:text-white">
-                                Home
-                            </a>
-                        </li>
-                        <li>
-                            <div class="flex items-center">
-                                <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                                </svg>
-                                <a href="{{ route('couriers.index') }}" class="ml-1 text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-400 dark:hover:text-white md:ml-2">Order</a>
-                            </div>
-                        </li>
-                        <li aria-current="page">
-                            <div class="flex items-center">
-                                <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                                </svg>
-                                <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2 dark:text-gray-400">{{ $courier->name }} Domestic Payment</span>
-                            </div>
-                        </li>
-                    </ol>
-                </nav>
-            </div>
-
-            <!-- Main Form Section -->
-            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-6">
-                <form action="{{ route('courier-receive.store', $courier->id) }}" method="POST" enctype="multipart/form-data" id="receive-form">
-                    @csrf
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                        <!-- Payment Account -->
-                        <div>
-                            <label for="payment_account" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Account <span class="text-red-500">*</span></label>
-                            <select name="payment_account" id="payment_account" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                                <option value="ESB test Acccont">ESB test Acccont</option>
-                                <!-- Populate dynamically if Accounts gets implemented -->
-                            </select>
+    <x-slot name="header">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                {{ __('Receive Courier Payment') }} - {{ $courier->name }}
+            </h2>
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <svg class="w-3 h-3 text-gray-400 mx-1 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                            </svg>
+                            <a href="{{ route('courier-receive.index') }}" class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Receive Courier Payment</a>
                         </div>
-
-                        <!-- Date -->
-                        <div>
-                            <label for="payment_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date <span class="text-red-500">*</span></label>
-                            <input type="date" name="payment_date" id="payment_date" value="{{ date('Y-m-d') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                    </li>
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <svg class="w-3 h-3 text-gray-400 mx-1 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                            </svg>
+                            <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{{ $courier->name }}</span>
                         </div>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </x-slot>
 
-                        <!-- Excel Import -->
-                        <div>
-                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Excel Import</label>
-                             <div class="flex gap-3">
-                                 <input type="file" name="excel_file" id="excel_file" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400">
-<button type="button" onclick="uploadExcel()" class="text-white bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-6 py-2.5 shadow-lg shadow-blue-500/50 dark:shadow-blue-800/80 focus:outline-none transition-all transform hover:scale-105">Upload</button>
-                             </div>
-                             <div class="mt-3 text-right">
-                                 <a href="#" class="inline-flex items-center px-4 py-2 text-sm font-medium text-green-700 bg-white border border-green-300 rounded-lg shadow-sm hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:bg-gray-700 dark:text-green-400 dark:border-green-600 dark:hover:bg-gray-600 transition-all duration-200">
-                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                     Download Excel Template
-                                 </a>
-                             </div>
+    <div class="p-6 overflow-hidden bg-white rounded-md shadow-md dark:bg-gray-800">
+        <form action="{{ route('courier-receive.store', $courier->id) }}" method="POST" enctype="multipart/form-data" id="receive-form">
+            @csrf
+
+            <!-- Payment Setup -->
+            <div class="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Payment Setup</h3>
+                <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">Configure payment meta details before adding orders.</p>
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div>
+                        <div class="mb-2 flex items-center justify-between gap-2">
+                            <label for="payment_account_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Account <span class="text-red-500">*</span></label>
+                            <a href="{{ route('bank-accounts.create') }}" class="text-xs font-medium text-primary-700 hover:underline dark:text-primary-400">Add Account</a>
                         </div>
+                        <select name="payment_account_id" id="payment_account_id" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+                            <option value="">Select payment account</option>
+                            @foreach($bankAccounts as $account)
+                                <option value="{{ $account->id }}" {{ old('payment_account_id') == $account->id ? 'selected' : '' }}>
+                                    {{ $account->display_label }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @if($bankAccounts->isEmpty())
+                            <p class="mt-2 text-xs text-amber-600 dark:text-amber-400">No active accounts found. Please add one before saving payment.</p>
+                        @endif
+                        @error('payment_account_id')
+                            <p class="mt-2 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
                     </div>
-                </form>
-            </div>
-
-            <!-- Manual Entry Section -->
-            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-6">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Manual Entry</h3>
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                    <div class="md:col-span-1">
-                        <label for="waybill" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Waybill</label>
-                        <input type="text" id="waybill" onblur="searchWaybill()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Scan or Enter Waybill">
-                        <input type="hidden" id="manual_order_id"> <!-- Hidden ID to store fetched order -->
-                        <input type="hidden" id="manual_phone1">
-                        <input type="hidden" id="manual_phone2">
-                        <input type="hidden" id="manual_city">
-                        <input type="hidden" id="manual_remarks">
-                        <input type="hidden" id="manual_order_no">
-                        <input type="hidden" id="manual_destination">
-                        <input type="hidden" id="manual_description">
+                    <div>
+                        <label for="payment_date" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Date <span class="text-red-500">*</span></label>
+                        <input type="date" name="payment_date" id="payment_date" value="{{ date('Y-m-d') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
                     </div>
-                    <div class="md:col-span-1">
-                        <label for="cod_amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">COD Amount</label>
-                        <input type="number" id="cod_amount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                    </div>
-                    <div class="md:col-span-1">
-                        <label for="delivery_charge" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Delivery Charge</label>
-                        <input type="number" id="delivery_charge" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                    </div>
-                    <div class="md:col-span-1">
-                        <label for="recipient" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Recipient</label>
-                        <input type="text" id="recipient" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                    </div>
-                    <div class="md:col-span-1">
-                        <button type="button" onclick="addToTable()" class="w-full text-white bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 shadow-lg shadow-blue-500/50 dark:shadow-blue-800/80 focus:outline-none transition-all transform hover:scale-105">
-                            Add To Table
-                        </button>
+                    <div>
+                        <label for="excel_file" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Excel Import</label>
+                        <div class="flex gap-2">
+                            <input type="file" name="excel_file" id="excel_file" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <button type="button" onclick="uploadExcel()" class="inline-flex items-center text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2.5 focus:outline-none dark:bg-blue-600 dark:hover:bg-blue-700">
+                                Upload
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Search & Manual Entry (Two Rows) -->
+            <div class="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Search & Add Order</h3>
+                <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">Find an order by waybill, verify values, then add it to the table.</p>
+
+                <!-- Row 1 -->
+                <div class="grid grid-cols-1 gap-4 lg:grid-cols-12 mb-4">
+                    <div class="lg:col-span-7">
+                        <label for="waybill" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Waybill</label>
+                        <input type="text" id="waybill" onkeydown="handleWaybillKeydown(event)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Scan or enter waybill number">
+                    </div>
+                    <div class="lg:col-span-2 flex items-end">
+                        <button type="button" onclick="searchWaybill()" class="w-full inline-flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2.5 focus:outline-none dark:bg-blue-600 dark:hover:bg-blue-700">
+                            Search
+                        </button>
+                    </div>
+                    <div class="lg:col-span-3">
+                        <label for="recipient" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Recipient</label>
+                        <input type="text" id="recipient" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                    <div class="lg:col-span-3">
+                        <label for="cod_amount" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">COD Amount</label>
+                        <input type="number" id="cod_amount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div class="lg:col-span-3">
+                        <label for="delivery_charge" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Delivery Charge</label>
+                        <input type="number" id="delivery_charge" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div class="lg:col-span-3 flex items-end">
+                        <button type="button" onclick="clearManualEntry()" class="w-full inline-flex items-center justify-center text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-4 py-2.5 focus:outline-none dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+                            Clear Entry
+                        </button>
+                    </div>
+                    <div class="lg:col-span-3 flex items-end">
+                        <button type="button" onclick="addToTable()" class="w-full inline-flex items-center justify-center text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2.5 focus:outline-none dark:bg-blue-600 dark:hover:bg-blue-700">
+                            Add To Table
+                        </button>
+                    </div>
+                </div>
+
+                <input type="hidden" id="manual_order_id">
+                <input type="hidden" id="manual_phone1">
+                <input type="hidden" id="manual_phone2">
+                <input type="hidden" id="manual_city">
+                <input type="hidden" id="manual_remarks">
+                <input type="hidden" id="manual_order_no">
+                <input type="hidden" id="manual_destination">
+                <input type="hidden" id="manual_description">
+            </div>
+
             <!-- Data Table -->
-            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6">
+            <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
+                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <h4 class="text-base font-semibold text-gray-900 dark:text-white">Added Orders</h4>
+                        <div class="w-full md:w-80">
+                            <input type="text" id="order_table_filter" oninput="filterTableRows(this.value)" placeholder="Filter table rows..." class="block w-full p-2.5 text-sm text-gray-900 border border-gray-300 rounded-lg bg-white focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                    </div>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                        <thead class="text-xs text-white uppercase bg-gray-800 dark:bg-gray-700">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
                             <tr>
                                 <th scope="col" class="px-4 py-3">Waybill Number</th>
                                 <th scope="col" class="px-4 py-3">Order No</th>
@@ -129,24 +160,22 @@
                             </tr>
                         </thead>
                         <tbody id="payment-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
-                            <!-- Rows will be added here dynamically -->
                             <tr id="empty-row">
                                 <td colspan="12" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                                    No orders added yet. Scan a waybill or upload an Excel file.
+                                    No orders added yet. Search by waybill or upload an Excel file.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-            
-            <div class="flex justify-end">
-                 <button type="submit" form="receive-form" class="text-white bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-8 py-3 shadow-lg shadow-green-500/50 dark:shadow-green-800/80 focus:outline-none transition-all transform hover:scale-105">
-                    Save Payment
-                 </button>
-            </div>
 
-        </div>
+            <div class="flex justify-end">
+                <button type="submit" class="inline-flex items-center text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-8 py-3 focus:outline-none dark:bg-green-600 dark:hover:bg-green-700">
+                    Save Payment
+                </button>
+            </div>
+        </form>
     </div>
 
     <script>
@@ -186,11 +215,18 @@
             }
         }
 
+        function handleWaybillKeydown(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                searchWaybill();
+            }
+        }
+
         function searchWaybill() {
             const waybill = document.getElementById('waybill').value.trim();
             if (!waybill) return;
 
-            fetch(`{{ route('courier-receive.search-order') }}?query=${waybill}`)
+            fetch(`{{ route('courier-receive.search-order') }}?query=${encodeURIComponent(waybill)}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -211,7 +247,7 @@
                         showSuccess('Order found: ' + order.waybill_number);
                     } else {
                         showError('Order not found!');
-                        document.getElementById('manual_order_id').value = '';
+                        clearManualEntry(false);
                     }
                 })
                 .catch(err => {
@@ -229,7 +265,7 @@
                 return;
             }
             if (!orderId) {
-                showError('Please search for a valid order first (click away from Waybill field).');
+                showError('Please search and select a valid waybill first.');
                 return;
             }
 
@@ -250,14 +286,25 @@
             };
 
             appendRow(order);
-            
-            document.getElementById('waybill').value = '';
+            clearManualEntry();
+            document.getElementById('waybill').focus();
+        }
+
+        function clearManualEntry(clearWaybill = true) {
+            if (clearWaybill) {
+                document.getElementById('waybill').value = '';
+            }
             document.getElementById('manual_order_id').value = '';
             document.getElementById('cod_amount').value = '';
             document.getElementById('delivery_charge').value = '';
             document.getElementById('recipient').value = '';
-            
-            document.getElementById('waybill').focus();
+            document.getElementById('manual_order_no').value = '';
+            document.getElementById('manual_phone1').value = '';
+            document.getElementById('manual_phone2').value = '';
+            document.getElementById('manual_city').value = '';
+            document.getElementById('manual_destination').value = '';
+            document.getElementById('manual_description').value = '';
+            document.getElementById('manual_remarks').value = '';
         }
 
         function appendRow(order) {
@@ -291,14 +338,30 @@
                 </td>
             `;
             tbody.appendChild(tr);
+            filterTableRows(document.getElementById('order_table_filter')?.value || '');
         }
 
         function removeRow(btn) {
             btn.closest('tr').remove();
             const tbody = document.getElementById('payment-table-body');
             if (tbody.children.length === 0) {
-                 tbody.innerHTML = `<tr id="empty-row"><td colspan="12" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No orders added yet. Scan a waybill or upload an Excel file.</td></tr>`;
+                 tbody.innerHTML = `<tr id="empty-row"><td colspan="12" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No orders added yet. Search by waybill or upload an Excel file.</td></tr>`;
             }
+        }
+
+        function filterTableRows(searchValue) {
+            const query = (searchValue || '').toLowerCase().trim();
+            const rows = document.querySelectorAll('#payment-table-body tr');
+
+            rows.forEach((row) => {
+                if (row.id === 'empty-row') {
+                    row.style.display = query ? 'none' : '';
+                    return;
+                }
+
+                const content = row.textContent.toLowerCase();
+                row.style.display = content.includes(query) ? '' : 'none';
+            });
         }
 
         function uploadExcel() {

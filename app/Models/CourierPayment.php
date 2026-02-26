@@ -16,6 +16,7 @@ class CourierPayment extends Model
         'amount',
         'payment_date',
         'payment_method',
+        'bank_account_id',
         'payment_note',
         'reference_number',
     ];
@@ -33,5 +34,10 @@ class CourierPayment extends Model
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function bankAccount()
+    {
+        return $this->belongsTo(BankAccount::class);
     }
 }

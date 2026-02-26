@@ -132,6 +132,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('couriers', \App\Http\Controllers\CourierController::class);
     Route::resource('courier-payments', \App\Http\Controllers\CourierPaymentController::class);
+    Route::resource('bank-accounts', \App\Http\Controllers\BankAccountController::class)->except(['show']);
     // Purchases
     Route::get('/purchases/{purchase}/pdf', [\App\Http\Controllers\PurchaseController::class, 'pdf'])->name('purchases.pdf');
     Route::resource('purchases', \App\Http\Controllers\PurchaseController::class);
@@ -149,4 +150,3 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
 });
 
 require __DIR__.'/auth.php';
-
