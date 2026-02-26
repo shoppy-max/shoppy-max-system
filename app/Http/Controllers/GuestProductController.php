@@ -48,16 +48,16 @@ class GuestProductController extends Controller
         $sort = $request->get('sort', 'latest');
         switch ($sort) {
             case 'price_low':
-                $query->join('product_variants', 'products.id', '=', 'product_variants.product_id')
-                      ->select('products.*')
-                      ->orderByRaw('MIN(product_variants.selling_price) ASC')
-                      ->groupBy('products.id');
+                $query->withMin(['variants as min_variant_price' => function ($q) {
+                    $q->where('quantity', '>', 0);
+                }], 'selling_price')
+                    ->orderBy('min_variant_price', 'asc');
                 break;
             case 'price_high':
-                $query->join('product_variants', 'products.id', '=', 'product_variants.product_id')
-                      ->select('products.*')
-                      ->orderByRaw('MIN(product_variants.selling_price) DESC')
-                      ->groupBy('products.id');
+                $query->withMin(['variants as min_variant_price' => function ($q) {
+                    $q->where('quantity', '>', 0);
+                }], 'selling_price')
+                    ->orderBy('min_variant_price', 'desc');
                 break;
             case 'name_asc':
                 $query->orderBy('name', 'ASC');

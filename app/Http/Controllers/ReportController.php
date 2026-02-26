@@ -17,6 +17,11 @@ class ReportController extends Controller
      */
     public function index()
     {
+        $driver = DB::connection()->getDriverName();
+        $monthExpression = $driver === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
+
         // General Metrics
         $totalSales = Order::where('status', 'confirm')->sum('total_amount');
         $totalOrders = Order::count();
@@ -26,7 +31,7 @@ class ReportController extends Controller
         // Month-wise Sales for Chart
         $monthlySales = Order::select(
             DB::raw('sum(total_amount) as sums'), 
-            DB::raw("strftime('%Y-%m', created_at) as month")
+            DB::raw("{$monthExpression} as month")
         )
         ->groupBy('month')
         ->orderBy('month', 'desc')
