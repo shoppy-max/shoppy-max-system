@@ -221,6 +221,18 @@
                         'cancel' => 'badge-cancelled',
                         default => 'badge-other',
                     };
+                    $deliveryStatus = strtolower((string) ($order->delivery_status ?? 'pending'));
+                    $deliveryLabels = [
+                        'pending' => 'Pending',
+                        'waybill_printed' => 'Waybill printed',
+                        'picked_from_rack' => 'Picked from rack',
+                        'packed' => 'Packed',
+                        'dispatched' => 'Dispatched',
+                        'delivered' => 'Delivered',
+                        'return_requested' => 'Return Requested',
+                        'returned' => 'Returned',
+                        'cancel' => 'Cancel',
+                    ];
                 @endphp
                 <span class="badge {{ $statusClass }}">{{ $order->status }}</span>
             </div>
@@ -246,7 +258,8 @@
                         <strong>{{ $order->reseller->business_name ?: $order->reseller->name }}</strong><br>
                         Contact: {{ $order->reseller->name }}<br>
                         Mobile: {{ $order->reseller->mobile }}<br>
-                        Account: {{ $order->reseller->reseller_type === 'direct_reseller' ? 'Direct Reseller' : 'Reseller' }}
+                        Account: {{ $order->reseller->reseller_type === 'direct_reseller' ? 'Direct Reseller' : 'Reseller' }}<br>
+                        Delivery Status: {{ $deliveryLabels[$deliveryStatus] ?? 'Pending' }}
                     </div>
                 @else
                     <p class="label">Order Info</p>
@@ -255,6 +268,7 @@
                         Payment: {{ $order->payment_method === 'COD' ? 'Cash on Delivery (COD)' : $order->payment_method }}<br>
                         @if($order->courier)Courier: {{ $order->courier->name }}<br>@endif
                         Call Status: {{ ucfirst((string) $order->call_status) }}<br>
+                        Delivery Status: {{ $deliveryLabels[$deliveryStatus] ?? 'Pending' }}<br>
                         Created By: {{ $order->user->name ?? 'System' }}
                     </div>
                 @endif

@@ -81,6 +81,37 @@
                                 </div>
                             </div>
 
+                            <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                    <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Order Status</label>
+                                    <input
+                                        type="text"
+                                        x-model="form.order_status"
+                                        readonly
+                                        class="bg-gray-100 border border-gray-300 text-gray-600 text-sm rounded-lg block w-full p-2.5 cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Delivery Status</label>
+                                    <select
+                                        x-model="form.delivery_status"
+                                        disabled
+                                        class="bg-gray-100 border border-gray-300 text-gray-600 text-sm rounded-lg block w-full p-2.5 cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                                    >
+                                        <option value="pending">Pending</option>
+                                        <option value="waybill_printed">Waybill printed</option>
+                                        <option value="picked_from_rack">Picked from rack</option>
+                                        <option value="packed">Packed</option>
+                                        <option value="dispatched">Dispatched</option>
+                                        <option value="delivered">Delivered</option>
+                                        <option value="return_requested">Return Requested</option>
+                                        <option value="returned">Returned</option>
+                                        <option value="cancel">Cancel</option>
+                                    </select>
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Fixed to Pending on create. Editable in Order Edit.</p>
+                                </div>
+                            </div>
+
                             <!-- Reseller Selection -->
                             <div x-show="form.order_type === 'reseller'" x-transition>
                                 <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Select Reseller Account <span class="text-red-500">*</span></label>
@@ -702,6 +733,7 @@
                     paid_amount: 0,
                     payments: [],
                     call_status: 'pending',
+                    delivery_status: 'pending',
                     sales_note: '',
 
                     customer: {
@@ -1176,11 +1208,16 @@
                 syncCallStatusFromOrderStatus() {
                     if (this.form.order_status === 'cancel') {
                         this.form.call_status = 'cancel';
+                        this.form.delivery_status = 'cancel';
                         return;
                     }
 
                     if (this.form.call_status === 'cancel') {
                         this.form.call_status = 'pending';
+                    }
+
+                    if (this.form.delivery_status === 'cancel') {
+                        this.form.delivery_status = 'pending';
                     }
                 },
                 
@@ -1195,6 +1232,7 @@
                 async submitOrder() {
                     this.syncOrderStatusLock();
                     this.syncCallStatusFromOrderStatus();
+                    this.form.delivery_status = 'pending';
                     if (this.form.order_type === 'reseller' && !this.form.reseller_id) {
                         this.notify('warning', 'Please select a reseller.');
                         return;

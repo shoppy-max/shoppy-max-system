@@ -20,6 +20,7 @@ class Order extends Model
         'customer_address',
         'city_id',
         'status',
+        'delivery_status',
         'payment_method',
         'payment_status',
         'total_amount',

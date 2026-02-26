@@ -132,8 +132,9 @@ class WaybillController extends Controller
         foreach ($orders as $order) {
             if (!$order->waybill_number) {
                 $order->waybill_number = 'WB-' . $order->order_number;
-                $order->save();
             }
+            $order->delivery_status = 'waybill_printed';
+            $order->save();
         }
 
         return view('orders.waybill.print', compact('orders'));

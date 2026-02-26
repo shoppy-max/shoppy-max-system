@@ -42,6 +42,34 @@
                                 <span class="{{ $colors[$order->status] ?? 'bg-gray-100 text-gray-800' }} text-xs font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">
                                     {{ $order->status }}
                                 </span>
+                                @php
+                                    $deliveryColors = [
+                                        'pending' => 'bg-gray-100 text-gray-800',
+                                        'waybill_printed' => 'bg-indigo-100 text-indigo-800',
+                                        'picked_from_rack' => 'bg-purple-100 text-purple-800',
+                                        'packed' => 'bg-blue-100 text-blue-800',
+                                        'dispatched' => 'bg-cyan-100 text-cyan-800',
+                                        'delivered' => 'bg-green-100 text-green-800',
+                                        'return_requested' => 'bg-amber-100 text-amber-800',
+                                        'returned' => 'bg-orange-100 text-orange-800',
+                                        'cancel' => 'bg-red-100 text-red-800',
+                                    ];
+                                    $deliveryLabels = [
+                                        'pending' => 'Pending',
+                                        'waybill_printed' => 'Waybill printed',
+                                        'picked_from_rack' => 'Picked from rack',
+                                        'packed' => 'Packed',
+                                        'dispatched' => 'Dispatched',
+                                        'delivered' => 'Delivered',
+                                        'return_requested' => 'Return Requested',
+                                        'returned' => 'Returned',
+                                        'cancel' => 'Cancel',
+                                    ];
+                                    $deliveryStatus = strtolower((string) ($order->delivery_status ?? 'pending'));
+                                @endphp
+                                <span class="{{ $deliveryColors[$deliveryStatus] ?? 'bg-gray-100 text-gray-800' }} text-xs font-semibold px-2.5 py-0.5 rounded tracking-wide">
+                                    Delivery: {{ $deliveryLabels[$deliveryStatus] ?? 'Pending' }}
+                                </span>
                             </div>
                         </div>
                         <div class="text-right">
@@ -80,6 +108,7 @@
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Courier: {{ $order->courier->name }}</p>
                              @endif
                              <p class="text-sm text-gray-600 dark:text-gray-400">Call Status: <span class="capitalize">{{ $order->call_status }}</span></p>
+                             <p class="text-sm text-gray-600 dark:text-gray-400">Delivery Status: <span>{{ $deliveryLabels[$deliveryStatus] ?? 'Pending' }}</span></p>
                              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Created By: {{ $order->user->name ?? 'System' }}</p>
                         @endif
                     </div>

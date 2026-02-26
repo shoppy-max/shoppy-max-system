@@ -154,7 +154,8 @@
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Order ID</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Waybill</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Call Status</th>
-                        <th scope="col" class="px-6 py-3 whitespace-nowrap">Deliver Status</th>
+                        <th scope="col" class="px-6 py-3 whitespace-nowrap">Order Status</th>
+                        <th scope="col" class="px-6 py-3 whitespace-nowrap">Delivery Status</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Payment Status</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Payment Method</th>
                         <th scope="col" class="px-6 py-3">Customer</th>
@@ -206,16 +207,46 @@
                             </td>
                             <td class="px-6 py-4">
                                 @php
-                                    $deliveryStatus = strtolower((string) $order->status);
-                                    $deliveryColors = [
+                                    $orderStatus = strtolower((string) $order->status);
+                                    $orderStatusColors = [
                                         'pending' => 'text-yellow-800 bg-yellow-100 border-yellow-300',
                                         'hold' => 'text-orange-800 bg-orange-100 border-orange-300',
                                         'confirm' => 'text-green-800 bg-green-100 border-green-300',
                                         'cancel' => 'text-red-800 bg-red-100 border-red-300',
                                     ];
                                 @endphp
-                                <span class="{{ $deliveryColors[$deliveryStatus] ?? 'text-gray-700 bg-gray-100 border-gray-300' }} border px-2.5 py-0.5 rounded text-xs font-medium capitalize">
-                                    {{ $deliveryStatus ? ucfirst($deliveryStatus) : '-' }}
+                                <span class="{{ $orderStatusColors[$orderStatus] ?? 'text-gray-700 bg-gray-100 border-gray-300' }} border px-2.5 py-0.5 rounded text-xs font-medium capitalize">
+                                    {{ $orderStatus ? ucfirst($orderStatus) : '-' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                @php
+                                    $deliveryStatus = strtolower((string) ($order->delivery_status ?? 'pending'));
+                                    $deliveryStatusColors = [
+                                        'pending' => 'text-gray-700 bg-gray-100 border-gray-300',
+                                        'waybill_printed' => 'text-indigo-700 bg-indigo-100 border-indigo-300',
+                                        'picked_from_rack' => 'text-purple-700 bg-purple-100 border-purple-300',
+                                        'packed' => 'text-blue-700 bg-blue-100 border-blue-300',
+                                        'dispatched' => 'text-cyan-700 bg-cyan-100 border-cyan-300',
+                                        'delivered' => 'text-green-700 bg-green-100 border-green-300',
+                                        'return_requested' => 'text-amber-700 bg-amber-100 border-amber-300',
+                                        'returned' => 'text-orange-700 bg-orange-100 border-orange-300',
+                                        'cancel' => 'text-red-700 bg-red-100 border-red-300',
+                                    ];
+                                    $deliveryStatusLabels = [
+                                        'pending' => 'Pending',
+                                        'waybill_printed' => 'Waybill printed',
+                                        'picked_from_rack' => 'Picked from rack',
+                                        'packed' => 'Packed',
+                                        'dispatched' => 'Dispatched',
+                                        'delivered' => 'Delivered',
+                                        'return_requested' => 'Return Requested',
+                                        'returned' => 'Returned',
+                                        'cancel' => 'Cancel',
+                                    ];
+                                @endphp
+                                <span class="{{ $deliveryStatusColors[$deliveryStatus] ?? 'text-gray-700 bg-gray-100 border-gray-300' }} border px-2.5 py-0.5 rounded text-xs font-medium whitespace-nowrap">
+                                    {{ $deliveryStatusLabels[$deliveryStatus] ?? 'Pending' }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
@@ -301,7 +332,7 @@
                         </tr>
                     @empty
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                            <td colspan="17" class="px-6 py-8 text-center">
+                            <td colspan="18" class="px-6 py-8 text-center">
                                 <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                                     <svg class="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                                     <p class="text-lg font-medium">No orders found</p>

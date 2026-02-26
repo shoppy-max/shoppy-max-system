@@ -19,6 +19,18 @@ use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
+    private const DELIVERY_STATUSES = [
+        'pending',
+        'waybill_printed',
+        'picked_from_rack',
+        'packed',
+        'dispatched',
+        'delivered',
+        'return_requested',
+        'returned',
+        'cancel',
+    ];
+
     /**
      * Display a listing of orders.
      */
@@ -83,6 +95,10 @@ class OrderController extends Controller
             } elseif (in_array($status, ['pending', 'hold', 'confirm'], true)) {
                 $query->where('status', $status);
             }
+        }
+
+        if ($request->filled('delivery_status') && in_array($request->delivery_status, self::DELIVERY_STATUSES, true)) {
+            $query->where('delivery_status', $request->delivery_status);
         }
 
         // 3. Filter by Call Status
@@ -389,6 +405,7 @@ class OrderController extends Controller
             'call_status' => 'nullable|in:pending,confirm,hold,cancel',
             'sales_note' => 'nullable|string',
             'order_status' => 'nullable|in:pending,hold,confirm,cancel',
+            'delivery_status' => 'nullable|in:' . implode(',', self::DELIVERY_STATUSES),
             'customer.district' => 'nullable|string',
             'customer.province' => 'nullable|string',
         ]);
@@ -457,6 +474,7 @@ class OrderController extends Controller
             $order->call_status = $order->status === 'cancel'
                 ? 'cancel'
                 : ($requestedCallStatus === 'cancel' ? 'pending' : $requestedCallStatus);
+            $order->delivery_status = $this->normalizeDeliveryStatus('pending', (string) $order->status);
             $order->sales_note = $validated['sales_note'] ?? null;
             
             // Capture Address Snapshot
@@ -744,6 +762,7 @@ class OrderController extends Controller
             'call_status' => 'nullable|in:pending,confirm,hold,cancel',
             'sales_note' => 'nullable|string',
             'order_status' => 'nullable|in:pending,hold,confirm,cancel',
+            'delivery_status' => 'nullable|in:' . implode(',', self::DELIVERY_STATUSES),
             'customer.district' => 'nullable|string',
             'customer.province' => 'nullable|string',
         ]);
@@ -810,6 +829,8 @@ class OrderController extends Controller
             $order->call_status = $order->status === 'cancel'
                 ? 'cancel'
                 : (($requestedCallStatus === 'cancel' || empty($requestedCallStatus)) ? 'pending' : $requestedCallStatus);
+            $requestedDeliveryStatus = $validated['delivery_status'] ?? $order->delivery_status;
+            $order->delivery_status = $this->normalizeDeliveryStatus($requestedDeliveryStatus, (string) $order->status);
             $order->sales_note = $validated['sales_note'] ?? null;
              // Capture Address Snapshot
             $order->customer_city = $selectedCity->city_name;
@@ -984,6 +1005,7 @@ class OrderController extends Controller
         $validated = $request->validate([
             'status' => 'nullable|in:pending,hold,confirm,cancel',
             'call_status' => 'nullable|in:pending,confirm,hold',
+            'delivery_status' => 'nullable|in:' . implode(',', self::DELIVERY_STATUSES),
             'sales_note' => 'nullable|string',
         ]);
 
@@ -996,11 +1018,18 @@ class OrderController extends Controller
         if ($order->status === 'cancel') {
             // Call status is system-driven for canceled orders.
             $order->call_status = 'cancel';
+            $order->delivery_status = 'cancel';
         } elseif (array_key_exists('call_status', $validated)) {
             $order->call_status = $validated['call_status'];
         } elseif ($statusChanged && $order->call_status === 'cancel') {
             // If order moved away from cancel and no explicit call status was provided, reset to pending.
             $order->call_status = 'pending';
+        }
+
+        if ($order->status !== 'cancel' && array_key_exists('delivery_status', $validated)) {
+            $order->delivery_status = $this->normalizeDeliveryStatus($validated['delivery_status'], (string) $order->status);
+        } elseif ($statusChanged && $order->status !== 'cancel' && $order->delivery_status === 'cancel') {
+            $order->delivery_status = 'pending';
         }
         
         if (array_key_exists('sales_note', $validated)) {
@@ -1013,7 +1042,8 @@ class OrderController extends Controller
             'success' => true,
             'message' => 'Status updated successfully!',
             'call_status' => $order->call_status,
-            'status' => $order->status
+            'status' => $order->status,
+            'delivery_status' => $order->delivery_status,
         ]);
     }
 
@@ -1043,6 +1073,23 @@ class OrderController extends Controller
         }
 
         return $requestedStatus ?: 'pending';
+    }
+
+    private function normalizeDeliveryStatus(?string $requestedStatus, string $orderStatus): string
+    {
+        if ($orderStatus === 'cancel') {
+            return 'cancel';
+        }
+
+        if (!in_array($requestedStatus, self::DELIVERY_STATUSES, true)) {
+            return 'pending';
+        }
+
+        if ($requestedStatus === 'cancel') {
+            return 'pending';
+        }
+
+        return $requestedStatus;
     }
 
     private function normalizeSearchText(string $value): string

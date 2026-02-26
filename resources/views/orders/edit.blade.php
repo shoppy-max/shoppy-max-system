@@ -90,6 +90,28 @@
                                 </select>
                             </div>
 
+                            <div class="mb-4">
+                                <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Delivery Status</label>
+                                <select
+                                    x-model="form.delivery_status"
+                                    :disabled="form.order_status === 'cancel'"
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
+                                >
+                                    <option value="pending">Pending</option>
+                                    <option value="waybill_printed">Waybill printed</option>
+                                    <option value="picked_from_rack">Picked from rack</option>
+                                    <option value="packed">Packed</option>
+                                    <option value="dispatched">Dispatched</option>
+                                    <option value="delivered">Delivered</option>
+                                    <option value="return_requested">Return Requested</option>
+                                    <option value="returned">Returned</option>
+                                    <option value="cancel" x-show="form.delivery_status === 'cancel'">Cancel (Auto)</option>
+                                </select>
+                                <p x-show="form.order_status === 'cancel'" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                                    Delivery status is auto-set to Cancel when order status is Cancel.
+                                </p>
+                            </div>
+
                             <div x-show="form.order_type === 'reseller'" x-transition>
                                 <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Select Reseller Account <span class="text-red-500">*</span></label>
                                 <div class="relative" @click.outside="resellers = []">
@@ -639,6 +661,7 @@
                         }))
                         : [],
                     call_status: initialOrder.call_status,
+                    delivery_status: initialOrder.delivery_status || 'pending',
                     sales_note: initialOrder.sales_note,
 
                     customer: {
@@ -1116,11 +1139,16 @@
                 syncCallStatusFromOrderStatus() {
                     if (this.form.order_status === 'cancel') {
                         this.form.call_status = 'cancel';
+                        this.form.delivery_status = 'cancel';
                         return;
                     }
 
                     if (this.form.call_status === 'cancel') {
                         this.form.call_status = 'pending';
+                    }
+
+                    if (this.form.delivery_status === 'cancel') {
+                        this.form.delivery_status = 'pending';
                     }
                 },
 
