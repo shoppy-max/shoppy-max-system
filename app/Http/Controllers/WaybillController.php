@@ -13,13 +13,15 @@ class WaybillController extends Controller
      */
     public function index()
     {
-        $printableStatuses = $this->printableStatuses();
-
         $couriers = Courier::query()
             ->where('is_active', true)
             ->withCount([
-                'orders as printable_orders_count' => function ($query) use ($printableStatuses) {
-                    $query->whereIn('status', $printableStatuses);
+                'orders as printable_orders_count' => function ($query) {
+                    $query->where('status', 'confirm')
+                        ->where(function ($waybillQuery) {
+                            $waybillQuery->whereNull('waybill_number')
+                                ->orWhere('waybill_number', '');
+                        });
                 },
             ])
             ->orderBy('name')
@@ -33,7 +35,6 @@ class WaybillController extends Controller
      */
     public function show(Request $request, Courier $courier)
     {
-        $printableStatuses = $this->printableStatuses();
         $perPage = in_array((int) $request->input('per_page'), [25, 50, 100], true)
             ? (int) $request->input('per_page')
             : 25;
@@ -41,7 +42,11 @@ class WaybillController extends Controller
         $ordersQuery = Order::query()
             ->with('customer')
             ->where('courier_id', $courier->id)
-            ->whereIn('status', $printableStatuses);
+            ->where('status', 'confirm')
+            ->where(function ($waybillQuery) {
+                $waybillQuery->whereNull('waybill_number')
+                    ->orWhere('waybill_number', '');
+            });
 
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
@@ -56,10 +61,6 @@ class WaybillController extends Controller
                             ->orWhere('mobile', 'like', "%{$search}%");
                     });
             });
-        }
-
-        if ($request->filled('status') && in_array($request->status, $printableStatuses, true)) {
-            $ordersQuery->where('status', $request->status);
         }
 
         if ($request->filled('date_from')) {
@@ -77,14 +78,22 @@ class WaybillController extends Controller
 
         $statsBaseQuery = Order::query()
             ->where('courier_id', $courier->id)
-            ->whereIn('status', $printableStatuses);
+            ->where('status', 'confirm');
 
         $stats = [
-            'total' => (clone $statsBaseQuery)->count(),
-            'pending' => (clone $statsBaseQuery)->where('status', 'pending')->count(),
-            'hold' => (clone $statsBaseQuery)->where('status', 'hold')->count(),
-            'confirm' => (clone $statsBaseQuery)->where('status', 'confirm')->count(),
-            'with_waybill' => (clone $statsBaseQuery)->whereNotNull('waybill_number')->count(),
+            'eligible' => (clone $statsBaseQuery)
+                ->where(function ($waybillQuery) {
+                    $waybillQuery->whereNull('waybill_number')
+                        ->orWhere('waybill_number', '');
+                })
+                ->count(),
+            'confirm_total' => (clone $statsBaseQuery)->count(),
+            'with_waybill' => (clone $statsBaseQuery)
+                ->where(function ($waybillQuery) {
+                    $waybillQuery->whereNotNull('waybill_number')
+                        ->where('waybill_number', '!=', '');
+                })
+                ->count(),
         ];
 
         return view('orders.waybill.show', compact('courier', 'orders', 'stats'));
@@ -95,27 +104,43 @@ class WaybillController extends Controller
      */
     public function print(Request $request)
     {
-        $orderIds = $request->input('order_ids', []);
-        
-        if (empty($orderIds)) {
+        $orderIds = collect($request->input('order_ids', []))
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($orderIds->isEmpty()) {
             return back()->with('error', 'No orders selected.');
         }
-        
-        $orders = Order::whereIn('id', $orderIds)->with('items', 'city', 'customer')->get();
-        
-        // Generate unique waybill numbers if missing
+
+        $orders = Order::query()
+            ->whereIn('id', $orderIds)
+            ->where('status', 'confirm')
+            ->where(function ($waybillQuery) {
+                $waybillQuery->whereNull('waybill_number')
+                    ->orWhere('waybill_number', '');
+            })
+            ->with('items', 'city', 'customer')
+            ->get();
+
+        if ($orders->isEmpty()) {
+            return back()->with('error', 'Only confirmed orders without waybill numbers can be printed.');
+        }
+
+        // Generate waybill numbers before rendering print.
         foreach ($orders as $order) {
             if (!$order->waybill_number) {
-                 $order->waybill_number = 'WB-' . $order->order_number; // Logic to be refined if needed
-                 $order->save();
+                $order->waybill_number = 'WB-' . $order->order_number;
+                $order->save();
             }
         }
-        
+
         return view('orders.waybill.print', compact('orders'));
     }
 
     private function printableStatuses(): array
     {
-        return ['pending', 'hold', 'confirm'];
+        return ['confirm'];
     }
 }

@@ -39,15 +39,38 @@ class OrderController extends Controller
 
         // 1. Search (Order Number, Customer Name, Mobile)
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('order_number', 'like', "%{$search}%")
-                  ->orWhereHas('customer', function ($subQ) use ($search) {
-                      $subQ->where('name', 'like', "%{$search}%")
-                           ->orWhere('mobile', 'like', "%{$search}%");
-                  })
-                  ->orWhere('customer_name', 'like', "%{$search}%")
-                  ->orWhere('customer_phone', 'like', "%{$search}%");
+            $search = trim((string) $request->search);
+            $numericSearch = ctype_digit($search) ? (int) $search : null;
+
+            $query->where(function ($q) use ($search, $numericSearch) {
+                if ($numericSearch !== null) {
+                    $q->where('id', $numericSearch)
+                        ->orWhere('user_id', $numericSearch)
+                        ->orWhere('reseller_id', $numericSearch)
+                        ->orWhere('customer_id', $numericSearch);
+                }
+
+                $q->orWhere('order_number', 'like', "%{$search}%")
+                    ->orWhere('waybill_number', 'like', "%{$search}%")
+                    ->orWhere('customer_name', 'like', "%{$search}%")
+                    ->orWhere('customer_phone', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('mobile', 'like', "%{$search}%")
+                            ->orWhere('landline', 'like', "%{$search}%")
+                            ->orWhere('business_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('reseller', function ($resellerQuery) use ($search) {
+                        $resellerQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('business_name', 'like', "%{$search}%")
+                            ->orWhere('mobile', 'like', "%{$search}%")
+                            ->orWhere('landline', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    });
             });
         }
 

@@ -48,7 +48,7 @@
                 <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($couriers->count()) }}</p>
             </div>
             <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900/20">
-                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Printable Orders</p>
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Confirmed Pending Waybill</p>
                 <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($couriers->sum('printable_orders_count')) }}</p>
             </div>
         </div>
@@ -71,7 +71,7 @@
                     </div>
 
                     <div class="mt-4 flex items-center justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">Printable orders</span>
+                        <span class="text-gray-500 dark:text-gray-400">Confirmed pending waybill</span>
                         <span class="font-semibold text-gray-900 dark:text-white">{{ number_format($courier->printable_orders_count ?? 0) }}</span>
                     </div>
 
