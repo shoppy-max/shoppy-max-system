@@ -159,7 +159,6 @@ class ProductController extends Controller
             'variants.*.sku' => 'required|string|distinct|unique:product_variants,sku',
             'variants.*.selling_price' => 'required|numeric|min:0',
             'variants.*.limit_price' => 'nullable|numeric|min:0|lte:variants.*.selling_price',
-            'variants.*.quantity' => 'required|integer|min:0',
             'variants.*.alert_quantity' => 'nullable|integer|min:0',
             'variants.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
         ]);
@@ -197,7 +196,7 @@ class ProductController extends Controller
                 'sku' => $variantData['sku'],
                 'selling_price' => $variantData['selling_price'],
                 'limit_price' => $variantData['limit_price'] ?? null,
-                'quantity' => $variantData['quantity'],
+                'quantity' => 0,
                 'alert_quantity' => $variantData['alert_quantity'] ?? 0,
                 'image' => $variantImage,
             ]);

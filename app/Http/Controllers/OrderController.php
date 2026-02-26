@@ -565,6 +565,8 @@ class OrderController extends Controller
                 (string) ($order->delivery_status ?? 'pending')
             );
             $order->save();
+            $this->syncOrderCommission($order);
+            $this->syncResellerReturnFeePenalty($order);
 
             // 5. Log Action
             $this->logAction($order->id, 'created', 'Order created successfully.');
@@ -762,6 +764,8 @@ class OrderController extends Controller
                     (string) ($order->delivery_status ?? 'pending')
                 );
                 $order->save();
+                $this->syncOrderCommission($order);
+                $this->syncResellerReturnFeePenalty($order);
 
                 DB::commit();
                 return response()->json([
@@ -974,6 +978,8 @@ class OrderController extends Controller
                 (string) ($order->delivery_status ?? 'pending')
             );
             $order->save();
+            $this->syncOrderCommission($order);
+            $this->syncResellerReturnFeePenalty($order);
 
             DB::commit();
             return response()->json([
@@ -998,6 +1004,8 @@ class OrderController extends Controller
     {
         DB::beginTransaction();
         try {
+            $this->releaseResellerReturnFeePenalty($order);
+
             // Restore Stock
             foreach ($order->items as $item) {
                 if ($item->product_variant_id) {
@@ -1099,6 +1107,8 @@ class OrderController extends Controller
         }
 
         $order->save();
+        $this->syncOrderCommission($order);
+        $this->syncResellerReturnFeePenalty($order);
 
         return response()->json([
             'success' => true,
@@ -1306,6 +1316,147 @@ class OrderController extends Controller
         }
 
         return number_format((float) $rate, 2, '.', '');
+    }
+
+    private function shouldApplyResellerReturnFee(Order $order): bool
+    {
+        if ((string) ($order->order_type ?? '') !== 'reseller') {
+            return false;
+        }
+
+        if ((string) ($order->status ?? '') === 'cancel') {
+            return false;
+        }
+
+        return strtolower((string) ($order->delivery_status ?? '')) === 'returned';
+    }
+
+    private function shouldCalculateOrderCommission(Order $order): bool
+    {
+        if ((string) ($order->order_type ?? '') !== 'reseller') {
+            return false;
+        }
+
+        if ((string) ($order->status ?? '') === 'cancel') {
+            return false;
+        }
+
+        if (strtolower((string) ($order->delivery_status ?? '')) === 'returned') {
+            return false;
+        }
+
+        if (!$order->reseller_id) {
+            return false;
+        }
+
+        $reseller = $order->relationLoaded('reseller')
+            ? $order->reseller
+            : Reseller::find($order->reseller_id);
+
+        return $reseller && $reseller->reseller_type === Reseller::TYPE_RESELLER;
+    }
+
+    private function syncOrderCommission(Order $order): void
+    {
+        $order->loadMissing(['items', 'reseller']);
+
+        $commission = 0.0;
+        if ($this->shouldCalculateOrderCommission($order)) {
+            $grossCommission = (float) $order->items->sum(function (OrderItem $item) {
+                $qty = max((int) ($item->quantity ?? 0), 0);
+                $marginPerItem = (float) ($item->unit_price ?? 0) - (float) ($item->base_price ?? 0);
+
+                return max($marginPerItem, 0) * $qty;
+            });
+
+            // Discounts reduce realizable margin/commission on the order.
+            $commission = max($grossCommission - (float) ($order->discount_amount ?? 0), 0);
+        }
+
+        $normalizedCommission = round($commission, 2);
+        if ((float) ($order->total_commission ?? 0) !== $normalizedCommission) {
+            $order->total_commission = $normalizedCommission;
+            $order->save();
+        }
+    }
+
+    private function syncResellerReturnFeePenalty(Order $order): void
+    {
+        $previousAppliedAmount = round((float) ($order->reseller_return_fee_applied ?? 0), 2);
+        $previousAppliedResellerId = $order->return_fee_reseller_id ? (int) $order->return_fee_reseller_id : null;
+
+        $targetResellerId = null;
+        $targetAppliedAmount = 0.0;
+
+        if ($this->shouldApplyResellerReturnFee($order) && $order->reseller_id) {
+            $targetReseller = $order->relationLoaded('reseller')
+                ? $order->reseller
+                : Reseller::find($order->reseller_id);
+
+            if ($targetReseller && $targetReseller->reseller_type === Reseller::TYPE_RESELLER) {
+                $targetResellerId = (int) $targetReseller->id;
+                $targetAppliedAmount = round(max((float) ($targetReseller->return_fee ?? 0), 0), 2);
+            }
+        }
+
+        if (
+            $previousAppliedResellerId === $targetResellerId
+            && abs($previousAppliedAmount - $targetAppliedAmount) < 0.0001
+        ) {
+            return;
+        }
+
+        if ($previousAppliedResellerId && $previousAppliedAmount > 0) {
+            $previousReseller = Reseller::find($previousAppliedResellerId);
+            if ($previousReseller) {
+                $previousReseller->due_amount = round((float) $previousReseller->due_amount + $previousAppliedAmount, 2);
+                $previousReseller->save();
+            }
+        }
+
+        if ($targetResellerId && $targetAppliedAmount > 0) {
+            $targetReseller = Reseller::find($targetResellerId);
+            if ($targetReseller) {
+                $targetReseller->due_amount = round((float) $targetReseller->due_amount - $targetAppliedAmount, 2);
+                $targetReseller->save();
+            }
+        }
+
+        $order->reseller_return_fee_applied = $targetAppliedAmount;
+        $order->return_fee_reseller_id = $targetResellerId;
+        $order->save();
+
+        if ($targetAppliedAmount > 0) {
+            $this->logAction(
+                $order->id,
+                'return_fee_penalty',
+                'Reseller return fee applied: LKR ' . number_format($targetAppliedAmount, 2, '.', '')
+            );
+        } elseif ($previousAppliedAmount > 0) {
+            $this->logAction($order->id, 'return_fee_penalty_reversed', 'Reseller return fee penalty reversed.');
+        }
+    }
+
+    private function releaseResellerReturnFeePenalty(Order $order): void
+    {
+        $appliedAmount = round((float) ($order->reseller_return_fee_applied ?? 0), 2);
+        $appliedResellerId = $order->return_fee_reseller_id ? (int) $order->return_fee_reseller_id : null;
+
+        if (!$appliedResellerId || $appliedAmount <= 0) {
+            return;
+        }
+
+        $reseller = Reseller::find($appliedResellerId);
+        if ($reseller) {
+            $reseller->due_amount = round((float) $reseller->due_amount + $appliedAmount, 2);
+            $reseller->save();
+        }
+
+        $order->reseller_return_fee_applied = 0;
+        $order->return_fee_reseller_id = null;
+        $order->save();
+
+        $this->logAction($order->id, 'return_fee_penalty_reversed', 'Reseller return fee penalty reversed on order removal.');
     }
 
     private function resolvePaymentDetails(string $paymentMethod, array $paymentsInput, $paidAmountInput, float $totalAmount): array

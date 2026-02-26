@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Supplier;
-use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\BankAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -84,6 +84,7 @@ class PurchaseController extends Controller
             'purchase_date' => 'required|date',
             'purchase_number' => 'required|string|max:100|unique:purchases,purchase_number',
             'items' => 'required|array|min:1',
+            'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
             'items.*.product_id' => 'nullable|exists:products,id',
             'items.*.product_name' => 'required|string|max:255',
             'items.*.quantity' => 'required|integer|min:1',
@@ -128,21 +129,15 @@ class PurchaseController extends Controller
             ]);
 
             foreach ($validated['items'] as $item) {
-                $quantity = (int) $item['quantity'];
-                $price = round((float) $item['purchase_price'], 2);
-                PurchaseItem::create([
-                    'purchase_id' => $purchase->id,
-                    'product_id' => $item['product_id'] ?? null,
-                    'product_name' => trim((string) $item['product_name']),
-                    'quantity' => $quantity,
-                    'purchase_price' => $price,
-                    'total' => round($quantity * $price, 2),
-                ]);
+                $this->createPurchaseItemAndApplyStock($purchase, $item);
             }
 
             DB::commit();
             return redirect()->route('purchases.index')->with('success', 'Purchase recorded successfully.');
 
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error creating purchase: ' . $e->getMessage())->withInput();
@@ -193,6 +188,7 @@ class PurchaseController extends Controller
             'purchase_date' => 'required|date',
             'purchase_number' => 'required|string|max:100|unique:purchases,purchase_number,' . $purchase->id,
             'items' => 'required|array|min:1',
+            'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
             'items.*.product_id' => 'nullable|exists:products,id',
             'items.*.product_name' => 'required|string|max:255',
             'items.*.quantity' => 'required|integer|min:1',
@@ -218,6 +214,9 @@ class PurchaseController extends Controller
             $paidAmount = (float) collect($paymentsData)->sum('amount');
             $this->ensurePaidAmountWithinTotal($paidAmount, $totals['net_total']);
 
+            $purchase->load('items');
+            $this->revertPurchaseStock($purchase->items, 'update');
+
             $purchase->update([
                 'purchase_number' => $purchaseNumber,
                 'supplier_id' => $validated['supplier_id'],
@@ -240,21 +239,15 @@ class PurchaseController extends Controller
             $purchase->items()->delete();
 
             foreach ($validated['items'] as $item) {
-                $quantity = (int) $item['quantity'];
-                $price = round((float) $item['purchase_price'], 2);
-                PurchaseItem::create([
-                    'purchase_id' => $purchase->id,
-                    'product_id' => $item['product_id'] ?? null,
-                    'product_name' => trim((string) $item['product_name']),
-                    'quantity' => $quantity,
-                    'purchase_price' => $price,
-                    'total' => round($quantity * $price, 2),
-                ]);
+                $this->createPurchaseItemAndApplyStock($purchase, $item);
             }
 
             DB::commit();
             return redirect()->route('purchases.index')->with('success', 'Purchase updated successfully.');
 
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error updating purchase: ' . $e->getMessage())->withInput();
@@ -302,47 +295,44 @@ class PurchaseController extends Controller
             return response()->json([]);
         }
 
-        $products = Product::query()
-            ->with(['variants.unit:id,name,short_name'])
+        $variants = ProductVariant::query()
+            ->with([
+                'product:id,name,description',
+                'unit:id,name,short_name',
+            ])
+            ->whereHas('product')
             ->where(function ($q) use ($query) {
-                $q->where('name', 'like', "%{$query}%")
-                    ->orWhere('description', 'like', "%{$query}%")
-                    ->orWhereHas('variants', function ($variantQuery) use ($query) {
-                        $variantQuery->where('sku', 'like', "%{$query}%")
-                            ->orWhere('unit_value', 'like', "%{$query}%")
-                            ->orWhereHas('unit', function ($unitQuery) use ($query) {
-                                $unitQuery->where('name', 'like', "%{$query}%")
-                                    ->orWhere('short_name', 'like', "%{$query}%");
-                            });
+                $q->where('sku', 'like', "%{$query}%")
+                    ->orWhere('unit_value', 'like', "%{$query}%")
+                    ->orWhereHas('unit', function ($unitQuery) use ($query) {
+                        $unitQuery->where('name', 'like', "%{$query}%")
+                            ->orWhere('short_name', 'like', "%{$query}%");
+                    })
+                    ->orWhereHas('product', function ($productQuery) use ($query) {
+                        $productQuery->where('name', 'like', "%{$query}%")
+                            ->orWhere('description', 'like', "%{$query}%");
                     });
             })
-            ->limit(25)
-            ->get(['id', 'name']);
+            ->limit(30)
+            ->get(['id', 'product_id', 'unit_value', 'sku']);
 
-        return response()->json($products->map(function (Product $product) {
-            $variantLabels = $product->variants
-                ->map(function ($variant) {
-                    $value = trim((string) ($variant->unit_value ?? ''));
-                    $unit = trim((string) ($variant->unit->short_name ?? ''));
-                    $label = trim(($value !== '' ? $value : '') . ($unit !== '' ? ' ' . $unit : ''));
-                    return $label !== '' ? $label : null;
-                })
-                ->filter()
-                ->unique()
-                ->take(3)
-                ->values();
+        return response()->json($variants
+            ->map(function (ProductVariant $variant) {
+                if (!$variant->product) {
+                    return null;
+                }
 
-            $displayName = $product->name;
-            if ($variantLabels->isNotEmpty()) {
-                $displayName .= ' (' . $variantLabels->implode(', ') . ')';
-            }
-
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'display_name' => $displayName,
-            ];
-        }));
+                return [
+                    'id' => $variant->id,
+                    'variant_id' => $variant->id,
+                    'product_id' => $variant->product_id,
+                    'name' => $variant->product->name,
+                    'display_name' => $this->buildVariantDisplayName($variant),
+                    'sku' => $variant->sku,
+                ];
+            })
+            ->filter()
+            ->values());
     }
 
     /**
@@ -350,8 +340,26 @@ class PurchaseController extends Controller
      */
     public function destroy(Purchase $purchase)
     {
-        $purchase->delete();
-        return redirect()->route('purchases.index')->with('success', 'Purchase deleted successfully.');
+        DB::beginTransaction();
+
+        try {
+            $purchase->load('items');
+            $this->revertPurchaseStock($purchase->items, 'delete');
+            $purchase->delete();
+
+            DB::commit();
+            return redirect()->route('purchases.index')->with('success', 'Purchase deleted successfully.');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+
+            return redirect()->route('purchases.index')->with(
+                'error',
+                collect($e->errors())->flatten()->first() ?: 'Cannot delete purchase because stock has already been used by orders.'
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('purchases.index')->with('error', 'Error deleting purchase: ' . $e->getMessage());
+        }
     }
 
     private function normalizePayments(array $paymentsInput): array
@@ -434,5 +442,122 @@ class PurchaseController extends Controller
         throw ValidationException::withMessages([
             'payments' => 'Total paid amount cannot exceed the purchase net total.',
         ]);
+    }
+
+    private function createPurchaseItemAndApplyStock(Purchase $purchase, array $itemData): void
+    {
+        $variant = $this->resolveVariantForPurchaseItem($itemData);
+        $quantity = (int) ($itemData['quantity'] ?? 0);
+        $price = round((float) ($itemData['purchase_price'] ?? 0), 2);
+        $productName = trim((string) ($itemData['product_name'] ?? ''));
+        if ($productName === '') {
+            $productName = $this->buildVariantDisplayName($variant);
+        }
+
+        PurchaseItem::create([
+            'purchase_id' => $purchase->id,
+            'product_id' => $variant->product_id,
+            'stock_variant_id' => $variant->id,
+            'product_name' => $productName,
+            'quantity' => $quantity,
+            'purchase_price' => $price,
+            'total' => round($quantity * $price, 2),
+        ]);
+
+        $variant->increment('quantity', $quantity);
+    }
+
+    private function revertPurchaseStock($items, string $action): void
+    {
+        foreach ($items as $item) {
+            $variantId = (int) ($item->stock_variant_id ?? 0);
+            if ($variantId <= 0) {
+                continue;
+            }
+
+            $variant = ProductVariant::query()->whereKey($variantId)->lockForUpdate()->first();
+            if (!$variant) {
+                continue;
+            }
+
+            $quantity = (int) ($item->quantity ?? 0);
+            if ($quantity <= 0) {
+                continue;
+            }
+
+            if ((int) $variant->quantity < $quantity) {
+                $variantDisplayName = $this->buildVariantDisplayName($variant);
+                throw ValidationException::withMessages([
+                    'purchase' => "Cannot {$action} this purchase because stock for {$variantDisplayName} would go below zero.",
+                ]);
+            }
+
+            $variant->decrement('quantity', $quantity);
+        }
+    }
+
+    private function resolveVariantForPurchaseItem(array $itemData): ProductVariant
+    {
+        $variantId = isset($itemData['product_variant_id']) && $itemData['product_variant_id'] !== ''
+            ? (int) $itemData['product_variant_id']
+            : null;
+
+        if ($variantId) {
+            $variant = ProductVariant::with(['product', 'unit'])->find($variantId);
+            if (!$variant || !$variant->product) {
+                throw ValidationException::withMessages([
+                    'items' => 'A selected purchase item variant is invalid.',
+                ]);
+            }
+
+            return $variant;
+        }
+
+        $productId = isset($itemData['product_id']) && $itemData['product_id'] !== ''
+            ? (int) $itemData['product_id']
+            : null;
+
+        if (!$productId) {
+            throw ValidationException::withMessages([
+                'items' => 'Select a valid product variant for each purchase item.',
+            ]);
+        }
+
+        $variants = ProductVariant::with(['product', 'unit'])
+            ->where('product_id', $productId)
+            ->orderBy('id')
+            ->get();
+
+        if ($variants->isEmpty()) {
+            throw ValidationException::withMessages([
+                'items' => 'Selected product does not have an active variant.',
+            ]);
+        }
+
+        if ($variants->count() > 1) {
+            throw ValidationException::withMessages([
+                'items' => 'Selected product has multiple variants. Please reselect and choose a specific variant.',
+            ]);
+        }
+
+        return $variants->first();
+    }
+
+    private function buildVariantDisplayName(ProductVariant $variant): string
+    {
+        $productName = trim((string) ($variant->product->name ?? 'Product'));
+        $unitValue = trim((string) ($variant->unit_value ?? ''));
+        $unitShort = trim((string) ($variant->unit->short_name ?? ''));
+        $unitLabel = trim(($unitValue !== '' ? $unitValue : '') . ($unitShort !== '' ? ' ' . $unitShort : ''));
+
+        $name = $productName;
+        if ($unitLabel !== '') {
+            $name .= ' (' . $unitLabel . ')';
+        }
+        if (!empty($variant->sku)) {
+            $name .= ' [' . $variant->sku . ']';
+        }
+
+        return $name;
     }
 }

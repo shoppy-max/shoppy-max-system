@@ -42,11 +42,12 @@
                         <div class="space-y-6">
                             <!-- Reseller Select (Searchable) -->
                             <div class="relative" x-data="searchableSelect({
-                                options: @js($resellers->map(fn($r) => ['id' => $r->id, 'text' => $r->name . ' (' . $r->business_name . ')'])),
+                                options: @js($resellers->map(fn($r) => ['id' => $r->id, 'text' => ($r->business_name ?: $r->name) . ' - ' . $r->name])),
                                 selected: '{{ old('reseller_id') }}',
                                 name: 'reseller_id'
                             })">
                                 <label for="reseller_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Reseller <span class="text-red-500">*</span></label>
+                                <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">Only regular resellers are available here. Direct resellers are excluded.</p>
                                 
                                 <input type="hidden" name="reseller_id" :value="selected">
                                 

@@ -89,7 +89,6 @@ class DirectResellerController extends Controller
             'district' => 'nullable|string',
             'city' => 'nullable|string',
             'due_amount' => 'numeric|min:0',
-            'return_fee' => 'numeric|min:0',
             'couriers' => 'nullable|array',
             'couriers.*' => 'integer|exists:couriers,id',
         ]);
@@ -99,6 +98,7 @@ class DirectResellerController extends Controller
 
         $data = $validated;
         $data['reseller_type'] = Reseller::TYPE_DIRECT_RESELLER;
+        $data['return_fee'] = 0;
 
         $reseller = Reseller::create($data);
         $reseller->couriers()->sync($courierIds);
@@ -152,7 +152,6 @@ class DirectResellerController extends Controller
             'province' => 'nullable|string',
             'district' => 'nullable|string',
             'city' => 'nullable|string',
-            'return_fee' => 'numeric|min:0',
             'couriers' => 'nullable|array',
             'couriers.*' => 'integer|exists:couriers,id',
         ]);
@@ -162,6 +161,7 @@ class DirectResellerController extends Controller
 
         $data = $validated;
         $data['reseller_type'] = Reseller::TYPE_DIRECT_RESELLER;
+        $data['return_fee'] = 0;
 
         $directReseller->update($data);
         $directReseller->couriers()->sync($courierIds);

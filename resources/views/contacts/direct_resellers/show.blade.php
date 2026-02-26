@@ -90,12 +90,6 @@
                             </span>
                         @endif
                     </div>
-                    <div class="mt-4 flex items-center justify-between">
-                        <span class="text-gray-900 dark:text-white font-medium">Return Fee</span>
-                        <span class="bg-amber-100 text-amber-800 text-sm font-bold px-3 py-1 rounded-full dark:bg-amber-900 dark:text-amber-300">
-                            Rs {{ number_format($reseller->return_fee ?? 0, 2) }}
-                        </span>
-                    </div>
                     <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                         <div class="flex items-center">
                             <div class="p-2 bg-blue-100 rounded-lg dark:bg-blue-900">

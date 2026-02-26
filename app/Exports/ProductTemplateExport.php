@@ -28,7 +28,6 @@ class ProductTemplateExport implements FromCollection, WithHeadings, WithTitle, 
                 '1',                // Unit Value (e.g. 500, 1.5)
                 '2500.00',          // Selling Price
                 '3000.00',          // Limit Price
-                '50',               // Quantity
                 '5',                // Alert Quantity
                 'https://example.com/image.jpg' // Image URL
             ]
@@ -46,7 +45,6 @@ class ProductTemplateExport implements FromCollection, WithHeadings, WithTitle, 
             'Unit Value',
             'Selling Price*',
             'Limit Price',
-            'Quantity*',
             'Alert Quantity',
             'Image URL'
         ];

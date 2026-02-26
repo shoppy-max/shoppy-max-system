@@ -59,7 +59,7 @@ class ResellerDuesController extends Controller
             ->select(
                 'created_at as date',
                 'order_number as reference',
-                'total_amount as amount',
+                \DB::raw('total_amount - COALESCE(reseller_return_fee_applied, 0) as amount'),
                 'status', // Add status to match union
                 \DB::raw("'Order' as type"),
                 \DB::raw('CONCAT("Order placed (", status, ")") as description'),
@@ -91,7 +91,9 @@ class ResellerDuesController extends Controller
         // Formula: Adj = API_Due - (All_Orders - All_Payments)
         // If the system is perfect, Adj is 0. If imported data exists, Adj is the initial balance.
         
-        $allOrdersSum = $reseller->orders()->where('status', '!=', 'cancel')->sum('total_amount');
+        $allOrdersSum = (float) $reseller->orders()
+            ->where('status', '!=', 'cancel')
+            ->sum(\DB::raw('total_amount - COALESCE(reseller_return_fee_applied, 0)'));
         $allPaymentsSum = $reseller->payments()->where('status', '!=', 'cancelled')->sum('amount');
         $globalAdjustment = $reseller->due_amount - ($allOrdersSum - $allPaymentsSum);
         
@@ -102,7 +104,7 @@ class ResellerDuesController extends Controller
             $ordersBefore = $reseller->orders()
                 ->where('status', '!=', 'cancel')
                 ->where('created_at', '<', $startDate)
-                ->sum('total_amount');
+                ->sum(\DB::raw('total_amount - COALESCE(reseller_return_fee_applied, 0)'));
                 
             $paymentsBefore = $reseller->payments()
                 ->where('status', '!=', 'cancelled') // Exclude cancelled
@@ -160,7 +162,7 @@ class ResellerDuesController extends Controller
             $paymentsInRange->where('payment_date', '<=', $endDate . ' 23:59:59');
         }
         
-        $netChangeInRange = $ordersInRange->sum('total_amount') - $paymentsInRange->sum('amount');
+        $netChangeInRange = $ordersInRange->sum(\DB::raw('total_amount - COALESCE(reseller_return_fee_applied, 0)')) - $paymentsInRange->sum('amount');
         $closingBalance = $balanceForward + $netChangeInRange;
 
         // But we are PAGINATING. If we are on Page 2, the top item is NOT the closing balance.

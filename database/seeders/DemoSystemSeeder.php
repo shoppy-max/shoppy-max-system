@@ -26,6 +26,7 @@ use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class DemoSystemSeeder extends Seeder
 {
@@ -42,10 +43,10 @@ class DemoSystemSeeder extends Seeder
         $this->seedResellerTargets($resellers);
         [$products, $variants] = $this->seedProducts($categories, $subCategories, $units);
         $customers = $this->seedCustomers($cities);
+        $this->seedPurchases($suppliers, $variants);
         $orders = $this->seedOrders($users, $resellers, $customers, $couriers, $cities, $variants);
         $this->seedCourierPayments($users, $couriers, $bankAccounts, $orders);
         $this->seedResellerPayments($resellers);
-        $this->seedPurchases($suppliers, $products);
         $this->syncResellerDueAmounts($resellers);
         $this->seedAttributes();
     }
@@ -381,7 +382,7 @@ class DemoSystemSeeder extends Seeder
                 'province' => 'Western',
                 'country' => 'Sri Lanka',
                 'reseller_type' => Reseller::TYPE_DIRECT_RESELLER,
-                'return_fee' => 175.00,
+                'return_fee' => 0,
                 'couriers' => ['Lanka Post Parcel', 'Prompt Express'],
             ],
             [
@@ -396,7 +397,7 @@ class DemoSystemSeeder extends Seeder
                 'province' => 'Southern',
                 'country' => 'Sri Lanka',
                 'reseller_type' => Reseller::TYPE_DIRECT_RESELLER,
-                'return_fee' => 160.00,
+                'return_fee' => 0,
                 'couriers' => ['SpeedX Courier'],
             ],
         ];
@@ -612,7 +613,8 @@ class DemoSystemSeeder extends Seeder
                         'selling_price' => $variant['selling_price'],
                         'limit_price' => $variant['limit_price'],
                         'alert_quantity' => $variant['alert_quantity'],
-                        'quantity' => $variant['quantity'],
+                        // Stock is system-managed. Seed products start at zero stock.
+                        'quantity' => 0,
                     ]
                 );
 
@@ -693,7 +695,9 @@ class DemoSystemSeeder extends Seeder
                 'order_type' => 'direct',
                 'status' => 'confirm',
                 'call_status' => 'confirm',
+                'delivery_status' => 'dispatched',
                 'payment_method' => 'COD',
+                'discount_amount' => 0.00,
                 'customer' => 'Amila Perera',
                 'reseller' => null,
                 'city_key' => 'Colombo 01|Colombo',
@@ -711,7 +715,9 @@ class DemoSystemSeeder extends Seeder
                 'order_type' => 'reseller',
                 'status' => 'pending',
                 'call_status' => 'pending',
-                'payment_method' => 'Bank Transfer',
+                'delivery_status' => 'pending',
+                'payment_method' => 'COD',
+                'discount_amount' => 250.00,
                 'customer' => 'Nadeesha Silva',
                 'reseller' => 'Glow Wholesale Traders',
                 'city_key' => 'Kandy|Kandy',
@@ -727,9 +733,11 @@ class DemoSystemSeeder extends Seeder
                 'order_number' => 'DEMO-ORD-0003',
                 'order_date' => now()->subDays(3)->toDateString(),
                 'order_type' => 'reseller',
-                'status' => 'hold',
-                'call_status' => 'confirm',
+                'status' => 'pending',
+                'call_status' => 'pending',
+                'delivery_status' => 'pending',
                 'payment_method' => 'Online Payment',
+                'discount_amount' => 0.00,
                 'customer' => 'Kavindi Jayasekara',
                 'reseller' => 'Bright Cart Direct',
                 'city_key' => 'Galle|Galle',
@@ -746,8 +754,10 @@ class DemoSystemSeeder extends Seeder
                 'order_date' => now()->subDays(2)->toDateString(),
                 'order_type' => 'direct',
                 'status' => 'cancel',
-                'call_status' => 'hold',
+                'call_status' => 'cancel',
+                'delivery_status' => 'cancel',
                 'payment_method' => 'COD',
+                'discount_amount' => 0.00,
                 'customer' => 'Ruwan Maduranga',
                 'reseller' => null,
                 'city_key' => 'Maharagama|Colombo',
@@ -790,7 +800,13 @@ class DemoSystemSeeder extends Seeder
             $order->sales_note = $row['sales_note'];
             $order->courier_id = $courier->id;
             $order->courier_charge = $row['courier_charge'];
-            $order->call_status = $row['call_status'];
+            $order->call_status = $order->status === 'cancel'
+                ? 'cancel'
+                : ($row['call_status'] ?? 'pending');
+            $order->delivery_status = $order->status === 'cancel'
+                ? 'cancel'
+                : ($row['delivery_status'] ?? 'pending');
+            $order->discount_amount = round((float) ($row['discount_amount'] ?? 0), 2);
             $order->customer_city = $city->city_name;
             $order->customer_district = $city->district;
             $order->customer_province = $city->province;
@@ -801,6 +817,11 @@ class DemoSystemSeeder extends Seeder
             $subTotal = 0.0;
             $totalCost = 0.0;
             $totalCommission = 0.0;
+            $isCommissionEligible = $order->order_type === 'reseller'
+                && $reseller
+                && $reseller->reseller_type === Reseller::TYPE_RESELLER
+                && $order->status !== 'cancel'
+                && $order->delivery_status !== 'returned';
 
             foreach ($row['items'] as $itemRow) {
                 $variant = $variants[$itemRow['sku']] ?? ProductVariant::query()->where('sku', $itemRow['sku'])->first();
@@ -815,7 +836,7 @@ class DemoSystemSeeder extends Seeder
 
                 $subTotal += $lineTotal;
                 $totalCost += $qty * $basePrice;
-                if ($order->order_type === 'reseller') {
+                if ($isCommissionEligible) {
                     $totalCommission += ($unitPrice - $basePrice) * $qty;
                 }
 
@@ -832,11 +853,37 @@ class DemoSystemSeeder extends Seeder
                     'total_price' => $lineTotal,
                     'subtotal' => $lineTotal,
                 ]);
+
+                // Keep stock impact realistic for active orders only.
+                if ($order->status !== 'cancel') {
+                    $variant->decrement('quantity', $qty);
+                }
             }
 
-            $order->total_amount = round($subTotal + (float) $row['courier_charge'], 2);
+            $discountAmount = min((float) ($order->discount_amount ?? 0), $subTotal);
+            $order->discount_amount = round($discountAmount, 2);
+            $netTotal = max($subTotal - $discountAmount, 0);
+            $order->total_amount = round($netTotal + (float) $row['courier_charge'], 2);
             $order->total_cost = round($totalCost, 2);
-            $order->total_commission = round($totalCommission, 2);
+            $order->total_commission = round($isCommissionEligible ? max($totalCommission - $discountAmount, 0) : 0, 2);
+
+            if ($order->payment_method === 'Online Payment') {
+                $order->paid_amount = (float) $order->total_amount;
+                $order->payments_data = [[
+                    'amount' => (float) $order->total_amount,
+                    'date' => $order->order_date,
+                    'note' => 'Seeded online payment',
+                ]];
+            } else {
+                $order->paid_amount = 0;
+                $order->payments_data = null;
+            }
+
+            $order->payment_status = (
+                (float) $order->paid_amount >= (float) $order->total_amount && (float) $order->total_amount > 0
+            ) || $order->delivery_status === 'delivered'
+                ? 'paid'
+                : 'pending';
             $order->save();
 
             OrderLog::query()->where('order_id', $order->id)->delete();
@@ -957,8 +1004,10 @@ class DemoSystemSeeder extends Seeder
         }
     }
 
-    private function seedPurchases(array $suppliers, array $products): void
+    private function seedPurchases(array $suppliers, array $variants): void
     {
+        $hasStockVariantIdColumn = Schema::hasColumn('purchase_items', 'stock_variant_id');
+
         $rows = [
             [
                 'purchase_number' => 'PUR-DEMO-0001',
@@ -968,13 +1017,15 @@ class DemoSystemSeeder extends Seeder
                 'discount_type' => 'fixed',
                 'discount_value' => 500.00,
                 'paid_amount' => 15000.00,
-                'payment_method' => 'Bank Transfer',
+                'payment_method' => 'Online Payment',
                 'payment_reference' => 'TRX-DEMO-001',
                 'payment_account' => 'Main Operations',
                 'payment_note' => 'Initial stock batch',
                 'items' => [
-                    ['product' => 'VoltLink USB-C Cable', 'quantity' => 20, 'purchase_price' => 900.00],
-                    ['product' => 'Luma Desk Lamp', 'quantity' => 10, 'purchase_price' => 2500.00],
+                    ['sku' => 'VLC-1M', 'quantity' => 20, 'purchase_price' => 900.00],
+                    ['sku' => 'LDL-STD', 'quantity' => 10, 'purchase_price' => 2500.00],
+                    ['sku' => 'HSH-250ML', 'quantity' => 20, 'purchase_price' => 900.00],
+                    ['sku' => 'SMGV-1000', 'quantity' => 12, 'purchase_price' => 820.00],
                 ],
             ],
             [
@@ -990,8 +1041,8 @@ class DemoSystemSeeder extends Seeder
                 'payment_account' => 'Courier Float Wallet',
                 'payment_note' => 'Grocery replenishment',
                 'items' => [
-                    ['product' => 'Premium Nadu Rice', 'quantity' => 30, 'purchase_price' => 220.00],
-                    ['product' => 'FreshDay Orange Juice', 'quantity' => 25, 'purchase_price' => 560.00],
+                    ['sku' => 'PNR-1KG', 'quantity' => 35, 'purchase_price' => 220.00],
+                    ['sku' => 'FDOJ-1L', 'quantity' => 25, 'purchase_price' => 560.00],
                 ],
             ],
         ];
@@ -1019,22 +1070,32 @@ class DemoSystemSeeder extends Seeder
 
             $subTotal = 0.0;
             foreach ($row['items'] as $itemRow) {
-                $product = $products[$itemRow['product']] ?? null;
-                if (!$product) {
+                $variant = $variants[$itemRow['sku']] ?? ProductVariant::query()
+                    ->with('product')
+                    ->where('sku', $itemRow['sku'])
+                    ->first();
+                if (!$variant) {
                     continue;
                 }
 
                 $lineTotal = (float) $itemRow['purchase_price'] * (int) $itemRow['quantity'];
                 $subTotal += $lineTotal;
 
-                PurchaseItem::create([
+                $purchaseItemData = [
                     'purchase_id' => $purchase->id,
-                    'product_id' => $product->id,
-                    'product_name' => $product->name,
+                    'product_id' => $variant->product_id,
+                    'product_name' => $variant->product->name ?? $itemRow['sku'],
                     'quantity' => $itemRow['quantity'],
                     'purchase_price' => $itemRow['purchase_price'],
                     'total' => $lineTotal,
-                ]);
+                ];
+                if ($hasStockVariantIdColumn) {
+                    $purchaseItemData['stock_variant_id'] = $variant->id;
+                }
+
+                PurchaseItem::create($purchaseItemData);
+
+                $variant->increment('quantity', (int) $itemRow['quantity']);
             }
 
             $discountAmount = $row['discount_type'] === 'percentage'

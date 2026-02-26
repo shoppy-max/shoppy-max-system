@@ -157,7 +157,11 @@
                     <div class="w-full sm:w-1/2 lg:w-1/3">
                         @php
                             $paidAmount = (float) ($order->paid_amount ?? 0);
-                            $remainingAmount = max((float) $order->total_amount - $paidAmount, 0);
+                            $returnFeeDeduction = ((string) ($order->order_type ?? '') === 'reseller'
+                                && strtolower((string) ($order->delivery_status ?? '')) === 'returned')
+                                ? (float) ($order->reseller_return_fee_applied ?? 0)
+                                : 0;
+                            $remainingAmount = max((float) $order->total_amount - $paidAmount - $returnFeeDeduction, 0);
                             $discountAmount = (float) ($order->discount_amount ?? 0);
                             $subTotalBeforeDiscount = max(((float) $order->total_amount - (float) $order->courier_charge) + $discountAmount, 0);
                         @endphp
@@ -181,10 +185,16 @@
                                 <span>Courier Charge</span>
                                 <span>LKR {{ number_format($order->courier_charge, 2) }}</span>
                             </div>
-                            <div class="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 py-1">
+                             <div class="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 py-1">
                                 <span>Paid Amount</span>
                                 <span>LKR {{ number_format($paidAmount, 2) }}</span>
                             </div>
+                            @if($returnFeeDeduction > 0)
+                                <div class="flex justify-between items-center text-sm text-amber-600 dark:text-amber-400 py-1">
+                                    <span>Return Fee Penalty</span>
+                                    <span>- LKR {{ number_format($returnFeeDeduction, 2) }}</span>
+                                </div>
+                            @endif
                             <div class="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 py-1 border-b dark:border-gray-700">
                                 <span>{{ $order->payment_method === 'COD' ? 'Remaining (COD Collect)' : 'Remaining Amount' }}</span>
                                 <span>LKR {{ number_format($remainingAmount, 2) }}</span>

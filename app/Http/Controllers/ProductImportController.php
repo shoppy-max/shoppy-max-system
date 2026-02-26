@@ -56,7 +56,7 @@ class ProductImportController extends Controller
 
         foreach ($rows as $index => $row) {
              // Supported template columns:
-             // Product Name, Category, Sub Category, Description, Unit Name, Unit Value, (optional legacy SKU), Selling Price, Limit Price, Quantity, Alert Quantity, Image URL
+             // Product Name, Category, Sub Category, Description, Unit Name, Unit Value, (optional legacy SKU), Selling Price, Limit Price, (optional legacy Quantity), Alert Quantity, Image URL
              $name = $this->readTextColumn($row, $columnMap['name']);
              if (!$name) continue;
 
@@ -72,9 +72,6 @@ class ProductImportController extends Controller
              $limitRaw = $this->readRawColumn($row, $columnMap['limit_price']);
              $limit = trim((string) $limitRaw) === '' ? null : (is_numeric($limitRaw) ? (float) $limitRaw : null);
              $limitInvalid = trim((string) $limitRaw) !== '' && !is_numeric($limitRaw);
-
-             $qtyRaw = $this->readRawColumn($row, $columnMap['quantity']);
-             $qty = is_numeric($qtyRaw) ? (int) $qtyRaw : null;
 
              $alertRaw = $this->readRawColumn($row, $columnMap['alert_quantity']);
              $alert = trim((string) $alertRaw) === '' ? 0 : (is_numeric($alertRaw) ? (int) $alertRaw : null);
@@ -149,11 +146,10 @@ class ProductImportController extends Controller
                  }
              }
 
-             // 5. Validation: Price & Qty
+             // 5. Validation: Price
              if ($price === null || $price <= 0) $errors['price'] = "Invalid";
              if ($limitInvalid || ($limit !== null && $limit < 0)) $errors['limit_price'] = "Invalid";
              if ($limit !== null && $price !== null && $limit > $price) $errors['limit_price'] = "Must be <= price";
-             if ($qty === null || $qty < 0) $errors['qty'] = "Invalid";
              if ($alert === null || $alert < 0) $errors['alert_qty'] = "Invalid";
              
              $previewData[] = [
@@ -170,7 +166,7 @@ class ProductImportController extends Controller
                  'sku' => $sku,
                  'selling_price' => $price,
                  'limit_price' => $limit,
-                 'quantity' => $qty,
+                 'quantity' => 0,
                  'alert_quantity' => $alert,
                  'image_url' => $imageUrl,
                  'errors' => $errors
@@ -277,7 +273,7 @@ class ProductImportController extends Controller
                         'sku' => $sku,
                         'selling_price' => $row['selling_price'],
                         'limit_price' => $row['limit_price'] !== null ? $row['limit_price'] : null,
-                        'quantity' => $row['quantity'],
+                        'quantity' => 0,
                         'alert_quantity' => $row['alert_quantity'],
                         // 'image' => ... // Variant specific image not in simple template yet
                     ]);
@@ -339,7 +335,9 @@ class ProductImportController extends Controller
 
         // Fallback for files without recognizable headers.
         if ($map['name'] === null || $map['category'] === null || $map['unit_name'] === null) {
-            $hasLegacySkuColumn = count($headerRow) >= 12;
+            $columnCount = count($headerRow);
+            $hasLegacySkuColumn = $columnCount >= 12;
+            $hasLegacyQuantityColumn = $columnCount >= ($hasLegacySkuColumn ? 12 : 11);
 
             return [
                 'name' => 0,
@@ -351,9 +349,13 @@ class ProductImportController extends Controller
                 'sku' => $hasLegacySkuColumn ? 6 : null,
                 'selling_price' => $hasLegacySkuColumn ? 7 : 6,
                 'limit_price' => $hasLegacySkuColumn ? 8 : 7,
-                'quantity' => $hasLegacySkuColumn ? 9 : 8,
-                'alert_quantity' => $hasLegacySkuColumn ? 10 : 9,
-                'image_url' => $hasLegacySkuColumn ? 11 : 10,
+                'quantity' => $hasLegacyQuantityColumn ? ($hasLegacySkuColumn ? 9 : 8) : null,
+                'alert_quantity' => $hasLegacySkuColumn
+                    ? ($hasLegacyQuantityColumn ? 10 : 9)
+                    : ($hasLegacyQuantityColumn ? 9 : 8),
+                'image_url' => $hasLegacySkuColumn
+                    ? ($hasLegacyQuantityColumn ? 11 : 10)
+                    : ($hasLegacyQuantityColumn ? 10 : 9),
             ];
         }
 

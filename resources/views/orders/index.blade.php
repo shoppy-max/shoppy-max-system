@@ -309,9 +309,16 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @php
-                                    $balance = max(((float) $order->total_amount) - ((float) ($order->paid_amount ?? 0)), 0);
+                                    $returnFeeDeduction = ((string) ($order->order_type ?? '') === 'reseller'
+                                        && strtolower((string) ($order->delivery_status ?? '')) === 'returned')
+                                        ? (float) ($order->reseller_return_fee_applied ?? 0)
+                                        : 0;
+                                    $balance = max(((float) $order->total_amount) - ((float) ($order->paid_amount ?? 0)) - $returnFeeDeduction, 0);
                                 @endphp
-                                LKR {{ number_format($balance, 2) }}
+                                <div>LKR {{ number_format($balance, 2) }}</div>
+                                @if($returnFeeDeduction > 0)
+                                    <div class="text-xs text-amber-600 dark:text-amber-400">Return Fee: -LKR {{ number_format($returnFeeDeduction, 2) }}</div>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 LKR {{ number_format((float) ($order->total_commission ?? 0), 2) }}

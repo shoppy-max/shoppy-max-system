@@ -45,6 +45,9 @@
                 <div class="mt-2 text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
                     <strong>SKU:</strong> SKU is auto-generated during import and enforced as unique.
                 </div>
+                <div class="mt-2 text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 p-2 rounded">
+                    <strong>Stock:</strong> Imported products always start with stock <strong>0</strong>. Stock is updated from purchases and order flows.
+                </div>
             </div>
 
             <div class="flex justify-center mb-8">
@@ -89,7 +92,7 @@
                             <th scope="col" class="px-6 py-3">Variant (Unit)</th>
                             <th scope="col" class="px-6 py-3">SKU (Auto)</th>
                             <th scope="col" class="px-6 py-3">Price</th>
-                            <th scope="col" class="px-6 py-3">Qty</th>
+                            <th scope="col" class="px-6 py-3">Stock</th>
                             <th scope="col" class="px-6 py-3">Result</th>
                         </tr>
                     </thead>
@@ -166,7 +169,9 @@
                             </td>
                             <td class="px-6 py-4 font-mono text-xs">{{ $row['sku'] }}</td>
                             <td class="px-6 py-4">{{ number_format($row['selling_price'], 2) }}</td>
-                            <td class="px-6 py-4">{{ $row['quantity'] }}</td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-200">0 (Auto)</span>
+                            </td>
                             <td class="px-6 py-4">
                                 @if(empty($row['errors']))
                                     <span class="text-green-600 font-bold">OK</span>

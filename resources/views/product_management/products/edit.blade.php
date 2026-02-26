@@ -118,7 +118,7 @@
                     </x-form-section>
 
                      <!-- Product Variants -->
-                     <x-form-section title="Product Variants" description="Manage different units/variants (e.g., 1kg, 500g) with specific pricing and stock.">
+                     <x-form-section title="Product Variants" description="Manage different units/variants (e.g., 1kg, 500g) with specific pricing. Stock is auto-managed.">
                         <div class="space-y-6">
                             
                             <template x-for="(variant, index) in variants" :key="index">

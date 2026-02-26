@@ -198,7 +198,11 @@
                             @php
                                 $mobile = $order->customer->mobile ?? $order->customer_phone ?? '-';
                                 $paidAmount = (float) ($order->paid_amount ?? 0);
-                                $balanceAmount = max(((float) $order->total_amount) - $paidAmount, 0);
+                                $returnFeeDeduction = ((string) ($order->order_type ?? '') === 'reseller'
+                                    && strtolower((string) ($order->delivery_status ?? '')) === 'returned')
+                                    ? (float) ($order->reseller_return_fee_applied ?? 0)
+                                    : 0;
+                                $balanceAmount = max(((float) $order->total_amount) - $paidAmount - $returnFeeDeduction, 0);
                                 $orderDate = optional($order->order_date)->format('d M Y') ?? optional($order->created_at)->format('d M Y');
                             @endphp
                             <td class="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
@@ -393,6 +397,12 @@
                                 <span class="font-medium dark:text-white" x-text="formatMoney(selectedOrder?.courier_charge)"></span>
                             </div>
                         </template>
+                        <template x-if="isReturnedResellerOrder(selectedOrder) && Number(selectedOrder?.reseller_return_fee_applied || 0) > 0">
+                             <div class="flex justify-between text-sm text-amber-600 dark:text-amber-400">
+                                <span>Return Fee Penalty</span>
+                                <span class="font-medium" x-text="`- ${formatMoney(selectedOrder?.reseller_return_fee_applied)}`"></span>
+                            </div>
+                        </template>
                          <div class="flex justify-between text-lg font-bold text-gray-900 dark:text-white mt-2">
                             <span>Grand Total</span>
                             <span x-text="formatMoney(selectedOrder?.total_amount)"></span>
@@ -403,7 +413,7 @@
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500" x-text="selectedOrder?.payment_method === 'COD' ? 'Remaining (COD Collect)' : 'Balance'"></span>
-                            <span class="font-medium dark:text-white" x-text="formatMoney(Math.max(Number(selectedOrder?.total_amount || 0) - Number(selectedOrder?.paid_amount || 0), 0))"></span>
+                            <span class="font-medium dark:text-white" x-text="formatMoney(getOrderBalance(selectedOrder))"></span>
                         </div>
                      </div>
                 </div>
@@ -459,6 +469,19 @@
                 formatMoney(value) {
                     const amount = Number(value || 0);
                     return `LKR ${Number.isFinite(amount) ? amount.toFixed(2) : '0.00'}`;
+                },
+                getOrderBalance(order) {
+                    const total = Number(order?.total_amount || 0);
+                    const paid = Number(order?.paid_amount || 0);
+                    const returnFee = this.isReturnedResellerOrder(order)
+                        ? Number(order?.reseller_return_fee_applied || 0)
+                        : 0;
+
+                    return Math.max(total - paid - returnFee, 0);
+                },
+                isReturnedResellerOrder(order) {
+                    return String(order?.order_type || '') === 'reseller'
+                        && String(order?.delivery_status || '').toLowerCase() === 'returned';
                 }
             }
         }

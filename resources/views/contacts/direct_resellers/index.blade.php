@@ -92,7 +92,6 @@
                             </a>
                         </th>
                         <th scope="col" class="px-6 py-3">Mobile</th>
-                        <th scope="col" class="px-6 py-3">Return Fee</th>
                         <th scope="col" class="px-6 py-3">
                              <a href="{{ route('direct-resellers.index', array_merge(request()->all(), ['sort' => 'due_amount', 'direction' => request('direction') == 'asc' ? 'desc' : 'asc'])) }}" class="flex items-center group cursor-pointer hover:text-primary-600 dark:hover:text-white">
                                 Due Amount
@@ -116,11 +115,6 @@
                             </td>
                             <td class="px-6 py-4">
                                 {{ $reseller->mobile }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-amber-900 dark:text-amber-300">
-                                    {{ number_format($reseller->return_fee ?? 0, 2) }}
-                                </span>
                             </td>
                              <td class="px-6 py-4">
                                 @if($reseller->due_amount > 0)
@@ -153,7 +147,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                                 <div class="flex flex-col items-center justify-center py-6">
                                     <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                                     <p class="text-base">No direct resellers found.</p>

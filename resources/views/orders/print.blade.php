@@ -304,7 +304,11 @@
             <div class="totals-box">
                 @php
                     $paidAmount = (float) ($order->paid_amount ?? 0);
-                    $remainingAmount = max((float) $order->total_amount - $paidAmount, 0);
+                    $returnFeeDeduction = ((string) ($order->order_type ?? '') === 'reseller'
+                        && strtolower((string) ($order->delivery_status ?? '')) === 'returned')
+                        ? (float) ($order->reseller_return_fee_applied ?? 0)
+                        : 0;
+                    $remainingAmount = max((float) $order->total_amount - $paidAmount - $returnFeeDeduction, 0);
                     $discountAmount = (float) ($order->discount_amount ?? 0);
                     $subTotalBeforeDiscount = max(((float) $order->total_amount - (float) $order->courier_charge) + $discountAmount, 0);
                 @endphp
@@ -330,6 +334,12 @@
                     <span>Paid Amount</span>
                     <span>LKR {{ number_format($paidAmount, 2) }}</span>
                 </div>
+                @if($returnFeeDeduction > 0)
+                    <div class="totals-row">
+                        <span>Return Fee Penalty</span>
+                        <span>- LKR {{ number_format($returnFeeDeduction, 2) }}</span>
+                    </div>
+                @endif
                 <div class="totals-row">
                     <span>{{ $order->payment_method === 'COD' ? 'Remaining (COD Collect)' : 'Remaining Amount' }}</span>
                     <span>LKR {{ number_format($remainingAmount, 2) }}</span>

@@ -21,6 +21,7 @@
     if (is_array($oldItems) && count($oldItems) > 0) {
         $initialItems = collect($oldItems)->map(function ($item) {
             return [
+                'product_variant_id' => $item['product_variant_id'] ?? null,
                 'product_id' => $item['product_id'] ?? null,
                 'product_name' => $item['product_name'] ?? '',
                 'quantity' => (int) ($item['quantity'] ?? 1),
@@ -30,6 +31,7 @@
     } elseif ($isEditing) {
         $initialItems = $purchase->items->map(function ($item) {
             return [
+                'product_variant_id' => $item->stock_variant_id,
                 'product_id' => $item->product_id,
                 'product_name' => $item->product_name,
                 'quantity' => (int) $item->quantity,
@@ -38,7 +40,13 @@
         })->values()->all();
     } else {
         $initialItems = [
-            ['product_id' => null, 'product_name' => '', 'quantity' => 1, 'purchase_price' => 0],
+            [
+                'product_variant_id' => null,
+                'product_id' => null,
+                'product_name' => '',
+                'quantity' => 1,
+                'purchase_price' => 0,
+            ],
         ];
     }
 
@@ -202,6 +210,7 @@
                                 <div class="relative">
                                     <input type="text"
                                            x-model="item.product_name"
+                                           @input="item.product_variant_id = null; item.product_id = null"
                                            @input.debounce.250ms="searchProducts(index)"
                                            @focus="if ((item.product_name || '').trim().length >= 2) { searchProducts(index); }"
                                            class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -213,12 +222,13 @@
                                         <template x-for="product in item.results" :key="product.id">
                                             <button type="button" @click="selectProduct(index, product)" class="block w-full border-b border-gray-100 px-4 py-3 text-left hover:bg-blue-50 dark:border-gray-600 dark:hover:bg-gray-600">
                                                 <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="product.display_name || product.name"></p>
-                                                <p class="text-xs text-gray-500 dark:text-gray-300" x-text="'Product ID: ' + product.id"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-300" x-text="product.sku ? ('SKU: ' + product.sku) : ('Product ID: ' + product.product_id)"></p>
                                             </button>
                                         </template>
                                     </div>
                                 </div>
 
+                                <input type="hidden" :name="`items[${index}][product_variant_id]`" :value="item.product_variant_id || ''">
                                 <input type="hidden" :name="`items[${index}][product_id]`" :value="item.product_id || ''">
                                 <input type="hidden" :name="`items[${index}][product_name]`" :value="item.product_name">
                             </div>
@@ -396,6 +406,7 @@
             normalizeItem(item, index) {
                 return {
                     rowId: `item-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`,
+                    product_variant_id: item.product_variant_id || null,
                     product_id: item.product_id || null,
                     product_name: item.product_name || '',
                     quantity: Number(item.quantity || 1),
@@ -490,7 +501,8 @@
                     return;
                 }
 
-                item.product_id = product.id;
+                item.product_variant_id = product.variant_id || product.id || null;
+                item.product_id = product.product_id || null;
                 item.product_name = product.display_name || product.name || '';
                 item.results = [];
                 item.showResults = false;
@@ -567,11 +579,16 @@
                 const hasInvalidItem = this.items.some((item) => {
                     const qty = Number(item.quantity || 0);
                     const price = Number(item.purchase_price || 0);
-                    return !item.product_name || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(price) || price < 0;
+                    return !item.product_name
+                        || (!item.product_variant_id && !item.product_id)
+                        || !Number.isFinite(qty)
+                        || qty <= 0
+                        || !Number.isFinite(price)
+                        || price < 0;
                 });
 
                 if (hasInvalidItem) {
-                    alert('Please complete all items with valid product name, quantity, and unit price.');
+                    alert('Please select a valid product and enter quantity and unit price for each item.');
                     return;
                 }
 

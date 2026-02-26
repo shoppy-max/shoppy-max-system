@@ -89,7 +89,7 @@ class ResellerController extends Controller
             'district' => 'nullable|string',
             'city' => 'nullable|string',
             'due_amount' => 'numeric|min:0',
-            'return_fee' => 'numeric|min:0',
+            'return_fee' => 'required|numeric|min:0',
             'couriers' => 'nullable|array',
             'couriers.*' => 'integer|exists:couriers,id',
         ]);
@@ -99,6 +99,7 @@ class ResellerController extends Controller
 
         $data = $validated;
         $data['reseller_type'] = Reseller::TYPE_RESELLER;
+        $data['return_fee'] = round((float) $validated['return_fee'], 2);
 
         $reseller = Reseller::create($data);
         $reseller->couriers()->sync($courierIds);
@@ -148,7 +149,7 @@ class ResellerController extends Controller
             'province' => 'nullable|string',
             'district' => 'nullable|string',
             'city' => 'nullable|string',
-            'return_fee' => 'numeric|min:0',
+            'return_fee' => 'required|numeric|min:0',
             'couriers' => 'nullable|array',
             'couriers.*' => 'integer|exists:couriers,id',
         ]);
@@ -158,6 +159,7 @@ class ResellerController extends Controller
 
         $data = $validated;
         $data['reseller_type'] = Reseller::TYPE_RESELLER;
+        $data['return_fee'] = round((float) $validated['return_fee'], 2);
 
         $reseller->update($data);
         $reseller->couriers()->sync($courierIds);
