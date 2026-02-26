@@ -90,12 +90,14 @@ class ProductController extends Controller
                 DISTINCT product_variants.unit_id,
                 COALESCE(TRIM(product_variants.unit_value), '') as unit_value,
                 units.name as unit_name,
-                units.short_name as unit_short_name
+                units.short_name as unit_short_name,
+                CASE WHEN COALESCE(TRIM(product_variants.unit_value), '') = '' THEN 1 ELSE 0 END as unit_value_blank_sort,
+                LOWER(COALESCE(TRIM(product_variants.unit_value), '')) as unit_value_sort
             ")
             ->orderBy('units.name')
             ->orderBy('unit_short_name')
-            ->orderByRaw("CASE WHEN COALESCE(TRIM(product_variants.unit_value), '') = '' THEN 1 ELSE 0 END")
-            ->orderByRaw("LOWER(COALESCE(TRIM(product_variants.unit_value), ''))")
+            ->orderBy('unit_value_blank_sort')
+            ->orderBy('unit_value_sort')
             ->get()
             ->map(function ($option) {
                 $unitValue = (string) $option->unit_value;
