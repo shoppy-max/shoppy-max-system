@@ -136,6 +136,7 @@ Route::middleware(['auth'])->group(function () {
     // Purchases
     Route::get('/purchases/{purchase}/pdf', [\App\Http\Controllers\PurchaseController::class, 'pdf'])->name('purchases.pdf');
     Route::get('/purchases/search-suppliers', [\App\Http\Controllers\PurchaseController::class, 'searchSuppliers'])->name('purchases.search-suppliers');
+    Route::get('/purchases/search-products', [\App\Http\Controllers\PurchaseController::class, 'searchProducts'])->name('purchases.search-products');
     Route::resource('purchases', \App\Http\Controllers\PurchaseController::class);
 });
 
