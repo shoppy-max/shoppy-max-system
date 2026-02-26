@@ -72,17 +72,17 @@
 
         <!-- Table -->
         <div class="relative overflow-x-auto sm:rounded-lg">
-                <table class="w-full min-w-[1280px] text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <table class="w-full min-w-[1320px] text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
-                        <th scope="col" class="px-6 py-3">Order #</th>
+                        <th scope="col" class="px-6 py-3 whitespace-nowrap">Order Date</th>
+                        <th scope="col" class="px-6 py-3 whitespace-nowrap">Order ID</th>
+                        <th scope="col" class="px-6 py-3 whitespace-nowrap">User</th>
                         <th scope="col" class="px-6 py-3">Customer</th>
-                        <th scope="col" class="px-6 py-3">Mobile</th>
-                        <!-- Items column removed -->
-                        <th scope="col" class="px-6 py-3">Total</th>
-                        <th scope="col" class="px-6 py-3 min-w-[160px]">Payment Method</th>
-                        <th scope="col" class="px-6 py-3 min-w-[140px]">Courier Charge</th>
-                        <th scope="col" class="px-6 py-3 min-w-[120px]">Order Status</th>
+                        <th scope="col" class="px-6 py-3 whitespace-nowrap">Mobile</th>
+                        <th scope="col" class="px-6 py-3 whitespace-nowrap">Total Amount</th>
+                        <th scope="col" class="px-6 py-3 whitespace-nowrap">Paid Amount</th>
+                        <th scope="col" class="px-6 py-3 whitespace-nowrap">Balance</th>
                         <th scope="col" class="px-6 py-3 min-w-[170px]">Call Status</th>
                         <th scope="col" class="px-6 py-3 text-center">Action</th>
                     </tr>
@@ -121,46 +121,42 @@
                                 });
                             }
                         }">
+                            @php
+                                $mobile = $order->customer->mobile ?? $order->customer_phone ?? '-';
+                                $paidAmount = (float) ($order->paid_amount ?? 0);
+                                $balanceAmount = max(((float) $order->total_amount) - $paidAmount, 0);
+                                $orderDate = optional($order->order_date)->format('d M Y') ?? optional($order->created_at)->format('d M Y');
+                            @endphp
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
+                                {{ $orderDate ?? '-' }}
+                            </td>
                             <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                 <button type="button" @click="viewOrder({{ json_encode($order) }})" class="hover:underline text-blue-600 font-bold focus:outline-none">
                                     {{ $order->order_number }}
                                 </button>
-                                <div class="text-xs text-gray-400">{{ $order->created_at->format('d M Y') }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
+                                {{ $order->user->name ?? '-' }}
                             </td>
                             <td class="px-6 py-4">
                                 <div class="font-medium text-gray-900 dark:text-white">{{ $order->customer->name ?? $order->customer_name }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center">
-                                    <span class="text-lg font-bold text-gray-900 dark:text-white select-all">{{ $order->customer->mobile ?? $order->customer_phone }}</span>
-                                    <button class="ml-2 text-gray-400 hover:text-gray-600" title="Copy" onclick="navigator.clipboard.writeText('{{ $order->customer->mobile ?? $order->customer_phone }}')">
+                                    <span class="text-lg font-bold text-gray-900 dark:text-white select-all">{{ $mobile }}</span>
+                                    <button class="ml-2 text-gray-400 hover:text-gray-600" title="Copy" onclick="navigator.clipboard.writeText('{{ $mobile }}')">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                                     </button>
                                 </div>
                             </td>
-                             <!-- Items cell removed -->
-                            <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">
-                                {{ number_format($order->total_amount, 2) }}
-                            </td>
-                            <td class="px-6 py-4">
-                                @php
-                                    $paymentMethod = (string) ($order->payment_method ?? '');
-                                    $paymentMethodColors = [
-                                        'COD' => 'bg-amber-100 text-amber-800 border-amber-300',
-                                        'Online Payment' => 'bg-emerald-100 text-emerald-800 border-emerald-300',
-                                    ];
-                                @endphp
-                                <span class="inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium {{ $paymentMethodColors[$paymentMethod] ?? 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600' }}">
-                                    {{ $paymentMethod ?: 'N/A' }}
-                                </span>
+                            <td class="px-6 py-4 font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                                LKR {{ number_format((float) $order->total_amount, 2) }}
                             </td>
                             <td class="px-6 py-4 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                                LKR {{ number_format((float) ($order->courier_charge ?? 0), 2) }}
+                                LKR {{ number_format($paidAmount, 2) }}
                             </td>
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs select-none">
-                                    {{ ucfirst($order->status) }}
-                                </span>
+                            <td class="px-6 py-4 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                LKR {{ number_format($balanceAmount, 2) }}
                             </td>
                             <td class="px-6 py-4 min-w-[170px]">
                                 <div class="relative">
@@ -193,7 +189,7 @@
                         </tr>
                     @empty
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                            <td colspan="9" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="10" class="px-6 py-8 text-center text-gray-500">
                                 No orders found.
                             </td>
                         </tr>
@@ -216,7 +212,7 @@
                          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                             Order: <span x-text="selectedOrder?.order_number"></span>
                         </h3>
-                        <p class="text-sm text-gray-500" x-text="new Date(selectedOrder?.created_at).toLocaleDateString()"></p>
+                        <p class="text-sm text-gray-500" x-text="formatOrderDate(selectedOrder?.order_date || selectedOrder?.created_at)"></p>
                     </div>
                     <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -241,21 +237,33 @@
                         <div>
                              <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">Details</h4>
                              <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-500">User:</span>
+                                <span class="font-medium dark:text-white" x-text="selectedOrder?.user?.name || '-'"></span>
+                             </div>
+                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-500">Payment:</span>
-                                <span class="font-medium dark:text-white" x-text="selectedOrder?.payment_method"></span>
+                                <span class="font-medium dark:text-white" x-text="selectedOrder?.payment_method || '-'"></span>
                              </div>
                               <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-500">Courier:</span>
-                                <span class="font-medium dark:text-white" x-text="selectedOrder?.courier_id ? 'Assigned' : 'Not Assigned'"></span>
+                                <span class="font-medium dark:text-white" x-text="selectedOrder?.courier?.name || (selectedOrder?.courier_id ? 'Assigned' : 'Not Assigned')"></span>
                              </div>
                              <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-500">Status:</span>
+                                <span class="text-gray-500">Order Status:</span>
                                 <span class="font-medium capitalize" :class="{
                                     'text-yellow-600': selectedOrder?.status === 'pending',
                                     'text-green-600': selectedOrder?.status === 'confirm',
                                     'text-red-600': selectedOrder?.status === 'cancel',
                                     'text-orange-600': selectedOrder?.status === 'hold'
-                                }" x-text="selectedOrder?.status"></span>
+                                }" x-text="formatStatus(selectedOrder?.status)"></span>
+                             </div>
+                             <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-500">Delivery Status:</span>
+                                <span class="font-medium dark:text-white" x-text="formatStatus(selectedOrder?.delivery_status)"></span>
+                             </div>
+                             <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-500">Call Status:</span>
+                                <span class="font-medium dark:text-white" x-text="formatStatus(selectedOrder?.call_status)"></span>
                              </div>
                         </div>
                     </div>
@@ -292,17 +300,31 @@
                      <div class="flex flex-col gap-2 border-t pt-4 dark:border-gray-700">
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500">Subtotal</span>
-                             <span class="font-medium dark:text-white" x-text="Number(selectedOrder?.items?.reduce((sum, item) => sum + Number(item.subtotal), 0) || 0).toFixed(2)"></span>
+                             <span class="font-medium dark:text-white" x-text="formatMoney(selectedOrder?.items?.reduce((sum, item) => sum + Number(item.subtotal), 0) || 0)"></span>
                         </div>
+                        <template x-if="Number(selectedOrder?.discount_amount || 0) > 0">
+                             <div class="flex justify-between text-sm text-red-600 dark:text-red-400">
+                                <span>Discount</span>
+                                <span class="font-medium" x-text="`- ${formatMoney(selectedOrder?.discount_amount)}`"></span>
+                            </div>
+                        </template>
                         <template x-if="Number(selectedOrder?.courier_charge) > 0">
                              <div class="flex justify-between text-sm">
                                 <span class="text-gray-500">Courier Charge</span>
-                                <span class="font-medium dark:text-white" x-text="Number(selectedOrder?.courier_charge).toFixed(2)"></span>
+                                <span class="font-medium dark:text-white" x-text="formatMoney(selectedOrder?.courier_charge)"></span>
                             </div>
                         </template>
                          <div class="flex justify-between text-lg font-bold text-gray-900 dark:text-white mt-2">
                             <span>Grand Total</span>
-                            <span x-text="Number(selectedOrder?.total_amount).toFixed(2)"></span>
+                            <span x-text="formatMoney(selectedOrder?.total_amount)"></span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Paid Amount</span>
+                            <span class="font-medium dark:text-white" x-text="formatMoney(selectedOrder?.paid_amount)"></span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500" x-text="selectedOrder?.payment_method === 'COD' ? 'Remaining (COD Collect)' : 'Balance'"></span>
+                            <span class="font-medium dark:text-white" x-text="formatMoney(Math.max(Number(selectedOrder?.total_amount || 0) - Number(selectedOrder?.paid_amount || 0), 0))"></span>
                         </div>
                      </div>
                 </div>
@@ -329,6 +351,35 @@
                 viewOrder(order) {
                     this.selectedOrder = order;
                     this.showModal = true;
+                },
+                formatOrderDate(value) {
+                    if (!value) {
+                        return '-';
+                    }
+
+                    const date = new Date(value);
+                    if (Number.isNaN(date.getTime())) {
+                        return value;
+                    }
+
+                    return date.toLocaleDateString(undefined, {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                    });
+                },
+                formatStatus(value) {
+                    if (!value) {
+                        return '-';
+                    }
+
+                    return String(value)
+                        .replaceAll('_', ' ')
+                        .replace(/\b\w/g, (char) => char.toUpperCase());
+                },
+                formatMoney(value) {
+                    const amount = Number(value || 0);
+                    return `LKR ${Number.isFinite(amount) ? amount.toFixed(2) : '0.00'}`;
                 }
             }
         }

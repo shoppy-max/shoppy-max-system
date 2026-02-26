@@ -961,7 +961,7 @@ class OrderController extends Controller
      */
     public function callList(Request $request)
     {
-        $query = Order::with(['customer', 'reseller', 'items'])
+        $query = Order::with(['customer', 'reseller', 'items', 'user', 'courier'])
             ->where('status', '!=', 'cancel');
         
         // Default to 'pending' call status if not specified, 
