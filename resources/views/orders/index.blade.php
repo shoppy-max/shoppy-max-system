@@ -57,7 +57,7 @@
                 </a>
             </div>
 
-             <form method="GET" action="{{ route('orders.index') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+             <form method="GET" action="{{ route('orders.index') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <input type="hidden" name="view" value="{{ $viewMode }}">
                         
                 <!-- Search -->
@@ -102,6 +102,24 @@
                         @foreach($couriers as $courier)
                             <option value="{{ $courier->id }}" {{ request('courier_id') == $courier->id ? 'selected' : '' }}>{{ $courier->name }}</option>
                         @endforeach
+                    </select>
+                </div>
+
+                <!-- Delivery Status -->
+                <div>
+                    <select name="delivery_status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        <option value="">All Delivery Status</option>
+                        <option value="pending" {{ request('delivery_status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="waybill_printed" {{ request('delivery_status') == 'waybill_printed' ? 'selected' : '' }}>Waybill Printed</option>
+                        <option value="picked_from_rack" {{ request('delivery_status') == 'picked_from_rack' ? 'selected' : '' }}>Picked From Rack</option>
+                        <option value="packed" {{ request('delivery_status') == 'packed' ? 'selected' : '' }}>Packed</option>
+                        <option value="dispatched" {{ request('delivery_status') == 'dispatched' ? 'selected' : '' }}>Dispatched</option>
+                        <option value="delivered" {{ request('delivery_status') == 'delivered' ? 'selected' : '' }}>Delivered</option>
+                        <option value="return_requested" {{ request('delivery_status') == 'return_requested' ? 'selected' : '' }}>Return Requested</option>
+                        <option value="returned" {{ request('delivery_status') == 'returned' ? 'selected' : '' }}>Returned</option>
+                        @if($viewMode === 'cancelled')
+                            <option value="cancel" {{ request('delivery_status') == 'cancel' ? 'selected' : '' }}>Cancel</option>
+                        @endif
                     </select>
                 </div>
 
