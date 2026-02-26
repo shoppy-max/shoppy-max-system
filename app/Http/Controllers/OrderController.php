@@ -248,6 +248,64 @@ class OrderController extends Controller
     }
 
     /**
+     * API: Search Customers for Order Form
+     */
+    public function searchCustomers(Request $request)
+    {
+        $query = trim((string) $request->get('q', ''));
+        if (mb_strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $customers = Customer::query()
+            ->where(function ($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                    ->orWhere('mobile', 'like', "%{$query}%")
+                    ->orWhere('address', 'like', "%{$query}%")
+                    ->orWhere('city', 'like', "%{$query}%")
+                    ->orWhere('district', 'like', "%{$query}%")
+                    ->orWhere('province', 'like', "%{$query}%");
+            })
+            ->orderBy('name')
+            ->orderBy('mobile')
+            ->limit(25)
+            ->get([
+                'id',
+                'name',
+                'mobile',
+                'landline',
+                'address',
+                'city',
+                'district',
+                'province',
+                'country',
+            ])
+            ->map(function (Customer $customer) {
+                $locationParts = array_filter([
+                    $customer->city,
+                    $customer->district,
+                    $customer->province,
+                ]);
+
+                return [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'mobile' => $customer->mobile,
+                    'landline' => $customer->landline,
+                    'address' => $customer->address,
+                    'city' => $customer->city,
+                    'district' => $customer->district,
+                    'province' => $customer->province,
+                    'country' => $customer->country,
+                    'location_label' => implode(' | ', $locationParts),
+                    'display_label' => trim(($customer->name ?: 'Unknown') . ($customer->mobile ? " | {$customer->mobile}" : '')),
+                ];
+            });
+
+        return response()->json($customers->values());
+    }
+
+    /**
      * Store a new order.
      */
     public function store(Request $request)

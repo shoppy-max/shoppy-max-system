@@ -72,7 +72,7 @@
 
         <!-- Table -->
         <div class="relative overflow-x-auto sm:rounded-lg">
-                <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <table class="w-full min-w-[1280px] text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
                         <th scope="col" class="px-6 py-3">Order #</th>
@@ -80,10 +80,10 @@
                         <th scope="col" class="px-6 py-3">Mobile</th>
                         <!-- Items column removed -->
                         <th scope="col" class="px-6 py-3">Total</th>
-                        <th scope="col" class="px-6 py-3">Payment Method</th>
-                        <th scope="col" class="px-6 py-3">Courier Charge</th>
-                        <th scope="col" class="px-6 py-3">Order Status</th>
-                        <th scope="col" class="px-6 py-3 w-48">Call Status</th>
+                        <th scope="col" class="px-6 py-3 min-w-[160px]">Payment Method</th>
+                        <th scope="col" class="px-6 py-3 min-w-[140px]">Courier Charge</th>
+                        <th scope="col" class="px-6 py-3 min-w-[120px]">Order Status</th>
+                        <th scope="col" class="px-6 py-3 min-w-[170px]">Call Status</th>
                         <th scope="col" class="px-6 py-3 text-center">Action</th>
                     </tr>
                 </thead>
@@ -143,11 +143,18 @@
                                 {{ number_format($order->total_amount, 2) }}
                             </td>
                             <td class="px-6 py-4">
-                                <span class="text-xs font-medium px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                                    {{ $order->payment_method ?: '-' }}
+                                @php
+                                    $paymentMethod = (string) ($order->payment_method ?? '');
+                                    $paymentMethodColors = [
+                                        'COD' => 'bg-amber-100 text-amber-800 border-amber-300',
+                                        'Online Payment' => 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                                    ];
+                                @endphp
+                                <span class="inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium {{ $paymentMethodColors[$paymentMethod] ?? 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600' }}">
+                                    {{ $paymentMethod ?: 'N/A' }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 font-medium text-gray-700 dark:text-gray-300">
+                            <td class="px-6 py-4 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                                 LKR {{ number_format((float) ($order->courier_charge ?? 0), 2) }}
                             </td>
                             <td class="px-6 py-4">
@@ -155,10 +162,10 @@
                                     {{ ucfirst($order->status) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4 min-w-[170px]">
                                 <div class="relative">
                                     <select @change="updateStatus($event.target.value)" 
-                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm font-medium rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full min-w-[150px] px-3 py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
                                             :class="{'opacity-50 pointer-events-none': updating, 'bg-green-50 text-green-800 border-green-300': currentStatus === 'confirm', 'bg-orange-50 text-orange-800 border-orange-300': currentStatus === 'hold'}"
                                     >
                                         <option value="pending" :selected="currentStatus === 'pending'">Pending</option>

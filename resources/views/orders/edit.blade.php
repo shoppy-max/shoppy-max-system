@@ -151,6 +151,49 @@
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div class="md:col-span-2">
+                                    <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Select Existing Customer (Optional)</label>
+                                    <div class="relative" @click.outside="showCustomerDropdown = false">
+                                        <input type="text"
+                                               x-model="customerSearch"
+                                               @input.debounce.300ms="searchCustomers()"
+                                               @focus="if ((customerSearch || '').trim().length >= 2) { searchCustomers(); }"
+                                               @click="if ((customerSearch || '').trim().length >= 2) { searchCustomers(); }"
+                                               placeholder="Search customer by name, mobile, or address..."
+                                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+
+                                        <div x-show="showCustomerDropdown && customerResults.length > 0 && !selectedCustomer" class="absolute z-30 w-full bg-white dark:bg-gray-700 rounded-lg shadow-lg mt-1 max-h-56 overflow-y-auto border border-gray-100 dark:border-gray-600">
+                                            <ul>
+                                                <template x-for="customer in customerResults" :key="customer.id">
+                                                    <li @click="selectCustomer(customer)" class="px-4 py-2 hover:bg-blue-50 dark:hover:bg-gray-600 cursor-pointer text-sm text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-600 last:border-0">
+                                                        <div class="flex items-center justify-between gap-2">
+                                                            <div class="font-semibold" x-text="customer.name || 'Unnamed Customer'"></div>
+                                                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-200" x-text="customer.mobile || 'No mobile'"></span>
+                                                        </div>
+                                                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="customer.location_label || customer.address || 'No address details'"></div>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                        <p x-show="showCustomerDropdown && (customerSearch || '').trim().length >= 2 && customerResults.length === 0 && !selectedCustomer" class="mt-1 text-xs text-gray-500 dark:text-gray-400">No matching customers found. Continue editing details if this is a new customer.</p>
+                                    </div>
+
+                                    <div x-show="selectedCustomer" class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center">
+                                        <div>
+                                            <div class="text-sm font-bold text-blue-800 dark:text-blue-300" x-text="selectedCustomer?.name"></div>
+                                            <div class="text-xs text-blue-600 dark:text-blue-400">
+                                                <span x-text="selectedCustomer?.mobile || '-'"></span>
+                                                <span x-show="selectedCustomer?.location_label"> | </span>
+                                                <span x-text="selectedCustomer?.location_label"></span>
+                                            </div>
+                                        </div>
+                                        <button type="button" @click="clearSelectedCustomer()" class="text-red-500 hover:text-red-700 dark:hover:text-red-400">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        </button>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Same names can exist. Options show mobile and location to help you pick correctly.</p>
+                                </div>
+
+                                <div class="md:col-span-2">
                                     <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Name <span class="text-red-500">*</span></label>
                                     <input type="text" x-model="form.customer.name" placeholder="Customer Name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" required>
                                 </div>
@@ -544,6 +587,23 @@
                 resellerSearch: '',
                 resellers: [],
                 selectedReseller: initialOrder.reseller || null,
+                customerSearch: '',
+                customerResults: [],
+                selectedCustomer: initialOrder.customer
+                    ? {
+                        id: initialOrder.customer.id,
+                        name: initialOrder.customer.name,
+                        mobile: initialOrder.customer.mobile,
+                        landline: initialOrder.customer.landline,
+                        address: initialOrder.customer.address,
+                        city: initialOrder.customer_city || initialOrder.customer.city || '',
+                        district: initialOrder.customer_district || '',
+                        province: initialOrder.customer_province || '',
+                        location_label: [initialOrder.customer_city || initialOrder.customer.city || '', initialOrder.customer_district || '', initialOrder.customer_province || ''].filter(Boolean).join(' | '),
+                        display_label: `${initialOrder.customer.name || ''} | ${initialOrder.customer.mobile || ''}`.trim(),
+                    }
+                    : null,
+                showCustomerDropdown: false,
                 
                 productSearch: '',
                 productResults: [],
@@ -630,6 +690,91 @@
                     }
                     alert(message);
                 },
+
+                findCityMatchForCustomer(customer) {
+                    const cityName = (customer?.city || '').toString().trim().toLowerCase();
+                    if (!cityName) {
+                        return null;
+                    }
+
+                    const district = (customer?.district || '').toString().trim().toLowerCase();
+                    const province = (customer?.province || '').toString().trim().toLowerCase();
+                    const source = Array.isArray(this.cities) ? this.cities : [];
+
+                    return source.find((city) => {
+                        const cityMatches = (city.city_name || '').toString().trim().toLowerCase() === cityName;
+                        if (!cityMatches) {
+                            return false;
+                        }
+
+                        if (district && (city.district || '').toString().trim().toLowerCase() !== district) {
+                            return false;
+                        }
+
+                        if (province && (city.province || '').toString().trim().toLowerCase() !== province) {
+                            return false;
+                        }
+
+                        return true;
+                    }) || source.find((city) => (city.city_name || '').toString().trim().toLowerCase() === cityName) || null;
+                },
+
+                applySelectedCustomer(customer) {
+                    this.form.customer.name = customer?.name || '';
+                    this.form.customer.mobile = customer?.mobile || '';
+                    this.form.customer.landline = customer?.landline || '';
+                    this.form.customer.address = customer?.address || '';
+
+                    const matchedCity = this.findCityMatchForCustomer(customer);
+                    if (matchedCity) {
+                        this.form.customer.city_id = matchedCity.id;
+                        this.form.customer.city = matchedCity.city_name || '';
+                        this.form.customer.district = matchedCity.district || '';
+                        this.form.customer.province = matchedCity.province || '';
+                        this.citySearch = matchedCity.city_name || '';
+                    } else {
+                        this.form.customer.city_id = null;
+                        this.form.customer.city = customer?.city || '';
+                        this.form.customer.district = customer?.district || '';
+                        this.form.customer.province = customer?.province || '';
+                        this.citySearch = customer?.city || '';
+                        this.notify('warning', 'Selected customer city was not found in city master. Please choose the city from the dropdown.');
+                    }
+
+                    this.filterCities();
+                },
+
+                async searchCustomers() {
+                    const query = (this.customerSearch || '').trim();
+                    if (query.length < 2) {
+                        this.customerResults = [];
+                        this.showCustomerDropdown = false;
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/orders/search-customers?q=${encodeURIComponent(query)}`);
+                        this.customerResults = await response.json();
+                        this.showCustomerDropdown = true;
+                    } catch (error) {
+                        console.error('Error searching customers:', error);
+                    }
+                },
+
+                selectCustomer(customer) {
+                    this.selectedCustomer = customer;
+                    this.customerSearch = customer?.display_label || `${customer?.name || ''} | ${customer?.mobile || ''}`;
+                    this.customerResults = [];
+                    this.showCustomerDropdown = false;
+                    this.applySelectedCustomer(customer);
+                },
+
+                clearSelectedCustomer() {
+                    this.selectedCustomer = null;
+                    this.customerSearch = '';
+                    this.customerResults = [];
+                    this.showCustomerDropdown = false;
+                },
                 
                 init() {
                     this.$watch('form.order_type', (val) => {
@@ -649,6 +794,11 @@
                     });
                     this.$watch('form.discount_amount', () => this.syncOrderStatusLock());
                     this.$watch('form.items', () => this.syncOrderStatusLock());
+                    this.$watch('form.customer.mobile', (value) => {
+                        if (this.selectedCustomer && String(value || '') !== String(this.selectedCustomer.mobile || '')) {
+                            this.selectedCustomer = null;
+                        }
+                    });
                     if (this.form.payment_method === 'Online Payment' && this.form.payments.length === 0) {
                         this.addPaymentEntry();
                     }
@@ -661,6 +811,9 @@
                         this.form.customer.province = selected.province || '';
                     } else {
                         this.citySearch = this.form.customer.city || '';
+                    }
+                    if (this.selectedCustomer) {
+                        this.customerSearch = this.selectedCustomer.display_label || `${this.selectedCustomer.name || ''} | ${this.selectedCustomer.mobile || ''}`;
                     }
                     this.onCourierChange();
                     this.filterCities();

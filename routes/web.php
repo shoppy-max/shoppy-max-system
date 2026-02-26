@@ -80,6 +80,7 @@ Route::middleware(['auth'])->prefix('orders')->name('orders.')->group(function (
     // Search APIs
     Route::get('/search-products', [\App\Http\Controllers\OrderController::class, 'searchProducts'])->name('search-products');
     Route::get('/search-resellers', [\App\Http\Controllers\OrderController::class, 'searchResellers'])->name('search-resellers');
+    Route::get('/search-customers', [\App\Http\Controllers\OrderController::class, 'searchCustomers'])->name('search-customers');
     
     // Waybill (Must be before /{order} wildcard)
     Route::get('/waybill', [\App\Http\Controllers\WaybillController::class, 'index'])->name('waybill.index');

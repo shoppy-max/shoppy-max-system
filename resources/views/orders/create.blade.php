@@ -141,6 +141,49 @@
                             
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div class="md:col-span-2">
+                                    <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Select Existing Customer (Optional)</label>
+                                    <div class="relative" @click.outside="showCustomerDropdown = false">
+                                        <input type="text"
+                                               x-model="customerSearch"
+                                               @input.debounce.300ms="searchCustomers()"
+                                               @focus="if ((customerSearch || '').trim().length >= 2) { searchCustomers(); }"
+                                               @click="if ((customerSearch || '').trim().length >= 2) { searchCustomers(); }"
+                                               placeholder="Search customer by name, mobile, or address..."
+                                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+
+                                        <div x-show="showCustomerDropdown && customerResults.length > 0 && !selectedCustomer" class="absolute z-30 w-full bg-white dark:bg-gray-700 rounded-lg shadow-lg mt-1 max-h-56 overflow-y-auto border border-gray-100 dark:border-gray-600">
+                                            <ul>
+                                                <template x-for="customer in customerResults" :key="customer.id">
+                                                    <li @click="selectCustomer(customer)" class="px-4 py-2 hover:bg-blue-50 dark:hover:bg-gray-600 cursor-pointer text-sm text-gray-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-600 last:border-0">
+                                                        <div class="flex items-center justify-between gap-2">
+                                                            <div class="font-semibold" x-text="customer.name || 'Unnamed Customer'"></div>
+                                                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-200" x-text="customer.mobile || 'No mobile'"></span>
+                                                        </div>
+                                                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="customer.location_label || customer.address || 'No address details'"></div>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                        <p x-show="showCustomerDropdown && (customerSearch || '').trim().length >= 2 && customerResults.length === 0 && !selectedCustomer" class="mt-1 text-xs text-gray-500 dark:text-gray-400">No matching customers found. Continue filling details to create a new one.</p>
+                                    </div>
+
+                                    <div x-show="selectedCustomer" class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center">
+                                        <div>
+                                            <div class="text-sm font-bold text-blue-800 dark:text-blue-300" x-text="selectedCustomer?.name"></div>
+                                            <div class="text-xs text-blue-600 dark:text-blue-400">
+                                                <span x-text="selectedCustomer?.mobile || '-'"></span>
+                                                <span x-show="selectedCustomer?.location_label"> | </span>
+                                                <span x-text="selectedCustomer?.location_label"></span>
+                                            </div>
+                                        </div>
+                                        <button type="button" @click="clearSelectedCustomer()" class="text-red-500 hover:text-red-700 dark:hover:text-red-400">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        </button>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Same names can exist. Options show mobile and location to help you pick correctly.</p>
+                                </div>
+
+                                <div class="md:col-span-2">
                                     <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Name <span class="text-red-500">*</span></label>
                                     <input type="text" x-model="form.customer.name" placeholder="Customer Name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" required>
                                 </div>
@@ -553,6 +596,64 @@
                     
                 </div>
             </form>
+
+            <div
+                x-show="showSuccessModal"
+                x-transition.opacity
+                @keydown.escape.window="closeSuccessModal()"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 px-4"
+                style="display: none;"
+            >
+                <div @click.away="closeSuccessModal()" class="w-full max-w-md rounded-xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-700 dark:bg-gray-800">
+                    <div class="mb-3 flex items-start justify-between gap-3">
+                        <div>
+                            <h4 class="text-base font-semibold text-gray-900 dark:text-white">Order created successfully</h4>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">You can copy the order ID or continue with next action.</p>
+                        </div>
+                        <button
+                            type="button"
+                            @click="closeSuccessModal()"
+                            class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                            aria-label="Close"
+                        >
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="mb-5 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900/60 dark:bg-green-900/20">
+                        <p class="text-xs font-medium uppercase tracking-wide text-green-700 dark:text-green-300">Order ID</p>
+                        <div class="mt-1 flex items-center justify-between gap-2">
+                            <p class="text-sm font-semibold text-green-800 dark:text-green-200" x-text="createdOrderNumber || '-'"></p>
+                            <button
+                                type="button"
+                                @click="copyCreatedOrderNumber()"
+                                class="inline-flex items-center rounded-lg border border-green-300 bg-white px-2.5 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-700 dark:bg-gray-800 dark:text-green-300 dark:hover:bg-green-900/30"
+                            >
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button
+                            type="button"
+                            @click="createAnotherOrder()"
+                            class="inline-flex w-1/2 items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                        >
+                            Create Another
+                        </button>
+                        <button
+                            type="button"
+                            @click="goToOrderList()"
+                            class="inline-flex w-1/2 items-center justify-center rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700"
+                        >
+                            Go To Order List
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -561,9 +662,16 @@
         function orderManager() {
             return {
                 isSubmitting: false,
+                showSuccessModal: false,
+                createdOrderNumber: '',
+                createdOrderRedirect: @json(route('orders.index')),
                 resellerSearch: '',
                 resellers: [],
                 selectedReseller: null,
+                customerSearch: '',
+                customerResults: [],
+                selectedCustomer: null,
+                showCustomerDropdown: false,
                 
                 productSearch: '',
                 productResults: [],
@@ -615,6 +723,124 @@
                     }
                     alert(message);
                 },
+
+                closeSuccessModal() {
+                    this.showSuccessModal = false;
+                },
+
+                async copyCreatedOrderNumber() {
+                    const orderNumber = (this.createdOrderNumber || '').toString().trim();
+                    if (!orderNumber) {
+                        return;
+                    }
+
+                    try {
+                        if (navigator?.clipboard?.writeText) {
+                            await navigator.clipboard.writeText(orderNumber);
+                            this.notify('success', 'Order ID copied.');
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Clipboard copy failed:', error);
+                    }
+
+                    window.prompt('Copy Order ID', orderNumber);
+                },
+
+                createAnotherOrder() {
+                    this.closeSuccessModal();
+                    window.location.href = '{{ route("orders.create") }}';
+                },
+
+                goToOrderList() {
+                    this.closeSuccessModal();
+                    window.location.href = this.createdOrderRedirect || '{{ route("orders.index") }}';
+                },
+
+                findCityMatchForCustomer(customer) {
+                    const cityName = (customer?.city || '').toString().trim().toLowerCase();
+                    if (!cityName) {
+                        return null;
+                    }
+
+                    const district = (customer?.district || '').toString().trim().toLowerCase();
+                    const province = (customer?.province || '').toString().trim().toLowerCase();
+                    const source = Array.isArray(this.cities) ? this.cities : [];
+
+                    return source.find((city) => {
+                        const cityMatches = (city.city_name || '').toString().trim().toLowerCase() === cityName;
+                        if (!cityMatches) {
+                            return false;
+                        }
+
+                        if (district && (city.district || '').toString().trim().toLowerCase() !== district) {
+                            return false;
+                        }
+
+                        if (province && (city.province || '').toString().trim().toLowerCase() !== province) {
+                            return false;
+                        }
+
+                        return true;
+                    }) || source.find((city) => (city.city_name || '').toString().trim().toLowerCase() === cityName) || null;
+                },
+
+                applySelectedCustomer(customer) {
+                    this.form.customer.name = customer?.name || '';
+                    this.form.customer.mobile = customer?.mobile || '';
+                    this.form.customer.landline = customer?.landline || '';
+                    this.form.customer.address = customer?.address || '';
+
+                    const matchedCity = this.findCityMatchForCustomer(customer);
+                    if (matchedCity) {
+                        this.form.customer.city_id = matchedCity.id;
+                        this.form.customer.city = matchedCity.city_name || '';
+                        this.form.customer.district = matchedCity.district || '';
+                        this.form.customer.province = matchedCity.province || '';
+                        this.citySearch = matchedCity.city_name || '';
+                    } else {
+                        this.form.customer.city_id = null;
+                        this.form.customer.city = customer?.city || '';
+                        this.form.customer.district = customer?.district || '';
+                        this.form.customer.province = customer?.province || '';
+                        this.citySearch = customer?.city || '';
+                        this.notify('warning', 'Selected customer city was not found in city master. Please choose the city from the dropdown.');
+                    }
+
+                    this.filterCities();
+                },
+
+                async searchCustomers() {
+                    const query = (this.customerSearch || '').trim();
+                    if (query.length < 2) {
+                        this.customerResults = [];
+                        this.showCustomerDropdown = false;
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/orders/search-customers?q=${encodeURIComponent(query)}`);
+                        this.customerResults = await response.json();
+                        this.showCustomerDropdown = true;
+                    } catch (error) {
+                        console.error('Error searching customers:', error);
+                    }
+                },
+
+                selectCustomer(customer) {
+                    this.selectedCustomer = customer;
+                    this.customerSearch = customer?.display_label || `${customer?.name || ''} | ${customer?.mobile || ''}`;
+                    this.customerResults = [];
+                    this.showCustomerDropdown = false;
+                    this.applySelectedCustomer(customer);
+                },
+
+                clearSelectedCustomer() {
+                    this.selectedCustomer = null;
+                    this.customerSearch = '';
+                    this.customerResults = [];
+                    this.showCustomerDropdown = false;
+                },
                 
                 init() {
                     this.$watch('form.order_type', (val) => {
@@ -634,6 +860,11 @@
                     });
                     this.$watch('form.discount_amount', () => this.syncOrderStatusLock());
                     this.$watch('form.items', () => this.syncOrderStatusLock());
+                    this.$watch('form.customer.mobile', (value) => {
+                        if (this.selectedCustomer && String(value || '') !== String(this.selectedCustomer.mobile || '')) {
+                            this.selectedCustomer = null;
+                        }
+                    });
                     if (this.form.payment_method === 'Online Payment' && this.form.payments.length === 0) {
                         this.addPaymentEntry();
                     }
@@ -1028,7 +1259,10 @@
                         });
                         const result = await response.json();
                         if (response.ok && result.success) {
-                            window.location.href = result.redirect;
+                            this.createdOrderNumber = result.order_number || '';
+                            this.createdOrderRedirect = result.redirect || '{{ route("orders.index") }}';
+                            this.showSuccessModal = true;
+                            this.isSubmitting = false;
                         } else {
                             const firstValidationError = result.errors ? Object.values(result.errors).flat()[0] : null;
                             this.notify('error', firstValidationError || result.message || 'Failed to save order.');
