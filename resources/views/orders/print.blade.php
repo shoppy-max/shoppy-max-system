@@ -202,9 +202,10 @@
     </style>
 </head>
 <body>
+    <?php $autoPrint = request()->boolean('autoprint'); ?>
     <div class="toolbar no-print">
         <a href="{{ route('orders.show', $order) }}" class="btn-back">Back to Order</a>
-        <button type="button" class="btn-print" onclick="window.print()">Print</button>
+        <button type="button" class="btn-print" onclick="window.print()">{{ $autoPrint ? 'Print Again' : 'Print' }}</button>
     </div>
 
     <div class="paper">
@@ -213,14 +214,8 @@
                 <h1 class="title">Invoice</h1>
                 <div class="meta">Order #{{ $order->order_number }}</div>
                 <div class="meta">Date: {{ optional($order->order_date)->format('d M, Y') }}</div>
-                @php
-                    $statusClass = match($order->status) {
-                        'pending' => 'badge-pending',
-                        'confirm' => 'badge-confirm',
-                        'hold' => 'badge-hold',
-                        'cancel' => 'badge-cancelled',
-                        default => 'badge-other',
-                    };
+                <?php
+                    $status = strtolower((string) ($order->status ?? 'pending'));
                     $deliveryStatus = strtolower((string) ($order->delivery_status ?? 'pending'));
                     $deliveryLabels = [
                         'pending' => 'Pending',
@@ -233,8 +228,13 @@
                         'returned' => 'Returned',
                         'cancel' => 'Cancel',
                     ];
-                @endphp
-                <span class="badge {{ $statusClass }}">{{ $order->status }}</span>
+                ?>
+                <span class="badge {{ [
+                    'pending' => 'badge-pending',
+                    'confirm' => 'badge-confirm',
+                    'hold' => 'badge-hold',
+                    'cancel' => 'badge-cancelled',
+                ][$status] ?? 'badge-other' }}">{{ ucfirst($status) }}</span>
             </div>
             <div class="company">
                 <strong>{{ config('app.name', 'ShoppyMax') }}</strong>
@@ -386,5 +386,14 @@
             Thank you for your business. This is a system generated invoice. No signature is required.
         </div>
     </div>
+    @if($autoPrint)
+        <script>
+            window.addEventListener('load', function () {
+                setTimeout(function () {
+                    window.print();
+                }, 120);
+            });
+        </script>
+    @endif
 </body>
 </html>
