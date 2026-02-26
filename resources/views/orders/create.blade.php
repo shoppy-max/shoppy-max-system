@@ -630,11 +630,15 @@
                         if (value === 'Online Payment' && this.form.payments.length === 0) {
                             this.addPaymentEntry();
                         }
+                        this.syncOrderStatusLock();
                     });
+                    this.$watch('form.discount_amount', () => this.syncOrderStatusLock());
+                    this.$watch('form.items', () => this.syncOrderStatusLock());
                     if (this.form.payment_method === 'Online Payment' && this.form.payments.length === 0) {
                         this.addPaymentEntry();
                     }
                     this.filterCities();
+                    this.syncOrderStatusLock();
                 },
 
                 currentDate() {
@@ -917,6 +921,16 @@
                     const remaining = this.totalAmountNumber - this.paidAmount;
                     return remaining > 0 ? remaining : 0;
                 },
+
+                get isStatusLockedToPending() {
+                    return this.form.payment_method === 'Online Payment' || this.discountAmount > 0;
+                },
+
+                syncOrderStatusLock() {
+                    if (this.isStatusLockedToPending) {
+                        this.form.order_status = 'pending';
+                    }
+                },
                 
                 get totalCommission() {
                     if (this.form.order_type !== 'reseller') return '0.00';
@@ -927,6 +941,7 @@
                 },
                 
                 async submitOrder() {
+                    this.syncOrderStatusLock();
                     if (this.form.order_type === 'reseller' && !this.form.reseller_id) {
                         this.notify('warning', 'Please select a reseller.');
                         return;

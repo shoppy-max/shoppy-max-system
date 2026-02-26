@@ -290,7 +290,7 @@ class OrderController extends Controller
             'payments.*.note' => 'nullable|string|max:255',
             'call_status' => 'nullable|in:pending,confirm,hold',
             'sales_note' => 'nullable|string',
-            'order_status' => 'nullable|string',
+            'order_status' => 'nullable|in:pending,hold,confirm,shipped,delivered,cancelled',
             'customer.district' => 'nullable|string',
             'customer.province' => 'nullable|string',
         ]);
@@ -344,7 +344,11 @@ class OrderController extends Controller
             $order->customer_phone = $customer->mobile;
             $order->customer_address = $customer->address;
 
-            $order->status = $validated['order_status'] ?? 'pending';
+            $order->status = $this->resolveOrderStatus(
+                $validated['order_status'] ?? 'pending',
+                (float) ($validated['discount_amount'] ?? 0),
+                $validated['payment_method'] ?? 'COD'
+            );
             
             // New Fields
             $order->courier_id = $validated['courier_id'] ?? null;
@@ -638,7 +642,7 @@ class OrderController extends Controller
             'payments.*.note' => 'nullable|string|max:255',
             'call_status' => 'nullable|in:pending,confirm,hold',
             'sales_note' => 'nullable|string',
-            'order_status' => 'nullable|string',
+            'order_status' => 'nullable|in:pending,hold,confirm,shipped,delivered,cancelled',
             'customer.district' => 'nullable|string',
             'customer.province' => 'nullable|string',
         ]);
@@ -696,7 +700,11 @@ class OrderController extends Controller
             $order->customer_address = $customer->address;
             
              // Create/Update Logic for New Fields
-            $order->status = $validated['order_status'] ?? $order->status;
+            $order->status = $this->resolveOrderStatus(
+                $validated['order_status'] ?? $order->status,
+                (float) ($validated['discount_amount'] ?? 0),
+                $validated['payment_method'] ?? $order->payment_method
+            );
             $order->courier_id = $validated['courier_id'] ?? null;
             $order->courier_charge = $validated['courier_charge'] ?? 0;
             $order->discount_amount = $validated['discount_amount'] ?? 0;
@@ -879,7 +887,9 @@ class OrderController extends Controller
         ]);
 
         if (array_key_exists('status', $validated)) {
-            $order->status = $validated['status'];
+            $order->status = $this->mustKeepOrderPending($order->discount_amount, $order->payment_method)
+                ? 'pending'
+                : $validated['status'];
         }
         
         if (array_key_exists('call_status', $validated)) {
@@ -912,6 +922,20 @@ class OrderController extends Controller
                 return [(string) $courier->id => $rates];
             })
             ->all();
+    }
+
+    private function mustKeepOrderPending(float $discountAmount, ?string $paymentMethod): bool
+    {
+        return $discountAmount > 0 || $paymentMethod === 'Online Payment';
+    }
+
+    private function resolveOrderStatus(?string $requestedStatus, float $discountAmount, ?string $paymentMethod): string
+    {
+        if ($this->mustKeepOrderPending($discountAmount, $paymentMethod)) {
+            return 'pending';
+        }
+
+        return $requestedStatus ?: 'pending';
     }
 
     private function normalizeSearchText(string $value): string

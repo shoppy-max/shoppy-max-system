@@ -79,11 +79,18 @@
 
                             <div class="mb-4">
                                 <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Order Status</label>
-                                <select x-model="form.order_status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                                <select
+                                    x-model="form.order_status"
+                                    :disabled="isStatusLockedToPending"
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-700/60 dark:disabled:text-gray-400"
+                                >
                                     <option value="pending">Pending</option>
                                     <option value="hold">Hold</option>
                                     <option value="confirm">Confirm</option>
                                 </select>
+                                <p x-show="isStatusLockedToPending" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                                    Status is locked to Pending when discount is applied or payment method is Online Payment.
+                                </p>
                             </div>
 
                             <div x-show="form.order_type === 'reseller'" x-transition>
@@ -638,7 +645,10 @@
                         if (value === 'Online Payment' && this.form.payments.length === 0) {
                             this.addPaymentEntry();
                         }
+                        this.syncOrderStatusLock();
                     });
+                    this.$watch('form.discount_amount', () => this.syncOrderStatusLock());
+                    this.$watch('form.items', () => this.syncOrderStatusLock());
                     if (this.form.payment_method === 'Online Payment' && this.form.payments.length === 0) {
                         this.addPaymentEntry();
                     }
@@ -654,6 +664,7 @@
                     }
                     this.onCourierChange();
                     this.filterCities();
+                    this.syncOrderStatusLock();
                 },
 
                 currentDate() {
@@ -945,6 +956,16 @@
                     const remaining = this.totalAmountNumber - this.paidAmount;
                     return remaining > 0 ? remaining : 0;
                 },
+
+                get isStatusLockedToPending() {
+                    return this.form.payment_method === 'Online Payment' || this.discountAmount > 0;
+                },
+
+                syncOrderStatusLock() {
+                    if (this.isStatusLockedToPending && this.form.order_status !== 'pending') {
+                        this.form.order_status = 'pending';
+                    }
+                },
                 
                 get totalCommission() {
                     if (this.form.order_type !== 'reseller') return '0.00';
@@ -956,6 +977,7 @@
                 
                 // --- Submission ---
                 async submitOrder() {
+                    this.syncOrderStatusLock();
                     // Validation
                     if (this.form.order_type === 'reseller' && !this.form.reseller_id) {
                         this.notify('warning', 'Please select a reseller.');

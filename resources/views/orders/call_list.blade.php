@@ -80,6 +80,8 @@
                         <th scope="col" class="px-6 py-3">Mobile</th>
                         <!-- Items column removed -->
                         <th scope="col" class="px-6 py-3">Total</th>
+                        <th scope="col" class="px-6 py-3">Payment Method</th>
+                        <th scope="col" class="px-6 py-3">Courier Charge</th>
                         <th scope="col" class="px-6 py-3">Order Status</th>
                         <th scope="col" class="px-6 py-3 w-48">Call Status</th>
                         <th scope="col" class="px-6 py-3 text-center">Action</th>
@@ -141,6 +143,14 @@
                                 {{ number_format($order->total_amount, 2) }}
                             </td>
                             <td class="px-6 py-4">
+                                <span class="text-xs font-medium px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                    {{ $order->payment_method ?: '-' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 font-medium text-gray-700 dark:text-gray-300">
+                                LKR {{ number_format((float) ($order->courier_charge ?? 0), 2) }}
+                            </td>
+                            <td class="px-6 py-4">
                                 <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs select-none">
                                     {{ ucfirst($order->status) }}
                                 </span>
@@ -176,7 +186,7 @@
                         </tr>
                     @empty
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="9" class="px-6 py-8 text-center text-gray-500">
                                 No orders found.
                             </td>
                         </tr>
