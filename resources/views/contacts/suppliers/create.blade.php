@@ -24,7 +24,7 @@
                     </li>
                     <li aria-current="page">
                         <div class="flex items-center">
-                            <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/></svg>
+                            <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/></svg>
                             <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">Create</span>
                         </div>
                     </li>
@@ -110,7 +110,7 @@
                         <!-- Country -->
                          <div>
                             <label for="country" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Country <span class="text-red-500">*</span></label>
-                            <select name="country" id="country" x-model="country" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                            <select name="country" id="country" x-model="country" @change="handleCountryChange" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                                 @foreach(config('locations.countries') as $c)
                                     <option value="{{ $c }}">{{ $c }}</option>
                                 @endforeach
@@ -122,14 +122,20 @@
                         <div>
                             <label for="city" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">City <span class="text-red-500">*</span></label>
                             
-                            <!-- Unified Input with Datalist -->
-                            <input list="city_options" type="text" name="city" id="city" x-model="city" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Enter or Select City" required>
-                            
-                            <datalist id="city_options">
-                                <template x-for="c in availableCities" :key="c.city_name">
-                                    <option :value="c.city_name"></option>
-                                </template>
-                            </datalist>
+                            <!-- Dynamic Dropdown for Sri Lanka -->
+                            <div x-show="country === 'Sri Lanka'">
+                                <select name="city" id="city_select" x-model="city" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" :required="country === 'Sri Lanka'">
+                                    <option value="">Select City</option>
+                                    <template x-for="c in availableCities" :key="c.city_name">
+                                        <option :value="c.city_name" x-text="c.city_name" :selected="c.city_name === city"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <!-- Standard Input for Other Countries -->
+                            <div x-show="country !== 'Sri Lanka'">
+                                <input type="text" name="city" id="city_input" x-model="city" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Enter City" :required="country !== 'Sri Lanka'">
+                            </div>
 
                              @error('city') <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ $message }}</p> @enderror
                         </div>
@@ -152,12 +158,26 @@
                         <!-- District -->
                         <div>
                             <label for="district" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">District</label>
-                            <select name="district" id="district" x-model="district" @change="handleDistrictChange" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                                <option value="">Select District</option>
-                                <template x-for="dist in availableDistricts" :key="dist">
-                                     <option :value="dist" x-text="dist" :selected="dist === district"></option>
-                                </template>
-                            </select>
+                            
+                            <!-- Static Select for Initial Load (Blade) -->
+                            <template x-if="!isDynamic">
+                                <select name="district" id="district" x-model="district" @change="handleDistrictChange" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                    <option value="">Select District</option>
+                                    @foreach($initialDistricts as $dist)
+                                        <option value="{{ $dist }}" {{ old('district') == $dist ? 'selected' : '' }}>{{ $dist }}</option>
+                                    @endforeach
+                                </select>
+                            </template>
+
+                            <!-- Dynamic Select for Updates (Alpine) -->
+                            <template x-if="isDynamic">
+                                <select name="district" id="district_dynamic" x-model="district" @change="handleDistrictChange" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                    <option value="">Select District</option>
+                                    <template x-for="dist in availableDistricts" :key="dist">
+                                         <option :value="dist" x-text="dist" :selected="dist === district"></option>
+                                    </template>
+                                </select>
+                            </template>
                              @error('district') <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -171,8 +191,8 @@
             </form>
         </div>
     </div>
-</x-app-layout>
 
+    <!-- Alpine Data for Sri Lanka Logic -->
     <script>
         function supplierForm() {
             return {
@@ -181,14 +201,12 @@
                 district: '{{ old('district') }}',
                 city: '{{ old('city') }}',
                 provinces: @json($slData),
-                // Flatten all districts for initial "All" view or specific logic
-                allDistricts: @json(collect($slData)->flatten()), 
-                availableDistricts: [],
+                availableDistricts: @json($initialDistricts),
                 availableCities: [],
-                
+                isDynamic: false,
+
                 init() {
-                    this.updateDistricts();
-                    if (this.country === 'Sri Lanka' && this.district) {
+                    if (this.country === 'Sri Lanka') {
                          this.fetchCities();
                     }
                 },
@@ -198,22 +216,25 @@
                         this.province = '';
                         this.district = '';
                         this.city = '';
+                        this.availableDistricts = [];
+                        this.availableCities = [];
+                        this.isDynamic = true;
+                    } else {
+                         this.province = ''; 
+                         this.availableDistricts = [];
+                         this.isDynamic = true;
                     }
                 },
 
                 handleProvinceChange() {
-                     // Filter districts based on province
                      this.updateDistricts();
-                     this.district = ''; // Reset district when province changes
+                     this.district = ''; 
                      this.city = '';
-                     this.availableCities = [];
+                     this.availableCities = []; 
+                     this.isDynamic = true;
                 },
 
                 handleDistrictChange() {
-                     // If province is empty, try to find it from the selected district
-                     if (!this.province && this.district) {
-                         this.findProvinceByDistrict(this.district);
-                     }
                      this.fetchCities();
                      this.city = '';
                 },
@@ -222,34 +243,23 @@
                     if (this.province && this.provinces[this.province]) {
                         this.availableDistricts = this.provinces[this.province];
                     } else {
-                        // If no province selected, show ALL districts
-                         this.availableDistricts = this.allDistricts;
-                    }
-                },
-                
-                findProvinceByDistrict(dist) {
-                    for (const [prov, dists] of Object.entries(this.provinces)) {
-                        if (dists.includes(dist)) {
-                            this.province = prov;
-                            this.availableDistricts = dists; // Narrow down the list now
-                            return;
-                        }
+                        this.availableDistricts = [];
                     }
                 },
 
                 async fetchCities() {
-                    this.availableCities = [];
-                    if (!this.district) return;
-
+                    if (!this.district) {
+                        this.availableCities = [];
+                        return;
+                    }
                     try {
                         let response = await fetch(`/api/cities?district=${this.district}`);
-                        let data = await response.json();
-                        this.availableCities = data;
+                        this.availableCities = await response.json();
                     } catch (error) {
                         console.error('Failed to fetch cities:', error);
                     }
-                     // Keep user input if they typed something, or clear? Better keep.
                 }
             }
         }
     </script>
+</x-app-layout>
