@@ -14,7 +14,7 @@
         'name' => $selectedSupplier->business_name ?: $selectedSupplier->name,
         'business_name' => $selectedSupplier->business_name,
         'contact_name' => $selectedSupplier->name,
-        'mobile' => $selectedSupplier->mobile ?: $selectedSupplier->phone,
+        'mobile' => $selectedSupplier->mobile ?: $selectedSupplier->landline,
     ] : null;
 
     $oldItems = old('items');
@@ -129,14 +129,17 @@
                     <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Supplier <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <svg x-show="!supplierLoading" class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <svg x-show="supplierLoading" class="h-4 w-4 animate-spin text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style="display: none;"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                         </div>
                         <input type="text"
                                x-model="supplierSearch"
-                               @input.debounce.250ms="searchSuppliers()"
-                               @focus="if ((supplierSearch || '').trim().length >= 2) { searchSuppliers(); }"
-                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                               placeholder="Search supplier by business, contact, or mobile"
+                               @input.debounce.300ms="onSupplierInput()"
+                               @focus="onSupplierFocus()"
+                               @keydown.escape="showSupplierDropdown = false"
+                               :class="selectedSupplier ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700' : 'border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700'"
+                               class="block w-full rounded-lg border p-2.5 pl-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:text-white"
+                               placeholder="Search supplier by business name, contact, or mobile"
                                autocomplete="off"
                                required>
                         <input type="hidden" name="supplier_id" :value="selectedSupplier ? selectedSupplier.id : ''">
@@ -144,25 +147,62 @@
                         <button type="button"
                                 x-show="selectedSupplier"
                                 @click="clearSupplier()"
-                                class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-red-600"
+                                class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 transition-colors hover:text-red-600"
                                 title="Clear supplier">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
 
-                        <div x-show="showSupplierDropdown && supplierResults.length > 0" class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700" style="display: none;">
+                        {{-- Dropdown results --}}
+                        <div x-show="showSupplierDropdown"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 -translate-y-1"
+                             class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+                             style="display: none;">
+
+                            {{-- Results list --}}
                             <template x-for="supplier in supplierResults" :key="supplier.id">
-                                <button type="button" @click="selectSupplier(supplier)" class="block w-full border-b border-gray-100 px-4 py-3 text-left hover:bg-blue-50 dark:border-gray-600 dark:hover:bg-gray-600">
-                                    <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="supplier.name"></p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-300">
-                                        <span x-show="supplier.business_name && supplier.contact_name">Contact: <span x-text="supplier.contact_name"></span> | </span>
-                                        <span x-text="supplier.mobile || '-' "></span>
+                                <button type="button"
+                                        @click="selectSupplier(supplier)"
+                                        class="group block w-full border-b border-gray-100 px-4 py-3 text-left transition-colors hover:bg-blue-50 dark:border-gray-600 dark:hover:bg-gray-600">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-sm font-semibold text-gray-900 group-hover:text-blue-700 dark:text-white dark:group-hover:text-blue-300" x-text="supplier.name"></p>
+                                        <svg class="h-4 w-4 text-gray-300 opacity-0 transition-opacity group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    </div>
+                                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-300">
+                                        <span x-show="supplier.contact_name && supplier.business_name" class="inline-flex items-center gap-1">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                            <span x-text="supplier.contact_name"></span>
+                                            <span class="text-gray-300 dark:text-gray-500">·</span>
+                                        </span>
+                                        <span x-show="supplier.mobile" class="inline-flex items-center gap-1">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                            <span x-text="supplier.mobile"></span>
+                                        </span>
                                     </p>
                                 </button>
                             </template>
+
+                            {{-- No results --}}
+                            <div x-show="supplierResults.length === 0 && !supplierLoading" class="px-4 py-6 text-center">
+                                <svg class="mx-auto mb-2 h-8 w-8 text-gray-300 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">No suppliers found</p>
+                                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Try a different search term</p>
+                            </div>
+
+                            {{-- Loading --}}
+                            <div x-show="supplierLoading && supplierResults.length === 0" class="px-4 py-4 text-center" style="display: none;">
+                                <svg class="mx-auto h-5 w-5 animate-spin text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Searching suppliers...</p>
+                            </div>
                         </div>
                     </div>
-                    <p x-show="selectedSupplier" class="mt-1 text-xs text-blue-600 dark:text-blue-300">
-                        Selected: <span x-text="selectedSupplier ? selectedSupplier.name : ''"></span>
+                    <p x-show="selectedSupplier" x-transition class="mt-1.5 flex items-center gap-1 text-xs text-blue-600 dark:text-blue-300">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Selected: <span x-text="selectedSupplier ? selectedSupplier.name : ''" class="font-medium"></span>
                     </p>
                     @error('supplier_id')
                         <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -388,6 +428,9 @@
             selectedSupplier: config.initialSupplier || null,
             supplierResults: [],
             showSupplierDropdown: false,
+            supplierLoading: false,
+            _supplierLocked: !!config.initialSupplier,
+            _supplierAbort: null,
             items: [],
             payments: [],
             bankAccounts: Array.isArray(config.bankAccounts) ? config.bankAccounts : [],
@@ -434,41 +477,77 @@
                 };
             },
 
-            async searchSuppliers() {
+            onSupplierInput() {
+                // User typed something — if we had a selection, deselect it
+                if (this._supplierLocked) {
+                    this._supplierLocked = false;
+                    this.selectedSupplier = null;
+                }
+                this.fetchSuppliers();
+            },
+
+            onSupplierFocus() {
+                if (this._supplierLocked || this.selectedSupplier) return;
+                const q = (this.supplierSearch || '').trim();
+                if (q.length >= 2) {
+                    this.fetchSuppliers();
+                }
+            },
+
+            async fetchSuppliers() {
                 const query = (this.supplierSearch || '').trim();
-                this.selectedSupplier = this.selectedSupplier && this.selectedSupplier.name === this.supplierSearch
-                    ? this.selectedSupplier
-                    : null;
 
                 if (query.length < 2) {
                     this.supplierResults = [];
                     this.showSupplierDropdown = false;
+                    this.supplierLoading = false;
                     return;
                 }
 
+                // Cancel any in-flight request
+                if (this._supplierAbort) {
+                    this._supplierAbort.abort();
+                }
+                this._supplierAbort = new AbortController();
+
+                this.supplierLoading = true;
+                this.showSupplierDropdown = true;
+
                 try {
-                    const response = await fetch(`${config.supplierSearchUrl}?q=${encodeURIComponent(query)}`);
+                    const response = await fetch(
+                        `${config.supplierSearchUrl}?q=${encodeURIComponent(query)}`,
+                        { signal: this._supplierAbort.signal }
+                    );
                     const data = await response.json();
                     this.supplierResults = Array.isArray(data) ? data : [];
-                    this.showSupplierDropdown = this.supplierResults.length > 0;
+                    this.supplierLoading = false;
+                    // Keep dropdown open even with 0 results to show "No suppliers found"
+                    this.showSupplierDropdown = true;
                 } catch (error) {
-                    this.supplierResults = [];
-                    this.showSupplierDropdown = false;
+                    if (error.name !== 'AbortError') {
+                        this.supplierResults = [];
+                        this.supplierLoading = false;
+                        this.showSupplierDropdown = false;
+                    }
                 }
             },
 
             selectSupplier(supplier) {
                 this.selectedSupplier = supplier;
                 this.supplierSearch = supplier.name || '';
+                this._supplierLocked = true;
                 this.supplierResults = [];
                 this.showSupplierDropdown = false;
+                this.supplierLoading = false;
             },
 
             clearSupplier() {
                 this.selectedSupplier = null;
                 this.supplierSearch = '';
+                this._supplierLocked = false;
                 this.supplierResults = [];
                 this.showSupplierDropdown = false;
+                this.supplierLoading = false;
             },
 
             async searchProducts(index) {

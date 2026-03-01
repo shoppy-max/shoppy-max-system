@@ -269,18 +269,19 @@ class PurchaseController extends Controller
                 $q->where('name', 'like', "%{$query}%")
                     ->orWhere('business_name', 'like', "%{$query}%")
                     ->orWhere('mobile', 'like', "%{$query}%")
-                    ->orWhere('phone', 'like', "%{$query}%");
+                    ->orWhere('landline', 'like', "%{$query}%")
+                    ->orWhere('email', 'like', "%{$query}%");
             })
             ->limit(20)
-            ->get(['id', 'name', 'business_name', 'mobile', 'phone']);
+            ->get(['id', 'name', 'business_name', 'mobile', 'landline', 'email']);
 
         return response()->json($suppliers->map(function ($supplier) {
             return [
                 'id' => $supplier->id,
-                'name' => $supplier->business_name ?? $supplier->name,
+                'name' => $supplier->business_name ?: $supplier->name,
                 'business_name' => $supplier->business_name,
                 'contact_name' => $supplier->name,
-                'mobile' => $supplier->mobile ?? $supplier->phone,
+                'mobile' => $supplier->mobile ?: $supplier->landline,
             ];
         }));
     }
