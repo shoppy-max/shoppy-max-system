@@ -137,6 +137,9 @@
                                @input.debounce.300ms="onSupplierInput()"
                                @focus="onSupplierFocus()"
                                @keydown.escape="showSupplierDropdown = false"
+                               @keydown.arrow-down.prevent="navigateSupplier(1)"
+                               @keydown.arrow-up.prevent="navigateSupplier(-1)"
+                               @keydown.enter.prevent="selectHighlightedSupplier()"
                                :class="selectedSupplier ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700' : 'border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700'"
                                class="block w-full rounded-lg border p-2.5 pl-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:text-white"
                                placeholder="Search supplier by business name, contact, or mobile"
@@ -164,9 +167,11 @@
                              style="display: none;">
 
                             {{-- Results list --}}
-                            <template x-for="supplier in supplierResults" :key="supplier.id">
+                            <template x-for="(supplier, sIdx) in supplierResults" :key="supplier.id">
                                 <button type="button"
                                         @click="selectSupplier(supplier)"
+                                        @mouseenter="highlightedSupplierIndex = sIdx"
+                                        :class="highlightedSupplierIndex === sIdx ? 'bg-blue-50 dark:bg-gray-600' : ''"
                                         class="group block w-full border-b border-gray-100 px-4 py-3 text-left transition-colors hover:bg-blue-50 dark:border-gray-600 dark:hover:bg-gray-600">
                                     <div class="flex items-center justify-between">
                                         <p class="text-sm font-semibold text-gray-900 group-hover:text-blue-700 dark:text-white dark:group-hover:text-blue-300" x-text="supplier.name"></p>
@@ -219,7 +224,7 @@
 
                 <div class="md:col-span-2">
                     <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Reference Number <span class="text-red-500">*</span></label>
-                    <input type="text" name="purchase_number" value="{{ $initialNumber }}" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" required>
+                    <input type="text" name="purchase_number" value="{{ $initialNumber }}" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" required {{ !$isEditing ? 'readonly' : '' }}>
                     @error('purchase_number')
                         <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
@@ -253,14 +258,32 @@
                                            @input="item.product_variant_id = null; item.product_id = null"
                                            @input.debounce.250ms="searchProducts(index)"
                                            @focus="if ((item.product_name || '').trim().length >= 2) { searchProducts(index); }"
-                                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                           @keydown.escape="item.showResults = false"
+                                           @keydown.arrow-down.prevent="navigateProduct(index, 1)"
+                                           @keydown.arrow-up.prevent="navigateProduct(index, -1)"
+                                           @keydown.enter.prevent="selectHighlightedProduct(index)"
+                                           :class="item.product_variant_id ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700' : 'border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700'"
+                                           class="block w-full rounded-lg border p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:text-white"
                                            placeholder="Search product name, SKU, or unit"
                                            autocomplete="off"
                                            required>
 
-                                    <div x-show="item.showResults && item.results.length > 0" class="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700" style="display: none;">
-                                        <template x-for="product in item.results" :key="product.id">
-                                            <button type="button" @click="selectProduct(index, product)" class="block w-full border-b border-gray-100 px-4 py-3 text-left hover:bg-blue-50 dark:border-gray-600 dark:hover:bg-gray-600">
+                                    <div x-show="item.showResults && item.results.length > 0"
+                                         x-transition:enter="transition ease-out duration-150"
+                                         x-transition:enter-start="opacity-0"
+                                         x-transition:enter-end="opacity-100"
+                                         x-transition:leave="transition ease-in duration-100"
+                                         x-transition:leave-start="opacity-100"
+                                         x-transition:leave-end="opacity-0"
+                                         class="absolute z-20 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+                                         :class="shouldOpenUpward($el) ? 'bottom-full mb-1' : 'top-full mt-1'"
+                                         style="display: none;">
+                                        <template x-for="(product, pIdx) in item.results" :key="product.id">
+                                            <button type="button"
+                                                    @click="selectProduct(index, product)"
+                                                    @mouseenter="item.highlightedIndex = pIdx"
+                                                    :class="item.highlightedIndex === pIdx ? 'bg-blue-50 dark:bg-gray-600' : ''"
+                                                    class="block w-full border-b border-gray-100 px-4 py-3 text-left transition-colors hover:bg-blue-50 dark:border-gray-600 dark:hover:bg-gray-600">
                                                 <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="product.display_name || product.name"></p>
                                                 <p class="text-xs text-gray-500 dark:text-gray-300" x-text="product.sku ? ('SKU: ' + product.sku) : ('Product ID: ' + product.product_id)"></p>
                                             </button>
@@ -429,6 +452,7 @@
             supplierResults: [],
             showSupplierDropdown: false,
             supplierLoading: false,
+            highlightedSupplierIndex: -1,
             _supplierLocked: !!config.initialSupplier,
             _supplierAbort: null,
             items: [],
@@ -456,6 +480,7 @@
                     purchase_price: Number(item.purchase_price || 0),
                     results: [],
                     showResults: false,
+                    highlightedIndex: -1,
                 };
             },
 
@@ -521,6 +546,7 @@
                     const data = await response.json();
                     this.supplierResults = Array.isArray(data) ? data : [];
                     this.supplierLoading = false;
+                    this.highlightedSupplierIndex = -1;
                     // Keep dropdown open even with 0 results to show "No suppliers found"
                     this.showSupplierDropdown = true;
                 } catch (error) {
@@ -548,6 +574,21 @@
                 this.supplierResults = [];
                 this.showSupplierDropdown = false;
                 this.supplierLoading = false;
+                this.highlightedSupplierIndex = -1;
+            },
+
+            navigateSupplier(direction) {
+                if (!this.showSupplierDropdown || this.supplierResults.length === 0) return;
+                this.highlightedSupplierIndex = Math.max(-1, Math.min(
+                    this.highlightedSupplierIndex + direction,
+                    this.supplierResults.length - 1
+                ));
+            },
+
+            selectHighlightedSupplier() {
+                if (this.highlightedSupplierIndex >= 0 && this.highlightedSupplierIndex < this.supplierResults.length) {
+                    this.selectSupplier(this.supplierResults[this.highlightedSupplierIndex]);
+                }
             },
 
             async searchProducts(index) {
@@ -568,6 +609,7 @@
                     const data = await response.json();
                     item.results = Array.isArray(data) ? data : [];
                     item.showResults = item.results.length > 0;
+                    item.highlightedIndex = -1;
                 } catch (error) {
                     item.results = [];
                     item.showResults = false;
@@ -585,6 +627,32 @@
                 item.product_name = product.display_name || product.name || '';
                 item.results = [];
                 item.showResults = false;
+                item.highlightedIndex = -1;
+            },
+
+            navigateProduct(index, direction) {
+                const item = this.items[index];
+                if (!item || !item.showResults || item.results.length === 0) return;
+                item.highlightedIndex = Math.max(-1, Math.min(
+                    item.highlightedIndex + direction,
+                    item.results.length - 1
+                ));
+            },
+
+            selectHighlightedProduct(index) {
+                const item = this.items[index];
+                if (!item) return;
+                if (item.highlightedIndex >= 0 && item.highlightedIndex < item.results.length) {
+                    this.selectProduct(index, item.results[item.highlightedIndex]);
+                }
+            },
+
+            shouldOpenUpward(el) {
+                if (!el) return false;
+                const rect = el.closest('.relative')?.getBoundingClientRect();
+                if (!rect) return false;
+                const spaceBelow = window.innerHeight - rect.bottom;
+                return spaceBelow < 250;
             },
 
             addItem() {
