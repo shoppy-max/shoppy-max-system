@@ -909,6 +909,9 @@ class OrderController extends Controller
                 ? 'cancel'
                 : (($requestedCallStatus === 'cancel' || empty($requestedCallStatus)) ? 'pending' : $requestedCallStatus);
             $requestedDeliveryStatus = $validated['delivery_status'] ?? $order->delivery_status;
+            if (strtolower((string) $order->status) !== 'cancel') {
+                $this->assertDeliveryStatusTransitionAllowed($requestedDeliveryStatus, $previousDeliveryStatus);
+            }
             $order->delivery_status = $this->normalizeDeliveryStatus($requestedDeliveryStatus, (string) $order->status);
             $this->applyDeliveryTimelineTimestamps($order, $previousOrderStatus, $previousDeliveryStatus);
             $order->sales_note = $validated['sales_note'] ?? null;
@@ -1110,6 +1113,7 @@ class OrderController extends Controller
             }
 
             if ($order->status !== 'cancel' && array_key_exists('delivery_status', $validated)) {
+                $this->assertDeliveryStatusTransitionAllowed($validated['delivery_status'], $previousDeliveryStatus);
                 $order->delivery_status = $this->normalizeDeliveryStatus($validated['delivery_status'], (string) $order->status);
             } elseif ($statusChanged && $order->status !== 'cancel' && $order->delivery_status === 'cancel') {
                 $order->delivery_status = 'pending';
@@ -1194,6 +1198,18 @@ class OrderController extends Controller
         }
 
         return $requestedStatus;
+    }
+
+    private function assertDeliveryStatusTransitionAllowed(?string $requestedStatus, ?string $previousStatus): void
+    {
+        $requestedStatus = strtolower((string) ($requestedStatus ?? 'pending'));
+        $previousStatus = strtolower((string) ($previousStatus ?? 'pending'));
+
+        if ($requestedStatus === 'delivered' && !in_array($previousStatus, ['dispatched', 'delivered'], true)) {
+            throw ValidationException::withMessages([
+                'delivery_status' => 'Only dispatched orders can be marked as delivered.',
+            ]);
+        }
     }
 
     private function applyDeliveryTimelineTimestamps(

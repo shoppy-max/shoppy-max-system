@@ -6,12 +6,20 @@ use App\Models\Courier;
 use App\Models\Order;
 use App\Models\CourierPayment;
 use App\Models\BankAccount;
+use App\Services\CourierPaymentOrderService;
+use App\Support\CourierSettlement;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CourierReceiveController extends Controller
 {
+    public function __construct(
+        private readonly CourierPaymentOrderService $courierPaymentOrders
+    ) {
+    }
+
     /**
      * Display the courier selection popup/page.
      */
@@ -24,19 +32,36 @@ class CourierReceiveController extends Controller
     /**
      * Show the Receive Courier Payment form for a specific courier.
      */
-    public function show(Courier $courier)
+    public function show(Request $request, Courier $courier)
     {
-        // Get eligible orders for this courier and not yet linked to a courier payment
         $orders = $this->eligibleOrdersQuery($courier)
-            ->latest()
-            ->take(50) // Limit for initial load
+            ->latest('dispatched_at')
+            ->take(50)
             ->get();
 
         $bankAccounts = BankAccount::where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        return view('couriers.receive.show', compact('courier', 'orders', 'bankAccounts'));
+        $initialRows = collect();
+        $oldOrderIds = $this->normalizeRequestedOrderIds((array) $request->old('order_ids', []));
+        $oldCourierCosts = (array) $request->old('courier_costs', []);
+
+        if (!empty($oldOrderIds)) {
+            $initialRows = Order::query()
+                ->whereIn('id', $oldOrderIds)
+                ->get()
+                ->map(function (Order $order) use ($oldCourierCosts) {
+                    $override = array_key_exists($order->id, $oldCourierCosts)
+                        ? (float) $oldCourierCosts[$order->id]
+                        : null;
+
+                    return CourierSettlement::serializeOrder($order, $override);
+                })
+                ->values();
+        }
+
+        return view('couriers.receive.show', compact('courier', 'orders', 'bankAccounts', 'initialRows'));
     }
 
     /**
@@ -44,41 +69,28 @@ class CourierReceiveController extends Controller
      */
     public function searchOrder(Request $request) 
     {
-        $query = $request->get('query');
+        $query = trim((string) $request->get('query'));
         $courierId = $request->integer('courier_id');
 
-        $orderQuery = Order::where(function($q) use ($query) {
-                $q->where('waybill_number', $query)
-                  ->orWhere('id', $query);
-            });
-
-        if ($courierId) {
-            $orderQuery->where('courier_id', $courierId)
-                ->where('status', 'confirm')
-                ->whereNull('courier_payment_id');
+        if ($query === '' || !$courierId) {
+            return response()->json(['success' => false, 'message' => 'Enter a valid waybill or order number.']);
         }
 
-        $order = $orderQuery
-            ->with(['customer', 'city', 'courier']) // Eager load relationships
+        $order = $this->eligibleOrdersQuery(Courier::findOrFail($courierId))
+            ->where(function (Builder $builder) use ($query) {
+                $builder->where('waybill_number', $query)
+                    ->orWhere('order_number', $query);
+
+                if (ctype_digit($query)) {
+                    $builder->orWhere('id', (int) $query);
+                }
+            })
             ->first();
 
         if ($order) {
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'waybill_number' => $order->waybill_number,
-                    'order_no' => $order->id, // or order_number field
-                    'customer_name' => $order->customer_name ?? $order->customer->name ?? 'N/A', // Fallback
-                    'destination' => $order->city ? $order->city->name : ($order->customer_city ?? 'N/A'),
-                    'description' => 'Order #' . $order->id, // Placeholder
-                    'phone1' => $order->customer_phone,
-                    'phone2' => $order->customer_phone_2 ?? '', // Assuming logic
-                    'delivery_fee' => $order->delivery_fee,
-                    'amount' => $order->total_amount,
-                    'city' => $order->city ? $order->city->name : '',
-                    'remarks' => $order->sales_note,
-                    'id' => $order->id
-                ]
+                'data' => CourierSettlement::serializeOrder($order),
             ]);
         }
 
@@ -114,19 +126,18 @@ class CourierReceiveController extends Controller
                 $waybill = $row[0] ?? null; // Adjusted based on actual template
                 if ($waybill) {
                     $order = $this->eligibleOrdersQuery($courier)
-                        ->where('waybill_number', $waybill)
+                        ->where(function (Builder $builder) use ($waybill) {
+                            $builder->where('waybill_number', $waybill)
+                                ->orWhere('order_number', $waybill);
+
+                            if (ctype_digit((string) $waybill)) {
+                                $builder->orWhere('id', (int) $waybill);
+                            }
+                        })
                         ->first();
                     
                     if ($order) {
-                        $foundOrders[] = [
-                            'waybill_number' => $order->waybill_number,
-                            'order_no' => $order->id,
-                            'customer_name' => $order->customer_name,
-                            'destination' => $order->city->name ?? $order->customer_city,
-                            'delivery_fee' => $order->delivery_fee,
-                            'amount' => $order->total_amount,
-                            'id' => $order->id
-                        ];
+                        $foundOrders[] = CourierSettlement::serializeOrder($order);
                     }
                 }
             }
@@ -145,30 +156,54 @@ class CourierReceiveController extends Controller
     {
         $request->validate([
             'payment_account_id' => 'required|exists:bank_accounts,id',
-            'order_ids' => 'required|array',
-            'order_ids.*' => 'exists:orders,id',
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|distinct|exists:orders,id',
+            'courier_costs' => 'required|array',
+            'courier_costs.*' => 'nullable|numeric|min:0',
+            'expected_amount' => 'nullable|numeric|min:0',
         ]);
 
         try {
             DB::transaction(function() use ($request, $courier) {
-                $selectedAccount = BankAccount::findOrFail($request->payment_account_id);
+                $selectedAccount = BankAccount::where('is_active', true)
+                    ->findOrFail($request->payment_account_id);
                 $paymentDate = now()->toDateString();
+                $orderIds = $this->normalizeRequestedOrderIds($request->input('order_ids', []));
 
                 $eligibleOrders = $this->eligibleOrdersQuery($courier)
-                    ->whereIn('id', $request->order_ids)
+                    ->whereIn('id', $orderIds)
                     ->lockForUpdate()
-                    ->get();
+                    ->get()
+                    ->keyBy('id');
 
-                if ($eligibleOrders->count() !== count($request->order_ids)) {
+                if ($eligibleOrders->count() !== count($orderIds)) {
                     throw ValidationException::withMessages([
                         'order_ids' => 'One or more selected orders are invalid for this courier or already reconciled.',
                     ]);
                 }
 
-                // 1. Calculate total received amount from selected eligible orders.
-                $totalAmount = (float) $eligibleOrders->sum('total_amount');
+                $resolvedCosts = [];
+                $totalAmount = 0.0;
 
-                // 2. Create Payment Record
+                foreach ($orderIds as $orderId) {
+                    /** @var Order $order */
+                    $order = $eligibleOrders->get($orderId);
+                    $realCharge = $this->resolveRealChargeFromRequest($request, $order);
+                    $this->assertRealChargeIsValid($order, $realCharge);
+
+                    if (strtolower((string) $order->delivery_status) !== 'dispatched') {
+                        throw ValidationException::withMessages([
+                            'order_ids' => 'Only dispatched orders can be marked as delivered through courier payments.',
+                        ]);
+                    }
+
+                    $resolvedCosts[$orderId] = $realCharge;
+                    $totalAmount += CourierSettlement::receivedAmount($order, $realCharge);
+                }
+
+                $totalAmount = round($totalAmount, 2);
+                $this->assertExpectedAmountMatches($request, $totalAmount);
+
                 $payment = CourierPayment::create([
                     'courier_id' => $courier->id,
                     'user_id' => auth()->id(),
@@ -180,11 +215,16 @@ class CourierReceiveController extends Controller
                     'payment_note' => 'Received via Receive Courier Payment module',
                 ]);
 
-                // 3. Update Orders
-                Order::whereIn('id', $eligibleOrders->pluck('id')->all())->update([
-                    'courier_payment_id' => $payment->id,
-                    'payment_status' => 'paid',
-                ]);
+                foreach ($orderIds as $orderId) {
+                    /** @var Order $order */
+                    $order = $eligibleOrders->get($orderId);
+                    $this->courierPaymentOrders->attachOrderToPayment(
+                        $order,
+                        $payment,
+                        $resolvedCosts[$orderId],
+                        auth()->id()
+                    );
+                }
             });
 
             return redirect()->route('courier-receive.index')->with('success', 'Payment received and orders updated successfully.');
@@ -201,6 +241,52 @@ class CourierReceiveController extends Controller
         return Order::query()
             ->where('courier_id', $courier->id)
             ->where('status', 'confirm')
+            ->where('payment_method', 'COD')
+            ->where('delivery_status', 'dispatched')
+            ->whereNotNull('waybill_number')
+            ->where('waybill_number', '!=', '')
             ->whereNull('courier_payment_id');
+    }
+
+    private function normalizeRequestedOrderIds(array $orderIds): array
+    {
+        return collect($orderIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function resolveRealChargeFromRequest(Request $request, Order $order): float
+    {
+        $rawValue = $request->input('courier_costs.' . $order->id);
+        if ($rawValue === null || $rawValue === '') {
+            return CourierSettlement::defaultRealDeliveryCharge($order);
+        }
+
+        return round((float) $rawValue, 2);
+    }
+
+    private function assertRealChargeIsValid(Order $order, float $realCharge): void
+    {
+        if ($realCharge > (float) ($order->total_amount ?? 0)) {
+            throw ValidationException::withMessages([
+                'courier_costs.' . $order->id => 'Real delivery charge cannot exceed the order amount.',
+            ]);
+        }
+    }
+
+    private function assertExpectedAmountMatches(Request $request, float $computedAmount): void
+    {
+        if (!$request->filled('expected_amount')) {
+            return;
+        }
+
+        if (abs(((float) $request->input('expected_amount')) - $computedAmount) > 0.01) {
+            throw ValidationException::withMessages([
+                'expected_amount' => 'Received amount total does not match the selected orders.',
+            ]);
+        }
     }
 }

@@ -674,6 +674,13 @@ class DemoSystemSeeder extends Seeder
                 'address' => 'No 90, Station Road',
                 'city_key' => 'Maharagama|Colombo',
             ],
+            [
+                'name' => 'Anjana Fernando',
+                'mobile' => '0781234567',
+                'landline' => null,
+                'address' => 'No 18, Main Street',
+                'city_key' => 'Colombo 01|Colombo',
+            ],
         ];
 
         $map = [];
@@ -713,14 +720,16 @@ class DemoSystemSeeder extends Seeder
                 'order_type' => 'direct',
                 'status' => 'confirm',
                 'call_status' => 'confirm',
-                'delivery_status' => 'dispatched',
+                'delivery_status' => 'delivered',
                 'payment_method' => 'COD',
                 'discount_amount' => 0.00,
                 'customer' => 'Amila Perera',
                 'reseller' => null,
                 'city_key' => 'Colombo 01|Colombo',
                 'courier' => 'SpeedX Courier',
+                'waybill_number' => 'SPX-240001',
                 'courier_charge' => 300.00,
+                'courier_cost' => 250.00,
                 'sales_note' => 'Handle with care',
                 'items' => [
                     ['sku' => 'VLC-1M', 'quantity' => 2, 'selling_price' => 1250.00],
@@ -786,6 +795,50 @@ class DemoSystemSeeder extends Seeder
                     ['sku' => 'NSE-BLK', 'quantity' => 1, 'selling_price' => 7900.00],
                 ],
             ],
+            [
+                'order_number' => 'DEMO-ORD-0005',
+                'order_date' => now()->subDay()->toDateString(),
+                'order_type' => 'direct',
+                'status' => 'confirm',
+                'call_status' => 'confirm',
+                'delivery_status' => 'dispatched',
+                'payment_method' => 'COD',
+                'discount_amount' => 0.00,
+                'customer' => 'Anjana Fernando',
+                'reseller' => null,
+                'city_key' => 'Colombo 01|Colombo',
+                'courier' => 'SpeedX Courier',
+                'waybill_number' => 'SPX-240002',
+                'courier_charge' => 300.00,
+                'courier_cost' => 0.00,
+                'sales_note' => 'Ready for courier settlement testing',
+                'items' => [
+                    ['sku' => 'SMGV-1000', 'quantity' => 1, 'selling_price' => 1000.00],
+                    ['sku' => 'FDOJ-1L', 'quantity' => 2, 'selling_price' => 760.00],
+                ],
+            ],
+            [
+                'order_number' => 'DEMO-ORD-0006',
+                'order_date' => now()->subDays(2)->toDateString(),
+                'order_type' => 'direct',
+                'status' => 'confirm',
+                'call_status' => 'confirm',
+                'delivery_status' => 'delivered',
+                'payment_method' => 'COD',
+                'discount_amount' => 0.00,
+                'customer' => 'Nadeesha Silva',
+                'reseller' => null,
+                'city_key' => 'Kandy|Kandy',
+                'courier' => 'Prompt Express',
+                'waybill_number' => 'PRM-240001',
+                'courier_charge' => 450.00,
+                'courier_cost' => 300.00,
+                'sales_note' => 'Settled courier delivery demo order',
+                'items' => [
+                    ['sku' => 'HSH-250ML', 'quantity' => 2, 'selling_price' => 1180.00],
+                    ['sku' => 'FDOJ-1L', 'quantity' => 2, 'selling_price' => 760.00],
+                ],
+            ],
         ];
 
         $orderMap = [];
@@ -818,6 +871,8 @@ class DemoSystemSeeder extends Seeder
             $order->sales_note = $row['sales_note'];
             $order->courier_id = $courier->id;
             $order->courier_charge = $row['courier_charge'];
+            $order->courier_cost = round((float) ($row['courier_cost'] ?? 0), 2);
+            $order->waybill_number = $row['waybill_number'] ?? null;
             $order->call_status = $order->status === 'cancel'
                 ? 'cancel'
                 : ($row['call_status'] ?? 'pending');
@@ -902,6 +957,12 @@ class DemoSystemSeeder extends Seeder
             ) || $order->delivery_status === 'delivered'
                 ? 'paid'
                 : 'pending';
+            $order->dispatched_at = $order->delivery_status === 'dispatched' || $order->delivery_status === 'delivered'
+                ? now()->subHours(12)
+                : null;
+            $order->delivered_at = $order->delivery_status === 'delivered'
+                ? now()->subHours(4)
+                : null;
             $order->save();
 
             OrderLog::query()->where('order_id', $order->id)->delete();
@@ -934,7 +995,7 @@ class DemoSystemSeeder extends Seeder
             [
                 'reference_number' => 'CP-DEMO-0001',
                 'courier' => 'SpeedX Courier',
-                'amount' => 12600.00,
+                'amount' => 6150.00,
                 'payment_date' => now()->subDay()->toDateString(),
                 'payment_method' => 'Bank Transfer',
                 'payment_note' => 'Weekly courier settlement',
@@ -943,10 +1004,10 @@ class DemoSystemSeeder extends Seeder
             [
                 'reference_number' => 'CP-DEMO-0002',
                 'courier' => 'Prompt Express',
-                'amount' => 8200.00,
+                'amount' => 0.00,
                 'payment_date' => now()->toDateString(),
                 'payment_method' => 'Cash',
-                'payment_note' => 'Partial payment',
+                'payment_note' => 'Prompt courier settlement',
                 'bank_account' => 'Courier Float Wallet',
             ],
         ];
@@ -978,7 +1039,20 @@ class DemoSystemSeeder extends Seeder
         if (isset($orders['DEMO-ORD-0001'], $paymentMap['CP-DEMO-0001'])) {
             $order = $orders['DEMO-ORD-0001'];
             $order->courier_payment_id = $paymentMap['CP-DEMO-0001']->id;
+            $order->payment_status = 'paid';
             $order->save();
+        }
+
+        if (isset($orders['DEMO-ORD-0006'], $paymentMap['CP-DEMO-0002'])) {
+            $order = $orders['DEMO-ORD-0006'];
+            $payment = $paymentMap['CP-DEMO-0002'];
+
+            $order->courier_payment_id = $payment->id;
+            $order->payment_status = 'paid';
+            $order->save();
+
+            $payment->amount = round((float) $order->total_amount - (float) $order->courier_cost, 2);
+            $payment->save();
         }
     }
 

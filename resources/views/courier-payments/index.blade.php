@@ -29,38 +29,35 @@
 
     <div class="p-6 overflow-hidden bg-white rounded-md shadow-md dark:bg-gray-800">
         
-        <div class="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-            <form method="GET" action="{{ route('courier-payments.index') }}" class="space-y-4">
-                <div class="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                    <div class="xl:col-span-7">
-                        <label for="search" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/></svg>
-                            </div>
-                            <input type="text" id="search" name="search" value="{{ request('search') }}" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-3 ps-10 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Search courier or reference..." />
+        <div class="mb-6 rounded-md border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <form method="GET" action="{{ route('courier-payments.index') }}" class="space-y-3">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-12">
+                    <div class="relative xl:col-span-8">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/></svg>
                         </div>
+                        <input type="search" id="search" name="search" value="{{ request('search') }}" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="Search courier, order no / ID, or waybill">
                     </div>
-                    <div class="xl:col-span-3">
-                        <label for="date" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
-                        <input type="date" id="date" name="date" value="{{ request('date') }}" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                    </div>
-                    <div class="xl:col-span-2">
-                        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Quick Fill</label>
-                        <button type="button" onclick="document.getElementById('date').value='{{ now()->toDateString() }}'" class="inline-flex w-full items-center justify-center rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm font-medium text-primary-700 transition hover:bg-primary-100 dark:border-primary-700/60 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50">
-                            Today
-                        </button>
+
+                    <div class="xl:col-span-4">
+                        <input type="date" id="date" name="date" value="{{ request('date') }}" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" title="Exact payment date">
                     </div>
                 </div>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Leave the date empty to show all payments. Choose any date or use Today for a quick exact match.</p>
-                    <div class="flex items-center gap-2">
-                        <a href="{{ route('courier-payments.index') }}" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600">
-                            Clear
-                        </a>
-                        <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700">
-                            Apply Filters
+
+                <div class="flex flex-col gap-3 border-t border-gray-200 pt-3 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Search matches courier name, order number or internal order ID, and waybill number. Leave the date empty to show all payments.</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" onclick="document.getElementById('date').value='{{ now()->toDateString() }}'" class="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 focus:ring-4 focus:ring-blue-200 dark:border-blue-700/60 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50">
+                            Today
                         </button>
+                        <button type="submit" class="inline-flex items-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
+                            Apply
+                        </button>
+                        @if(request()->filled('search') || request()->filled('date'))
+                            <a href="{{ route('courier-payments.index') }}" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+                                Clear
+                            </a>
+                        @endif
                     </div>
                 </div>
             </form>
@@ -72,10 +69,10 @@
                     <tr>
                         <th scope="col" class="px-6 py-3">Date</th>
                         <th scope="col" class="px-6 py-3">Courier</th>
-                        <th scope="col" class="px-6 py-3 text-right">Amount</th>
+                        <th scope="col" class="px-6 py-3 text-right">Total Received Amount</th>
                         <th scope="col" class="px-6 py-3">Method</th>
                         <th scope="col" class="px-6 py-3">Reference</th>
-                        <th scope="col" class="px-6 py-3">Note</th>
+                        <th scope="col" class="px-6 py-3 text-center">Order Count</th>
                         <th scope="col" class="px-6 py-3 text-center">Action</th>
                     </tr>
                 </thead>
@@ -106,28 +103,19 @@
                             <td class="px-6 py-4 font-mono text-xs">
                                 {{ $payment->reference_number ?? '-' }}
                             </td>
-                            <td class="px-6 py-4">
-                                @if($payment->payment_note)
-                                    <span class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{{ Str::limit($payment->payment_note, 50) }}</span>
-                                @else
-                                    <span class="text-gray-400">-</span>
-                                @endif
+                            <td class="px-6 py-4 text-center">
+                                <span class="inline-flex min-w-[2.5rem] items-center justify-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                                    {{ $payment->orders_count }}
+                                </span>
                             </td>
                             <td class="px-6 py-4 text-center">
                                 <div class="flex items-center justify-center gap-2">
                                     <a href="{{ route('courier-payments.show', $payment) }}" class="font-medium text-green-600 dark:text-green-500 hover:underline" title="View Details">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     </a>
-                                    <a href="{{ route('courier-payments.edit', $payment) }}" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                                    <a href="{{ route('courier-payments.edit', $payment) }}" class="font-medium text-blue-600 dark:text-blue-500 hover:underline" title="Edit Payment">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                     </a>
-                                    <form action="{{ route('courier-payments.destroy', $payment) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this payment?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="font-medium text-red-600 dark:text-red-500 hover:underline">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        </button>
-                                    </form>
                                 </div>
                             </td>
                         </tr>
