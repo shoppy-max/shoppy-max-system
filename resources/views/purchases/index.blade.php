@@ -112,6 +112,7 @@
             <table class="w-full text-left text-sm text-gray-500 dark:text-gray-400">
                 <thead class="bg-gray-100 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
+                        <th class="w-12 px-3 py-3 text-center"></th>
                         <th class="px-6 py-3">Date</th>
                         <th class="px-6 py-3">Purchasing ID</th>
                         <th class="px-6 py-3">Supplier</th>
@@ -124,12 +125,17 @@
                         <th class="px-6 py-3 text-center">Action</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse ($purchases as $purchase)
+                @forelse ($purchases as $purchase)
+                    <tbody x-data="{ open: false }" class="divide-y divide-gray-100 dark:divide-gray-700">
                         @php
                             $balance = (float) $purchase->net_total - (float) $purchase->paid_amount;
                         @endphp
-                        <tr class="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50">
+                        <tr class="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50">
+                            <td class="px-3 py-4 text-center">
+                                <button type="button" @click="open = !open" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-blue-300" :title="open ? 'Hide item details' : 'Show item details'">
+                                    <svg class="h-4 w-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </button>
+                            </td>
                             <td class="px-6 py-4">{{ optional($purchase->purchase_date)->format('d M Y') }}</td>
                             <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ $purchase->purchase_number }}</td>
                             <td class="px-6 py-4">
@@ -170,6 +176,9 @@
                                     <a href="{{ route('purchases.show', $purchase) }}" class="rounded-lg p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-gray-700" title="View">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     </a>
+                                    <a href="{{ route('purchases.barcodes', $purchase) }}" target="_blank" rel="noopener noreferrer" class="rounded-lg p-2 text-sky-600 hover:bg-sky-100 dark:text-sky-400 dark:hover:bg-gray-700" title="Print All Barcodes">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                    </a>
                                     <a href="{{ route('purchases.edit', $purchase) }}" class="rounded-lg p-2 text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-gray-700" title="Edit">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                     </a>
@@ -183,12 +192,68 @@
                                 </div>
                             </td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="10" class="px-6 py-10 text-center text-gray-500 dark:text-gray-400">No purchases found for current filters.</td>
+
+                        <tr x-show="open" x-transition.opacity style="display: none;" class="bg-gray-50/80 dark:bg-gray-900/30">
+                            <td colspan="11" class="px-6 py-5">
+                                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                    <div class="mb-3 flex items-center justify-between gap-3">
+                                        <div>
+                                            <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-900 dark:text-white">Purchase Item Details</h4>
+                                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Expanded view for products, variants, SKU, quantity, unit price, and line totals.</p>
+                                        </div>
+                                        <span class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                            {{ $purchase->items_count }} item{{ $purchase->items_count === 1 ? '' : 's' }}
+                                        </span>
+                                    </div>
+
+                                    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <table class="w-full text-left text-xs text-gray-600 dark:text-gray-300">
+                                            <thead class="bg-gray-100 uppercase tracking-wide text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                                <tr>
+                                                    <th class="px-4 py-3">Product Name & Variant</th>
+                                                    <th class="px-4 py-3">SKU</th>
+                                                    <th class="px-4 py-3 text-right">PCS Quantity</th>
+                                                    <th class="px-4 py-3 text-right">Unit Price</th>
+                                                    <th class="px-4 py-3 text-right">Line Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse($purchase->items as $item)
+                                                    <tr class="border-t border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-800">
+                                                        <td class="px-4 py-3">
+                                                            <div class="font-medium text-gray-900 dark:text-white">{{ $item->product_name }}</div>
+                                                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                                @if($item->variant)
+                                                                    {{ $item->variant->unit_value ? $item->variant->unit_value . ' ' : '' }}{{ $item->variant->unit->name ?? ($item->variant->unit->short_name ?? '-') }}
+                                                                @else
+                                                                    Variant not linked
+                                                                @endif
+                                                            </div>
+                                                        </td>
+                                                        <td class="px-4 py-3 font-mono text-[11px]">{{ $item->variant?->sku ?? '-' }}</td>
+                                                        <td class="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">{{ number_format((float) $item->quantity, 0) }}</td>
+                                                        <td class="px-4 py-3 text-right">Rs. {{ number_format((float) $item->purchase_price, 2) }}</td>
+                                                        <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">Rs. {{ number_format((float) $item->total, 2) }}</td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="5" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No purchase items found.</td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </td>
                         </tr>
-                    @endforelse
-                </tbody>
+                    </tbody>
+                @empty
+                    <tbody>
+                        <tr>
+                            <td colspan="11" class="px-6 py-10 text-center text-gray-500 dark:text-gray-400">No purchases found for current filters.</td>
+                        </tr>
+                    </tbody>
+                @endforelse
             </table>
         </div>
 

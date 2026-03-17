@@ -29,6 +29,8 @@
 
     @php
         $balance = (float) $purchase->net_total - (float) $purchase->paid_amount;
+        $totalItemCount = (int) $purchase->items->count();
+        $totalQuantityCount = (int) $purchase->items->sum('quantity');
         $statusStyles = [
             'pending' => 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
             'checking' => 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
@@ -87,18 +89,53 @@
             </div>
         </x-form-section>
 
-        <x-form-section title="Items">
+        <x-form-section title="Workflow & Counts">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-700 dark:bg-gray-900/40">
+                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Item Count</p>
+                    <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ $totalItemCount }}</p>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-700 dark:bg-gray-900/40">
+                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Qty Count</p>
+                    <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ $totalQuantityCount }}</p>
+                </div>
+                <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Created By</p>
+                    <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ $purchase->creator?->name ?? '-' }}</p>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ optional($purchase->created_at)->format('d M Y h:i A') ?: '-' }}</p>
+                </div>
+            </div>
+
+            <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Checking By</p>
+                    <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ $purchase->checker?->name ?? '-' }}</p>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ optional($purchase->checked_at)->format('d M Y h:i A') ?: '-' }}</p>
+                </div>
+                <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Verified By</p>
+                    <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ $purchase->verifier?->name ?? '-' }}</p>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ optional($purchase->verified_at)->format('d M Y h:i A') ?: '-' }}</p>
+                </div>
+                <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Complete By</p>
+                    <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ $purchase->completer?->name ?? '-' }}</p>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ optional($purchase->completed_at)->format('d M Y h:i A') ?: '-' }}</p>
+                </div>
+            </div>
+        </x-form-section>
+
+        <x-form-section title="Purchase Items">
             <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
                 <table class="w-full text-left text-sm text-gray-500 dark:text-gray-400">
                     <thead class="bg-gray-100 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
                             <th class="px-6 py-3">#</th>
-                            <th class="px-6 py-3">Product</th>
-                            <th class="px-6 py-3">Variant</th>
+                            <th class="px-6 py-3">Product Name & Variant</th>
                             <th class="px-6 py-3">SKU</th>
-                            <th class="px-6 py-3 text-right">Qty</th>
+                            <th class="px-6 py-3 text-right">PCS Quantity</th>
                             <th class="px-6 py-3 text-right">Unit Price</th>
-                            <th class="px-6 py-3 text-right">Total</th>
+                            <th class="px-6 py-3 text-right">Line Total</th>
                             <th class="px-6 py-3 text-center">Barcode</th>
                         </tr>
                     </thead>
@@ -106,20 +143,22 @@
                         @foreach($purchase->items as $index => $item)
                             <tr class="border-b bg-white dark:border-gray-700 dark:bg-gray-800">
                                 <td class="px-6 py-4">{{ $index + 1 }}</td>
-                                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ $item->product_name }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                                    @if($item->variant)
-                                        {{ $item->variant->unit_value ? $item->variant->unit_value . ' ' : '' }}{{ $item->variant->unit->name ?? ($item->variant->unit->short_name ?? '-') }}
-                                    @else
-                                        -
-                                    @endif
+                                <td class="px-6 py-4">
+                                    <div class="font-medium text-gray-900 dark:text-white">{{ $item->product_name }}</div>
+                                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        @if($item->variant)
+                                            {{ $item->variant->unit_value ? $item->variant->unit_value . ' ' : '' }}{{ $item->variant->unit->name ?? ($item->variant->unit->short_name ?? '-') }}
+                                        @else
+                                            Variant not linked
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 font-mono text-xs text-gray-600 dark:text-gray-300">
                                     {{ $item->variant?->sku ?? '-' }}
                                 </td>
-                                <td class="px-6 py-4 text-right">{{ $item->quantity }}</td>
-                                <td class="px-6 py-4 text-right">{{ number_format((float) $item->purchase_price, 2) }}</td>
-                                <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">{{ number_format((float) $item->total, 2) }}</td>
+                                <td class="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">{{ number_format((float) $item->quantity, 0) }}</td>
+                                <td class="px-6 py-4 text-right">Rs. {{ number_format((float) $item->purchase_price, 2) }}</td>
+                                <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">Rs. {{ number_format((float) $item->total, 2) }}</td>
                                 <td class="px-6 py-4 text-center">
                                     @if($item->variant)
                                         <a href="{{ route('products.barcode.print', $item->variant->id) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30">

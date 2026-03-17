@@ -80,6 +80,17 @@
     $initialDate = old('purchase_date', $isEditing ? optional($purchase->purchase_date)->format('Y-m-d') : now()->toDateString());
     $initialNumber = old('purchase_number', $isEditing ? $purchase->purchase_number : ($suggestedNumber ?? ''));
     $initialStatus = old('status', $isEditing ? ($purchase->status ?? 'pending') : 'pending');
+    $statusOptions = \App\Models\Purchase::STATUSES;
+    if ($isEditing) {
+        $currentStatusIndex = array_search($purchase->status ?? 'pending', \App\Models\Purchase::STATUSES, true);
+        if ($currentStatusIndex === false) {
+            $currentStatusIndex = 0;
+        }
+        $statusOptions = array_slice(\App\Models\Purchase::STATUSES, $currentStatusIndex, 2);
+        if (empty($statusOptions)) {
+            $statusOptions = [$purchase->status ?? 'pending'];
+        }
+    }
     $initialDiscountType = old('discount_type', $isEditing ? ($purchase->discount_type ?: 'fixed') : 'fixed');
     $initialDiscountValue = old('discount_value', $isEditing ? (float) $purchase->discount_value : 0);
     $bankAccountOptions = collect($bankAccounts ?? [])
@@ -244,12 +255,20 @@
 
                 <div>
                     <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Status <span class="text-red-500">*</span></label>
-                    <select name="status" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" required>
-                        <option value="pending" @selected($initialStatus === 'pending')>Pending</option>
-                        <option value="checking" @selected($initialStatus === 'checking')>Checking</option>
-                        <option value="verified" @selected($initialStatus === 'verified')>Verified</option>
-                        <option value="complete" @selected($initialStatus === 'complete')>Complete</option>
-                    </select>
+                    @if($isEditing)
+                        <select name="status" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" required>
+                            @foreach($statusOptions as $statusOption)
+                                <option value="{{ $statusOption }}" @selected($initialStatus === $statusOption)>{{ ucfirst($statusOption) }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Status can stay the same or move forward one step only.</p>
+                    @else
+                        <input type="hidden" name="status" value="pending">
+                        <div class="inline-flex rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                            Pending
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">New purchases always start at pending.</p>
+                    @endif
                     @error('status')
                         <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror

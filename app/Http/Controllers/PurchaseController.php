@@ -25,7 +25,7 @@ class PurchaseController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Purchase::with('supplier')->withCount('items')->latest('purchase_date');
+        $query = Purchase::with(['supplier', 'items.variant.unit'])->withCount('items')->latest('purchase_date');
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -108,7 +108,6 @@ class PurchaseController extends Controller
             'supplier_id' => 'required|exists:suppliers,id',
             'purchase_date' => 'required|date',
             'purchase_number' => 'required|string|max:100|unique:purchases,purchase_number',
-            'status' => 'required|in:' . implode(',', Purchase::STATUSES),
             'items' => 'required|array|min:1',
             'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
             'items.*.product_id' => 'nullable|exists:products,id',
@@ -137,12 +136,14 @@ class PurchaseController extends Controller
             $paymentsData = $this->normalizePayments($validated['payments'] ?? []);
             $paidAmount = (float) collect($paymentsData)->sum('amount');
             $this->ensurePaidAmountWithinTotal($paidAmount, $totals['net_total']);
+            $creatorId = $request->user()?->id;
 
             $purchase = Purchase::create([
                 'purchase_number' => $purchaseNumber,
                 'supplier_id' => $validated['supplier_id'],
                 'purchase_date' => $validated['purchase_date'],
-                'status' => $validated['status'],
+                'status' => 'pending',
+                'created_by' => $creatorId,
                 'currency' => 'LKR',
                 'sub_total' => $totals['sub_total'],
                 'discount_type' => $totals['discount_type'],
@@ -178,13 +179,13 @@ class PurchaseController extends Controller
      */
     public function show(Purchase $purchase)
     {
-        $purchase->load(['items.variant.product', 'items.variant.unit', 'supplier']);
+        $purchase->load(['items.variant.product', 'items.variant.unit', 'supplier', 'creator', 'checker', 'verifier', 'completer']);
         return view('purchases.show', compact('purchase'));
     }
 
     public function success(Purchase $purchase)
     {
-        $purchase->load(['items.variant.product', 'items.variant.unit', 'supplier']);
+        $purchase->load(['items.variant.product', 'items.variant.unit', 'supplier', 'creator', 'checker', 'verifier', 'completer']);
 
         return view('purchases.success', compact('purchase'));
     }
@@ -194,7 +195,7 @@ class PurchaseController extends Controller
      */
     public function pdf(Purchase $purchase)
     {
-        $purchase->load(['items.variant.product', 'items.variant.unit', 'supplier']);
+        $purchase->load(['items.variant.product', 'items.variant.unit', 'supplier', 'creator', 'checker', 'verifier', 'completer']);
         return view('purchases.pdf', compact('purchase'));
     }
 
@@ -277,6 +278,12 @@ class PurchaseController extends Controller
             ]);
         }
 
+        $statusTransition = $this->resolveStatusTransition(
+            $purchase,
+            (string) $validated['status'],
+            $request->user()?->id
+        );
+
         DB::beginTransaction();
         try {
             $discountType = $validated['discount_type'] ?? 'fixed';
@@ -293,7 +300,7 @@ class PurchaseController extends Controller
                 'purchase_number' => $currentPurchaseNumber,
                 'supplier_id' => $validated['supplier_id'],
                 'purchase_date' => $currentPurchaseDate,
-                'status' => $validated['status'],
+                'status' => $statusTransition['status'],
                 // currency ignored/kept as LKR
                 'sub_total' => $totals['sub_total'],
                 'discount_type' => $totals['discount_type'],
@@ -306,7 +313,7 @@ class PurchaseController extends Controller
                 'payment_reference' => null,
                 'payment_account' => null, // Deprecated
                 'payment_note' => null, // Deprecated
-            ]);
+            ] + $statusTransition['audit']);
 
             // Sync Items: Delete old and create new
             $purchase->items()->delete();
@@ -749,5 +756,60 @@ class PurchaseController extends Controller
 
             $seen[$key] = $index;
         }
+    }
+
+    private function resolveStatusTransition(Purchase $purchase, string $requestedStatus, ?int $userId): array
+    {
+        $sequence = Purchase::STATUSES;
+        $currentStatus = strtolower((string) ($purchase->status ?? 'pending'));
+        $requestedStatus = strtolower(trim($requestedStatus));
+
+        $currentIndex = array_search($currentStatus, $sequence, true);
+        $requestedIndex = array_search($requestedStatus, $sequence, true);
+
+        if ($currentIndex === false) {
+            $currentIndex = 0;
+            $currentStatus = 'pending';
+        }
+
+        if ($requestedIndex === false) {
+            throw ValidationException::withMessages([
+                'status' => 'Selected purchase status is invalid.',
+            ]);
+        }
+
+        if ($requestedIndex < $currentIndex) {
+            throw ValidationException::withMessages([
+                'status' => 'Purchase status cannot move backward.',
+            ]);
+        }
+
+        if ($requestedIndex > $currentIndex + 1) {
+            throw ValidationException::withMessages([
+                'status' => 'Purchase status can only move forward one step at a time.',
+            ]);
+        }
+
+        $audit = [];
+
+        if ($requestedIndex === $currentIndex + 1) {
+            $timestamp = now();
+
+            if ($requestedStatus === 'checking') {
+                $audit['checked_by'] = $userId;
+                $audit['checked_at'] = $timestamp;
+            } elseif ($requestedStatus === 'verified') {
+                $audit['verified_by'] = $userId;
+                $audit['verified_at'] = $timestamp;
+            } elseif ($requestedStatus === 'complete') {
+                $audit['completed_by'] = $userId;
+                $audit['completed_at'] = $timestamp;
+            }
+        }
+
+        return [
+            'status' => $requestedStatus,
+            'audit' => $audit,
+        ];
     }
 }
