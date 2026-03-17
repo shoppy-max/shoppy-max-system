@@ -181,6 +181,29 @@
             font-size: 12px;
             color: #6b7280;
         }
+        .muted-line {
+            display: block;
+            margin-top: 2px;
+            font-size: 11px;
+            color: #6b7280;
+        }
+        .tracking-list {
+            margin-top: 6px;
+            font-size: 10px;
+            line-height: 1.45;
+            color: #4b5563;
+        }
+        .tracking-unit {
+            display: inline-block;
+            margin: 0 4px 4px 0;
+            padding: 2px 6px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            background: #f9fafb;
+            font-family: monospace;
+            font-size: 10px;
+            color: #111827;
+        }
         @media print {
             body {
                 background: #fff;
@@ -289,7 +312,27 @@
                 <tbody>
                     @foreach($order->items as $item)
                         <tr>
-                            <td>{{ $item->product_name }}</td>
+                            <td>
+                                {{ $item->product_name }}
+                                <span class="muted-line">
+                                    Variant:
+                                    @if($item->variant)
+                                        {{ $item->variant->unit_value ? $item->variant->unit_value . ' ' : '' }}{{ $item->variant->unit->name ?? ($item->variant->unit->short_name ?? '-') }}
+                                    @else
+                                        -
+                                    @endif
+                                </span>
+                                @if($item->inventoryUnits->isNotEmpty())
+                                    <div class="tracking-list">
+                                        <strong>Tracked Units:</strong><br>
+                                        @foreach($item->inventoryUnits as $trackedUnit)
+                                            <span class="tracking-unit">
+                                                {{ $trackedUnit->unit_code }}{{ $trackedUnit->purchase?->purchase_number ? ' [' . $trackedUnit->purchase->purchase_number . ']' : ' [Legacy]' }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </td>
                             <td class="text-center">{{ $item->sku }}</td>
                             <td class="text-center">{{ $item->quantity }}</td>
                             <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>

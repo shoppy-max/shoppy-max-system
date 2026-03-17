@@ -26,7 +26,7 @@
                         <strong class="text-gray-900 dark:text-white">{{ $purchase->supplier->business_name ?? $purchase->supplier->name }}</strong>.
                     </p>
 
-                    <div class="mb-8 grid grid-cols-1 gap-4 text-left sm:grid-cols-2 xl:grid-cols-5">
+                    <div class="mb-8 grid grid-cols-1 gap-4 text-left sm:grid-cols-2 xl:grid-cols-6">
                         <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/30">
                             <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Purchasing ID</p>
                             <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ $purchase->purchase_number }}</p>
@@ -38,6 +38,10 @@
                         <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/30">
                             <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Items</p>
                             <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ $purchase->items->count() }}</p>
+                        </div>
+                        <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/30">
+                            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">PCS Qty</p>
+                            <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ number_format((float) $purchase->items->sum('quantity'), 0) }}</p>
                         </div>
                         <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/30">
                             <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</p>
@@ -53,9 +57,15 @@
                         </div>
                     </div>
 
-                    <div class="mb-8 rounded-lg border border-blue-200 bg-blue-50 p-4 text-left text-sm text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
-                        Inventory has not been added yet. Stock will update only when this purchase is moved to <span class="font-semibold">Complete</span>.
-                    </div>
+                    @if(($purchase->status ?? 'pending') !== 'complete')
+                        <div class="mb-8 rounded-lg border border-blue-200 bg-blue-50 p-4 text-left text-sm text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
+                            Inventory has not been added yet. Stock will update only when this purchase is moved to <span class="font-semibold">Complete</span>.
+                        </div>
+                    @else
+                        <div class="mb-8 rounded-lg border border-green-200 bg-green-50 p-4 text-left text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300">
+                            Inventory was added to stock when this purchase was completed on {{ optional($purchase->stock_applied_at)->format('d M Y h:i A') ?: optional($purchase->completed_at)->format('d M Y h:i A') ?: '-' }}. Completed purchases stay locked to preserve audit accuracy.
+                        </div>
+                    @endif
 
                     <div class="mb-8 flex flex-wrap justify-center gap-3">
                         <a href="{{ route('purchases.barcodes', $purchase) }}" target="_blank" class="inline-flex items-center rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
@@ -76,8 +86,10 @@
                                     <th class="px-6 py-3">Product</th>
                                     <th class="px-6 py-3">Variant</th>
                                     <th class="px-6 py-3">SKU</th>
+                                    <th class="px-6 py-3">Tracked Labels</th>
                                     <th class="px-6 py-3 text-right">Qty</th>
                                     <th class="px-6 py-3 text-right">Unit Price</th>
+                                    <th class="px-6 py-3 text-right">Line Total</th>
                                     <th class="px-6 py-3 text-center">Barcode</th>
                                 </tr>
                             </thead>
@@ -93,8 +105,32 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 font-mono text-xs">{{ $item->variant?->sku ?? '-' }}</td>
+                                        <td class="px-6 py-4">
+                                            @if($item->inventoryUnits->isNotEmpty())
+                                                <div class="flex flex-wrap gap-1.5">
+                                                    @foreach($item->inventoryUnits as $trackedUnit)
+                                                        @php
+                                                            $trackedStatus = strtolower((string) $trackedUnit->status);
+                                                            $trackedStatusClass = match ($trackedStatus) {
+                                                                'available' => 'border-green-200 bg-green-50 text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300',
+                                                                'pending_receipt' => 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300',
+                                                                'allocated' => 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300',
+                                                                'delivered' => 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/40 dark:bg-purple-900/20 dark:text-purple-300',
+                                                                default => 'border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300',
+                                                            };
+                                                        @endphp
+                                                        <span class="inline-flex rounded-lg border px-2 py-1 font-mono text-[11px] {{ $trackedStatusClass }}" title="{{ ucfirst(str_replace('_', ' ', $trackedUnit->status)) }}">
+                                                            {{ $trackedUnit->unit_code }}
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <span class="text-xs text-gray-400 dark:text-gray-500">No labels generated</span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 text-right">{{ $item->quantity }}</td>
                                         <td class="px-6 py-4 text-right">Rs. {{ number_format((float) $item->purchase_price, 2) }}</td>
+                                        <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">Rs. {{ number_format((float) $item->total, 2) }}</td>
                                         <td class="px-6 py-4 text-center">
                                             @if($item->variant)
                                                 <a href="{{ route('purchases.items.barcodes', [$purchase, $item]) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-lg bg-blue-700 px-4 py-2 text-xs font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700" title="Print {{ number_format((float) $item->quantity, 0) }} labels">

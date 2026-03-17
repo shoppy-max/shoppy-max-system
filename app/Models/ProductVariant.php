@@ -30,4 +30,9 @@ class ProductVariant extends Model
     {
         return $this->belongsTo(Unit::class);
     }
+
+    public function inventoryUnits()
+    {
+        return $this->hasMany(InventoryUnit::class);
+    }
 }

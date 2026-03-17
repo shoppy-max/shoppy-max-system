@@ -7,6 +7,7 @@ use App\Models\PurchaseItem;
 use App\Models\Supplier;
 use App\Models\ProductVariant;
 use App\Models\BankAccount;
+use App\Services\InventoryUnitService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -61,7 +62,7 @@ class PurchaseController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Purchase::with(['supplier', 'items.variant.unit'])->withCount('items')->latest('purchase_date');
+        $query = Purchase::with(['supplier', 'items.variant.unit', 'items.inventoryUnits'])->withCount('items')->latest('purchase_date');
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -298,13 +299,13 @@ class PurchaseController extends Controller
      */
     public function show(Purchase $purchase)
     {
-        $purchase->load(['items.variant.product', 'items.variant.unit', 'supplier', 'creator', 'checker', 'verifier', 'completer']);
+        $purchase->load(['items.variant.product', 'items.variant.unit', 'items.inventoryUnits', 'supplier', 'creator', 'checker', 'verifier', 'completer']);
         return view('purchases.show', compact('purchase'));
     }
 
     public function success(Purchase $purchase)
     {
-        $purchase->load(['items.variant.product', 'items.variant.unit', 'supplier', 'creator', 'checker', 'verifier', 'completer']);
+        $purchase->load(['items.variant.product', 'items.variant.unit', 'items.inventoryUnits', 'supplier', 'creator', 'checker', 'verifier', 'completer']);
 
         return view('purchases.success', compact('purchase'));
     }
@@ -314,24 +315,22 @@ class PurchaseController extends Controller
      */
     public function pdf(Purchase $purchase)
     {
-        $purchase->load(['items.variant.product', 'items.variant.unit', 'supplier', 'creator', 'checker', 'verifier', 'completer']);
+        $purchase->load(['items.variant.product', 'items.variant.unit', 'items.inventoryUnits', 'supplier', 'creator', 'checker', 'verifier', 'completer']);
         return view('purchases.pdf', compact('purchase'));
     }
 
     public function printBarcodes(Purchase $purchase)
     {
-        $purchase->load(['items.variant.product', 'items.variant.unit']);
+        $units = $this->inventoryUnits()->purchaseUnits($purchase);
 
-        $variants = $this->buildPurchaseBarcodeVariantSet($purchase->items);
-
-        if ($variants->isEmpty()) {
+        if ($units->isEmpty()) {
             return redirect()
                 ->route('purchases.show', $purchase)
-                ->with('error', 'No barcode-ready variants found for this purchase.');
+                ->with('error', 'No barcode-ready unit labels found for this purchase.');
         }
 
         $pdf = app('dompdf.wrapper');
-        $pdf->loadView('product_management.products.barcode-pdf', compact('variants'));
+        $pdf->loadView('purchases.barcode-pdf', compact('units'));
 
         return $pdf->stream('purchase_' . $purchase->purchase_number . '_barcodes.pdf');
     }
@@ -340,18 +339,16 @@ class PurchaseController extends Controller
     {
         abort_if((int) $item->purchase_id !== (int) $purchase->id, 404);
 
-        $item->loadMissing(['variant.product', 'variant.unit']);
+        $units = $this->inventoryUnits()->purchaseItemUnits($item);
 
-        $variants = $this->buildPurchaseBarcodeVariantSet(collect([$item]));
-
-        if ($variants->isEmpty()) {
+        if ($units->isEmpty()) {
             return redirect()
                 ->route('purchases.show', $purchase)
-                ->with('error', 'No barcode-ready variant found for this purchase item.');
+                ->with('error', 'No barcode-ready unit labels found for this purchase item.');
         }
 
         $pdf = app('dompdf.wrapper');
-        $pdf->loadView('product_management.products.barcode-pdf', compact('variants'));
+        $pdf->loadView('purchases.barcode-pdf', compact('units'));
 
         $sku = $item->variant?->sku ?: 'labels';
 
@@ -441,13 +438,14 @@ class PurchaseController extends Controller
             $paymentsData = $this->normalizePayments($validated['payments'] ?? []);
             $paidAmount = (float) collect($paymentsData)->sum('amount');
             $this->ensurePaidAmountWithinTotal($paidAmount, $totals['net_total']);
-            $stockAlreadyApplied = !is_null($purchase->stock_applied_at);
-            $shouldApplyStockAfterUpdate = $stockAlreadyApplied || $statusTransition['status'] === 'complete';
+            $shouldApplyStockAfterUpdate = $statusTransition['status'] === 'complete';
 
             $purchase->load('items');
-            if ($stockAlreadyApplied) {
-                $this->revertPurchaseStock($purchase->items, 'update');
-            }
+            $this->inventoryUnits()->archivePendingUnitsForPurchase(
+                $purchase,
+                'Purchase updated before completion.',
+                $request->user()?->id
+            );
 
             $purchase->update([
                 'purchase_number' => $currentPurchaseNumber,
@@ -467,7 +465,7 @@ class PurchaseController extends Controller
                 'payment_account' => null, // Deprecated
                 'payment_note' => null, // Deprecated
                 'stock_applied_at' => $shouldApplyStockAfterUpdate
-                    ? ($purchase->stock_applied_at ?? now())
+                    ? now()
                     : null,
             ] + $statusTransition['audit']);
 
@@ -475,7 +473,11 @@ class PurchaseController extends Controller
             $purchase->items()->delete();
 
             foreach ($validated['items'] as $item) {
-                $this->createPurchaseItem($purchase, $item, $shouldApplyStockAfterUpdate);
+                $this->createPurchaseItem($purchase, $item, false);
+            }
+
+            if ($shouldApplyStockAfterUpdate) {
+                $this->applyPurchaseStock($purchase->items()->get());
             }
 
             DB::commit();
@@ -621,6 +623,11 @@ class PurchaseController extends Controller
 
         try {
             $purchase->load('items');
+            $this->inventoryUnits()->archivePendingUnitsForPurchase(
+                $purchase,
+                'Purchase deleted before completion.',
+                auth()->id()
+            );
             $purchase->delete();
 
             DB::commit();
@@ -730,7 +737,7 @@ class PurchaseController extends Controller
             $productName = $this->buildVariantDisplayName($variant);
         }
 
-        PurchaseItem::create([
+        $purchaseItem = PurchaseItem::create([
             'purchase_id' => $purchase->id,
             'product_id' => $variant->product_id,
             'stock_variant_id' => $variant->id,
@@ -741,36 +748,9 @@ class PurchaseController extends Controller
         ]);
 
         if ($applyStock) {
-            $variant->increment('quantity', $quantity);
-        }
-    }
-
-    private function revertPurchaseStock($items, string $action): void
-    {
-        foreach ($items as $item) {
-            $variantId = (int) ($item->stock_variant_id ?? 0);
-            if ($variantId <= 0) {
-                continue;
-            }
-
-            $variant = ProductVariant::query()->whereKey($variantId)->lockForUpdate()->first();
-            if (!$variant) {
-                continue;
-            }
-
-            $quantity = (int) ($item->quantity ?? 0);
-            if ($quantity <= 0) {
-                continue;
-            }
-
-            if ((int) $variant->quantity < $quantity) {
-                $variantDisplayName = $this->buildVariantDisplayName($variant);
-                throw ValidationException::withMessages([
-                    'purchase' => "Cannot {$action} this purchase because stock for {$variantDisplayName} would go below zero.",
-                ]);
-            }
-
-            $variant->decrement('quantity', $quantity);
+            $this->inventoryUnits()->createAvailableUnitsForPurchaseItem($purchaseItem, auth()->id());
+        } else {
+            $this->inventoryUnits()->createPendingUnitsForPurchaseItem($purchaseItem, auth()->id());
         }
     }
 
@@ -1031,38 +1011,19 @@ class PurchaseController extends Controller
         };
     }
 
-    private function buildPurchaseBarcodeVariantSet($items)
-    {
-        return collect($items)
-            ->flatMap(function ($item) {
-                $variant = $item->variant;
-                $quantity = max((int) ($item->quantity ?? 0), 0);
-
-                if (!$variant || $quantity < 1) {
-                    return collect();
-                }
-
-                return collect(range(1, $quantity))->map(fn () => $variant);
-            })
-            ->values();
-    }
-
     private function applyPurchaseStock($items): void
     {
-        foreach ($items as $item) {
-            $variantId = (int) ($item->stock_variant_id ?? 0);
-            $quantity = (int) ($item->quantity ?? 0);
+        $purchase = $items instanceof \Illuminate\Support\Collection
+            ? $items->first()?->purchase
+            : null;
 
-            if ($variantId <= 0 || $quantity <= 0) {
-                continue;
-            }
-
-            $variant = ProductVariant::query()->whereKey($variantId)->lockForUpdate()->first();
-            if (!$variant) {
-                continue;
-            }
-
-            $variant->increment('quantity', $quantity);
+        if ($purchase) {
+            $this->inventoryUnits()->activatePendingUnitsForPurchase($purchase, auth()->id());
         }
+    }
+
+    private function inventoryUnits(): InventoryUnitService
+    {
+        return app(InventoryUnitService::class);
     }
 }

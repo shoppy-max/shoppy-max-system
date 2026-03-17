@@ -30,4 +30,9 @@ class PurchaseItem extends Model
     {
         return $this->belongsTo(ProductVariant::class, 'stock_variant_id');
     }
+
+    public function inventoryUnits()
+    {
+        return $this->hasMany(InventoryUnit::class);
+    }
 }

@@ -7,12 +7,14 @@ use App\Models\Category;
 use App\Models\SubCategory; // Make sure SubCategory model is imported
 use App\Models\Unit;
 use App\Models\Attribute;
+use App\Models\InventoryUnit;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ProductsExport;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Picqer\Barcode\BarcodeGeneratorPNG;
 use App\Models\ProductVariant;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
@@ -332,22 +334,30 @@ class ProductController extends Controller
     public function printBarcode(ProductVariant $variant)
     {
         $variant->loadMissing(['product', 'unit']);
+        $labels = $this->buildBarcodeLabelsForVariant($variant);
 
         $pdf = app('dompdf.wrapper');
-        $pdf->loadView('product_management.products.barcode-single-pdf', compact('variant'));
+        if ($labels->count() === 1) {
+            $label = $labels->first();
+            $pdf->loadView('product_management.products.barcode-single-pdf', compact('label'));
+            return $pdf->stream('barcode_' . $variant->sku . '.pdf');
+        }
 
-        return $pdf->stream('barcode_' . $variant->sku . '.pdf');
+        $pdf->loadView('product_management.products.barcode-pdf', compact('labels'));
+
+        return $pdf->stream('barcode_' . $variant->sku . '_labels.pdf');
     }
 
     public function bulkPrintBarcode(Request $request) 
     {
         $request->validate([
             'products' => 'required|string', // Comma separated IDs
+            'mode' => 'nullable|in:quantity,variant',
         ]);
 
         $productIds = explode(',', $request->products);
         $variants = ProductVariant::whereIn('product_id', $productIds)
-                        ->with(['product'])
+                        ->with(['product', 'unit'])
                         ->orderBy('product_id')
                         ->get();
 
@@ -355,8 +365,17 @@ class ProductController extends Controller
             return back()->with('error', 'No variants found for selected products.');
         }
 
+        $mode = strtolower((string) $request->input('mode', 'quantity'));
+        $labels = $mode === 'variant'
+            ? $this->buildGenericBarcodeLabelsForVariants($variants)
+            : $this->buildBarcodeLabelsForVariants($variants);
+
+        if ($labels->isEmpty()) {
+            return back()->with('error', 'No barcode labels available for selected products.');
+        }
+
         $pdf = app('dompdf.wrapper');
-        $pdf->loadView('product_management.products.barcode-pdf', compact('variants'));
+        $pdf->loadView('product_management.products.barcode-pdf', compact('labels'));
         
         return $pdf->stream('barcodes.pdf');
     }
@@ -417,6 +436,94 @@ class ProductController extends Controller
                 'name' => 'A product with this name already exists.',
             ]);
         }
+    }
+
+    private function buildBarcodeLabelsForVariants(Collection $variants): Collection
+    {
+        $variants = $variants->loadMissing(['product', 'unit']);
+        $variantIds = $variants->pluck('id')->filter()->values();
+
+        $availableUnits = InventoryUnit::query()
+            ->whereIn('product_variant_id', $variantIds)
+            ->where('status', InventoryUnit::STATUS_AVAILABLE)
+            ->orderBy('product_variant_id')
+            ->orderBy('id')
+            ->get(['product_variant_id', 'unit_code'])
+            ->groupBy('product_variant_id');
+
+        return $variants->flatMap(function (ProductVariant $variant) use ($availableUnits) {
+            return $this->buildBarcodeLabelsForVariant($variant, $availableUnits->get($variant->id, collect()));
+        })->values();
+    }
+
+    private function buildGenericBarcodeLabelsForVariants(Collection $variants): Collection
+    {
+        $variants = $variants->loadMissing(['product', 'unit']);
+
+        return $variants->map(function (ProductVariant $variant) {
+            return $this->buildGenericBarcodeLabelForVariant($variant);
+        })->values();
+    }
+
+    private function buildBarcodeLabelsForVariant(ProductVariant $variant, ?Collection $availableUnits = null): Collection
+    {
+        $variant->loadMissing(['product', 'unit']);
+
+        $productName = (string) ($variant->product?->name ?? '');
+        $variantText = trim(
+            (string) ($variant->unit_value ? $variant->unit_value . ' ' : '') .
+            (string) ($variant->unit?->name ?? '')
+        );
+        $variantText .= $variant->unit?->short_name ? ' (' . $variant->unit->short_name . ')' : '';
+
+        $stockCount = max((int) ($variant->quantity ?? 0), 0);
+        $availableUnits ??= InventoryUnit::query()
+            ->where('product_variant_id', $variant->id)
+            ->where('status', InventoryUnit::STATUS_AVAILABLE)
+            ->orderBy('id')
+            ->get(['unit_code']);
+
+        $labels = collect();
+
+        foreach ($availableUnits as $unit) {
+            $labels->push([
+                'product_name' => $productName,
+                'variant_text' => $variantText,
+                'barcode_value' => (string) $unit->unit_code,
+                'display_code' => (string) $unit->unit_code,
+            ]);
+        }
+
+        $targetCount = $stockCount > 0 ? $stockCount : 1;
+
+        while ($labels->count() < $targetCount) {
+            $labels->push([
+                'product_name' => $productName,
+                'variant_text' => $variantText,
+                'barcode_value' => (string) $variant->sku,
+                'display_code' => (string) $variant->sku,
+            ]);
+        }
+
+        return $labels->values();
+    }
+
+    private function buildGenericBarcodeLabelForVariant(ProductVariant $variant): array
+    {
+        $variant->loadMissing(['product', 'unit']);
+
+        $variantText = trim(
+            (string) ($variant->unit_value ? $variant->unit_value . ' ' : '') .
+            (string) ($variant->unit?->name ?? '')
+        );
+        $variantText .= $variant->unit?->short_name ? ' (' . $variant->unit->short_name . ')' : '';
+
+        return [
+            'product_name' => (string) ($variant->product?->name ?? ''),
+            'variant_text' => $variantText,
+            'barcode_value' => (string) $variant->sku,
+            'display_code' => (string) $variant->sku,
+        ];
     }
 
     private function resolveVariantUnitFilter(Request $request): array

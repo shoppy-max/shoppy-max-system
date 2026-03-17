@@ -83,6 +83,11 @@ class Purchase extends Model
         return $this->hasMany(PurchaseItem::class);
     }
 
+    public function inventoryUnits()
+    {
+        return $this->hasMany(InventoryUnit::class);
+    }
+
     public function getPaymentStatusAttribute(): string
     {
         $netTotal = (float) ($this->net_total ?? 0);

@@ -188,6 +188,7 @@
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Product Image</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Product Name</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">SKU</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Tracked Units / Source</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Variant</th>
                                 <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Quantity</th>
                                 <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Unit Price</th>
@@ -219,6 +220,22 @@
                                     </td>
                                     <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">{{ $item->product_name }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $item->sku ?: '-' }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                                        @if($item->inventoryUnits->isNotEmpty())
+                                            <div class="space-y-1">
+                                                @foreach($item->inventoryUnits as $trackedUnit)
+                                                    <div class="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 dark:border-gray-700 dark:bg-gray-900/40">
+                                                        <div class="font-mono text-[11px] text-gray-800 dark:text-gray-200">{{ $trackedUnit->unit_code }}</div>
+                                                        <div class="text-[10px] text-gray-500 dark:text-gray-400">
+                                                            {{ $trackedUnit->purchase?->purchase_number ? 'Source: ' . $trackedUnit->purchase->purchase_number : 'Source: Legacy stock' }}
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $variantLabel !== '' ? $variantLabel : '-' }}</td>
                                     <td class="px-4 py-3 text-sm text-center text-gray-900 dark:text-gray-100">{{ (int) $item->quantity }}</td>
                                     <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-gray-100">LKR {{ number_format((float) $item->unit_price, 2) }}</td>
@@ -226,7 +243,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No products found in this order.</td>
+                                    <td colspan="8" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No products found in this order.</td>
                                 </tr>
                             @endforelse
                         </tbody>

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Barcodes</title>
+    <title>Purchase Unit Labels</title>
     <style>
         @page {
             size: A4 portrait;
@@ -19,30 +19,30 @@
             width: 100%;
         }
 
-        .barcode-row {
+        .label-row {
             width: 100%;
             clear: both;
         }
 
-        .barcode-item {
+        .label-item {
             float: left;
             width: 34mm;
             height: 25mm;
             margin-right: 2mm;
             margin-bottom: 2mm;
             border: 0.2mm solid #d1d5db;
-            padding: 1.3mm 1.5mm 1mm;
+            padding: 1.1mm 1.5mm 1mm;
             text-align: center;
             box-sizing: border-box;
             overflow: hidden;
             page-break-inside: avoid;
         }
 
-        .barcode-item.last-in-row {
+        .label-item.last-in-row {
             margin-right: 0;
         }
 
-        .barcode-row::after {
+        .label-row::after {
             content: "";
             display: block;
             clear: both;
@@ -58,9 +58,9 @@
         }
 
         .variant-info {
-            margin-top: 0.6mm;
-            min-height: 2.6mm;
-            font-size: 6.5px;
+            margin-top: 0.5mm;
+            min-height: 2.4mm;
+            font-size: 6.2px;
             line-height: 1.1;
             color: #4b5563;
             white-space: nowrap;
@@ -68,26 +68,43 @@
             text-overflow: ellipsis;
         }
 
+        .sku {
+            margin-top: 0.4mm;
+            font-size: 5.8px;
+            color: #6b7280;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .barcode-wrap {
-            margin: 0.8mm 0 0.4mm;
-            height: 9.5mm;
+            margin: 0.6mm 0 0.4mm;
+            height: 9.2mm;
         }
 
         .barcode-img {
             width: 100%;
-            height: 9.5mm;
+            height: 9.2mm;
             object-fit: contain;
             display: block;
         }
 
-        .sku {
+        .unit-code {
             font-family: "Courier New", monospace;
-            font-size: 7px;
+            font-size: 6.5px;
             font-weight: 700;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.2px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        .status {
+            margin-top: 0.3mm;
+            font-size: 5.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #2563eb;
         }
     </style>
 </head>
@@ -97,22 +114,24 @@
     @endphp
 
     <div class="sheet">
-        @foreach(collect($labels)->chunk(5) as $row)
-            <div class="barcode-row">
-                @foreach($row as $label)
-                    <div class="barcode-item {{ $loop->last ? 'last-in-row' : '' }}">
-                        <div class="product-name">{{ $label['product_name'] }}</div>
-                        <div class="variant-info">{{ $label['variant_text'] }}</div>
+        @foreach(collect($units)->chunk(5) as $row)
+            <div class="label-row">
+                @foreach($row as $unit)
+                    <div class="label-item {{ $loop->last ? 'last-in-row' : '' }}">
+                        <div class="product-name">{{ $unit->product_name_snapshot ?: ($unit->productVariant?->product?->name ?? 'Product') }}</div>
+                        <div class="variant-info">{{ $unit->variant_label_snapshot ?: '-' }}</div>
+                        <div class="sku">{{ $unit->sku_snapshot ?: ($unit->productVariant?->sku ?? '-') }}</div>
 
                         <div class="barcode-wrap">
                             <img
                                 class="barcode-img"
-                                src="data:image/png;base64,{{ base64_encode($generator->getBarcode($label['barcode_value'], $generator::TYPE_CODE_128)) }}"
-                                alt="Barcode for {{ $label['display_code'] }}"
+                                src="data:image/png;base64,{{ base64_encode($generator->getBarcode($unit->unit_code, $generator::TYPE_CODE_128)) }}"
+                                alt="Barcode for {{ $unit->unit_code }}"
                             >
                         </div>
 
-                        <div class="sku">{{ $label['display_code'] }}</div>
+                        <div class="unit-code">{{ $unit->unit_code }}</div>
+                        <div class="status">{{ str_replace('_', ' ', $unit->status) }}</div>
                     </div>
                 @endforeach
             </div>

@@ -10,6 +10,7 @@ use App\Models\City;
 use App\Models\Courier;
 use App\Models\CourierPayment;
 use App\Models\Customer;
+use App\Models\InventoryUnit;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderLog;
@@ -24,7 +25,9 @@ use App\Models\SubCategory;
 use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\InventoryUnitService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
@@ -49,6 +52,7 @@ class DemoSystemSeeder extends Seeder
         $this->seedResellerPayments($resellers);
         $this->syncResellerDueAmounts($resellers);
         $this->seedAttributes();
+        $this->seedInventoryUnits();
     }
 
     private function seedUsers(): array
@@ -95,6 +99,20 @@ class DemoSystemSeeder extends Seeder
             'super_admin' => $superAdmin,
             'manager' => $manager,
         ];
+    }
+
+    private function seedInventoryUnits(): void
+    {
+        if (!Schema::hasTable('inventory_units') || !Schema::hasTable('inventory_unit_events')) {
+            return;
+        }
+
+        if (InventoryUnit::query()->exists()) {
+            DB::table('inventory_unit_events')->delete();
+            DB::table('inventory_units')->delete();
+        }
+
+        app(InventoryUnitService::class)->backfillFromCurrentState();
     }
 
     private function seedUnits(): array

@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\OrderLog;
 use App\Models\Courier;
 use App\Models\City;
+use App\Services\InventoryUnitService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -515,9 +516,6 @@ class OrderController extends Controller
                     'subtotal' => $subtotal,
                 ]);
 
-                // Deduct Stock
-                $variant->decrement('quantity', $qty);
-
                 // Accumulate Totals
                 $totalAmount += $subtotal;
                 $totalCost += $itemCost;
@@ -555,6 +553,7 @@ class OrderController extends Controller
                 (string) ($order->delivery_status ?? 'pending')
             );
             $order->save();
+            $this->syncOrderInventoryState($order, Auth::id());
             $this->syncOrderCommission($order);
             $this->syncResellerReturnFeePenalty($order);
 
@@ -664,7 +663,7 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        $order->load(['items.variant.unit', 'items.variant.product', 'customer', 'reseller', 'user', 'courier']);
+        $order->load(['items.variant.unit', 'items.variant.product', 'items.inventoryUnits.purchase', 'customer', 'reseller', 'user', 'courier']);
         return view('orders.show', compact('order'));
     }
 
@@ -673,7 +672,7 @@ class OrderController extends Controller
      */
     public function printView(Order $order)
     {
-        $order->load(['items.variant.unit', 'items.variant.product', 'customer', 'reseller', 'user', 'courier']);
+        $order->load(['items.variant.unit', 'items.variant.product', 'items.inventoryUnits.purchase', 'customer', 'reseller', 'user', 'courier']);
 
         return view('orders.print', compact('order'));
     }
@@ -683,7 +682,7 @@ class OrderController extends Controller
      */
     public function downloadPdf(Order $order)
     {
-        $order->load(['items.variant.unit', 'items.variant.product', 'customer', 'reseller', 'user', 'courier']);
+        $order->load(['items.variant.unit', 'items.variant.product', 'items.inventoryUnits.purchase', 'customer', 'reseller', 'user', 'courier']);
         $pdf = Pdf::loadView('orders.pdf', compact('order'))->setPaper('a4');
         return $pdf->download('invoice-' . $order->order_number . '.pdf');
     }
@@ -703,7 +702,7 @@ class OrderController extends Controller
             ->unique()
             ->values();
 
-        $orders = Order::with(['items.variant.unit', 'customer', 'reseller', 'user', 'courier'])
+        $orders = Order::with(['items.variant.unit', 'items.inventoryUnits.purchase', 'customer', 'reseller', 'user', 'courier'])
             ->whereIn('id', $requestedIds)
             ->get()
             ->sortBy(fn (Order $order) => $requestedIds->search($order->id))
@@ -876,15 +875,7 @@ class OrderController extends Controller
         try {
             $selectedCity = City::findOrFail($validated['customer']['city_id']);
 
-            // 1. Revert Stock for OLD items
-            foreach ($order->items as $item) {
-                if ($item->product_variant_id) {
-                    $variant = ProductVariant::find($item->product_variant_id);
-                    if ($variant) {
-                        $variant->increment('quantity', $item->quantity);
-                    }
-                }
-            }
+            $this->inventoryUnits()->releaseOrderUnits($order, 'released_for_order_update', Auth::id());
             
             // 2. Clear OLD items
             $order->items()->delete();
@@ -968,9 +959,6 @@ class OrderController extends Controller
                     'subtotal' => $subtotal,
                 ]);
 
-                // Deduct Stock
-                $variant->decrement('quantity', $qty);
-
                 // Accumulate totals
                 $totalAmount += $subtotal;
                 $totalCost += $itemCost;
@@ -1007,6 +995,7 @@ class OrderController extends Controller
                 (string) ($order->delivery_status ?? 'pending')
             );
             $order->save();
+            $this->syncOrderInventoryState($order, Auth::id());
             $this->syncOrderCommission($order);
             $this->syncResellerReturnFeePenalty($order);
 
@@ -1035,21 +1024,13 @@ class OrderController extends Controller
         try {
             $this->releaseResellerReturnFeePenalty($order);
 
-            // Restore Stock
-            foreach ($order->items as $item) {
-                if ($item->product_variant_id) {
-                    $variant = ProductVariant::find($item->product_variant_id);
-                    if ($variant) {
-                        $variant->increment('quantity', $item->quantity);
-                    }
-                }
-            }
+            $this->inventoryUnits()->releaseOrderUnits($order, 'released_on_order_delete', Auth::id());
 
             // Delete Order (Cascades items)
             $order->delete();
 
             DB::commit();
-            return redirect()->route('orders.index')->with('success', 'Order deleted successfully and stock restored.');
+            return redirect()->route('orders.index')->with('success', 'Order deleted successfully and allocated stock was released.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Failed to delete order: ' . $e->getMessage());
@@ -1060,7 +1041,7 @@ class OrderController extends Controller
      */
     public function callList(Request $request)
     {
-        $query = Order::with(['customer', 'reseller', 'items', 'user', 'courier'])
+        $query = Order::with(['customer', 'reseller', 'items.inventoryUnits.purchase', 'user', 'courier'])
             ->where('status', '!=', 'cancel');
         
         // Default to 'pending' call status if not specified, 
@@ -1100,9 +1081,6 @@ class OrderController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $order = Order::findOrFail($id);
-        $previousOrderStatus = (string) $order->status;
-        $previousDeliveryStatus = (string) ($order->delivery_status ?? 'pending');
-        
         $validated = $request->validate([
             'status' => 'nullable|in:pending,hold,confirm,cancel',
             'call_status' => 'nullable|in:pending,confirm,hold',
@@ -1110,45 +1088,67 @@ class OrderController extends Controller
             'sales_note' => 'nullable|string',
         ]);
 
-        $statusChanged = false;
-        if (array_key_exists('status', $validated)) {
-            $order->status = $validated['status'];
-            $statusChanged = true;
-        }
+        DB::beginTransaction();
 
-        if ($order->status === 'cancel') {
-            // Call status is system-driven for canceled orders.
-            $order->call_status = 'cancel';
-            $order->delivery_status = 'cancel';
-        } elseif (array_key_exists('call_status', $validated)) {
-            $order->call_status = $validated['call_status'];
-        } elseif ($statusChanged && $order->call_status === 'cancel') {
-            // If order moved away from cancel and no explicit call status was provided, reset to pending.
-            $order->call_status = 'pending';
-        }
+        try {
+            $previousOrderStatus = (string) $order->status;
+            $previousDeliveryStatus = (string) ($order->delivery_status ?? 'pending');
 
-        if ($order->status !== 'cancel' && array_key_exists('delivery_status', $validated)) {
-            $order->delivery_status = $this->normalizeDeliveryStatus($validated['delivery_status'], (string) $order->status);
-        } elseif ($statusChanged && $order->status !== 'cancel' && $order->delivery_status === 'cancel') {
-            $order->delivery_status = 'pending';
-        }
-        
-        if (array_key_exists('sales_note', $validated)) {
-             $order->sales_note = $validated['sales_note'];
-        }
+            $statusChanged = false;
+            if (array_key_exists('status', $validated)) {
+                $order->status = $validated['status'];
+                $statusChanged = true;
+            }
 
-        $this->applyDeliveryTimelineTimestamps($order, $previousOrderStatus, $previousDeliveryStatus);
-        $order->save();
-        $this->syncOrderCommission($order);
-        $this->syncResellerReturnFeePenalty($order);
+            if ($order->status === 'cancel') {
+                $order->call_status = 'cancel';
+                $order->delivery_status = 'cancel';
+            } elseif (array_key_exists('call_status', $validated)) {
+                $order->call_status = $validated['call_status'];
+            } elseif ($statusChanged && $order->call_status === 'cancel') {
+                $order->call_status = 'pending';
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Status updated successfully!',
-            'call_status' => $order->call_status,
-            'status' => $order->status,
-            'delivery_status' => $order->delivery_status,
-        ]);
+            if ($order->status !== 'cancel' && array_key_exists('delivery_status', $validated)) {
+                $order->delivery_status = $this->normalizeDeliveryStatus($validated['delivery_status'], (string) $order->status);
+            } elseif ($statusChanged && $order->status !== 'cancel' && $order->delivery_status === 'cancel') {
+                $order->delivery_status = 'pending';
+            }
+
+            if (array_key_exists('sales_note', $validated)) {
+                $order->sales_note = $validated['sales_note'];
+            }
+
+            $this->applyDeliveryTimelineTimestamps($order, $previousOrderStatus, $previousDeliveryStatus);
+            $order->save();
+            $this->syncOrderInventoryState($order, Auth::id());
+            $this->syncOrderCommission($order);
+            $this->syncResellerReturnFeePenalty($order);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status updated successfully!',
+                'call_status' => $order->call_status,
+                'status' => $order->status,
+                'delivery_status' => $order->delivery_status,
+            ]);
+        } catch (ValidationException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?: 'Unable to update order status.',
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
     }
 
     private function buildCourierRatesMap($couriers): array
@@ -1436,6 +1436,38 @@ class OrderController extends Controller
         return number_format((float) $rate, 2, '.', '');
     }
 
+    private function orderShouldHoldInventory(Order $order): bool
+    {
+        if ((string) ($order->status ?? '') === 'cancel') {
+            return false;
+        }
+
+        return strtolower((string) ($order->delivery_status ?? 'pending')) !== 'returned';
+    }
+
+    private function syncOrderInventoryState(Order $order, ?int $userId = null): void
+    {
+        $order->loadMissing(['items.variant.product', 'items.variant.unit']);
+
+        if (!$this->orderShouldHoldInventory($order)) {
+            $eventType = (string) ($order->status ?? '') === 'cancel'
+                ? 'released_on_cancel'
+                : 'released_on_return';
+
+            $this->inventoryUnits()->releaseOrderUnits($order, $eventType, $userId);
+
+            return;
+        }
+
+        $this->inventoryUnits()->ensureOrderUnitsAllocated($order, $userId);
+
+        if (strtolower((string) ($order->delivery_status ?? 'pending')) === 'delivered') {
+            $this->inventoryUnits()->markOrderUnitsDelivered($order, $userId);
+        } else {
+            $this->inventoryUnits()->markOrderUnitsAllocated($order, $userId);
+        }
+    }
+
     private function shouldApplyResellerReturnFee(Order $order): bool
     {
         if ((string) ($order->order_type ?? '') !== 'reseller') {
@@ -1668,5 +1700,10 @@ class OrderController extends Controller
         }
 
         return $normalizedRequested;
+    }
+
+    private function inventoryUnits(): InventoryUnitService
+    {
+        return app(InventoryUnitService::class);
     }
 }

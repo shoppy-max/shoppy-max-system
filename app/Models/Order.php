@@ -115,4 +115,9 @@ class Order extends Model
     {
         return $this->belongsTo(CourierPayment::class);
     }
+
+    public function inventoryUnits()
+    {
+        return $this->hasMany(InventoryUnit::class);
+    }
 }

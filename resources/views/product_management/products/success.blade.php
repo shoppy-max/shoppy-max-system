@@ -49,7 +49,7 @@
                                         <td class="px-6 py-4 text-right">Rs. {{ number_format((float) $variant->selling_price, 2) }}</td>
                                         <td class="px-6 py-4 text-center">
                                             <a href="{{ route('products.barcode.print', $variant->id) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-lg bg-blue-700 px-4 py-2 text-xs font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
-                                                Print Barcode
+                                                Print {{ max((int) $variant->quantity, 1) }} {{ max((int) $variant->quantity, 1) === 1 ? 'Label' : 'Labels' }}
                                             </a>
                                         </td>
                                     </tr>

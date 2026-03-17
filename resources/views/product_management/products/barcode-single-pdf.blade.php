@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Barcode - {{ $variant->sku }}</title>
+    <title>Barcode - {{ $label['display_code'] }}</title>
     <style>
         @page {
             size: 34mm 25mm;
@@ -74,20 +74,18 @@
     @endphp
 
     <div class="label">
-        <div class="product-name">{{ $variant->product->name }}</div>
-        <div class="variant-info">
-            {{ $variant->unit_value ? $variant->unit_value . ' ' : '' }}{{ $variant->unit->name }}{{ $variant->unit->short_name ? ' (' . $variant->unit->short_name . ')' : '' }}
-        </div>
+        <div class="product-name">{{ $label['product_name'] }}</div>
+        <div class="variant-info">{{ $label['variant_text'] }}</div>
 
         <div class="barcode-wrap">
             <img
                 class="barcode-img"
-                src="data:image/png;base64,{{ base64_encode($generator->getBarcode($variant->sku, $generator::TYPE_CODE_128)) }}"
-                alt="Barcode for {{ $variant->sku }}"
+                src="data:image/png;base64,{{ base64_encode($generator->getBarcode($label['barcode_value'], $generator::TYPE_CODE_128)) }}"
+                alt="Barcode for {{ $label['display_code'] }}"
             >
         </div>
 
-        <div class="sku">{{ $variant->sku }}</div>
+        <div class="sku">{{ $label['display_code'] }}</div>
     </div>
 </body>
 </html>

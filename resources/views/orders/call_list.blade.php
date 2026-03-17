@@ -369,6 +369,13 @@
                                         <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">
                                             <div x-text="item.product_name"></div>
                                             <div class="text-xs text-gray-500" x-text="item.sku"></div>
+                                            <template x-if="item.inventory_units && item.inventory_units.length">
+                                                <div class="mt-2 flex flex-wrap gap-1.5">
+                                                    <template x-for="trackedUnit in item.inventory_units" :key="trackedUnit.id">
+                                                        <span class="inline-flex rounded-md border border-gray-200 bg-gray-50 px-2 py-1 font-mono text-[11px] text-gray-700 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300" x-text="trackedUnit.unit_code + (trackedUnit.purchase?.purchase_number ? ' [' + trackedUnit.purchase.purchase_number + ']' : ' [Legacy]')"></span>
+                                                    </template>
+                                                </div>
+                                            </template>
                                         </td>
                                         <td class="px-4 py-2 text-center" x-text="item.quantity"></td>
                                         <td class="px-4 py-2 text-right" x-text="Number(item.unit_price).toFixed(2)"></td>
