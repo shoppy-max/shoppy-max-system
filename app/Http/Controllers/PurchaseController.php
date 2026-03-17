@@ -100,6 +100,8 @@ class PurchaseController extends Controller
             'payments.*.note' => 'nullable|string|max:255',
         ]);
 
+        $this->ensureUniquePurchaseItems($validated['items']);
+
         DB::beginTransaction();
         try {
             $purchaseNumber = trim((string) $validated['purchase_number']);
@@ -204,9 +206,22 @@ class PurchaseController extends Controller
             'payments.*.note' => 'nullable|string|max:255',
         ]);
 
+        $this->ensureUniquePurchaseItems($validated['items']);
+
+        $requestedPurchaseNumber = trim((string) $validated['purchase_number']);
+        $currentPurchaseNumber = trim((string) $purchase->purchase_number);
+        $requestedPurchaseDate = (string) $validated['purchase_date'];
+        $currentPurchaseDate = optional($purchase->purchase_date)->format('Y-m-d');
+
+        if ($requestedPurchaseNumber !== $currentPurchaseNumber || $requestedPurchaseDate !== $currentPurchaseDate) {
+            throw ValidationException::withMessages([
+                'purchase_number' => 'Purchasing ID cannot be changed after creation.',
+                'purchase_date' => 'Purchase date cannot be changed after creation.',
+            ]);
+        }
+
         DB::beginTransaction();
         try {
-            $purchaseNumber = trim((string) $validated['purchase_number']);
             $discountType = $validated['discount_type'] ?? 'fixed';
             $discountValue = isset($validated['discount_value']) ? (float) $validated['discount_value'] : 0;
             $totals = $this->calculatePurchaseTotals($validated['items'], $discountType, $discountValue);
@@ -218,9 +233,9 @@ class PurchaseController extends Controller
             $this->revertPurchaseStock($purchase->items, 'update');
 
             $purchase->update([
-                'purchase_number' => $purchaseNumber,
+                'purchase_number' => $currentPurchaseNumber,
                 'supplier_id' => $validated['supplier_id'],
-                'purchase_date' => $validated['purchase_date'],
+                'purchase_date' => $currentPurchaseDate,
                 // currency ignored/kept as LKR
                 'sub_total' => $totals['sub_total'],
                 'discount_type' => $totals['discount_type'],
@@ -314,25 +329,56 @@ class PurchaseController extends Controller
                             ->orWhere('description', 'like', "%{$query}%");
                     });
             })
-            ->limit(30)
-            ->get(['id', 'product_id', 'unit_value', 'sku']);
+            ->limit(50)
+            ->get(['id', 'product_id', 'unit_id', 'unit_value', 'sku']);
 
         return response()->json($variants
-            ->map(function (ProductVariant $variant) {
+            ->map(function (ProductVariant $variant) use ($query) {
                 if (!$variant->product) {
                     return null;
+                }
+
+                $productName = trim((string) $variant->product->name);
+                $variantLabel = $this->buildVariantLabel($variant);
+                $variantDetail = $this->buildVariantDetailLabel($variant);
+                $selectedLabel = $productName;
+
+                if ($variantLabel !== '') {
+                    $selectedLabel .= ' (' . $variantLabel . ')';
+                }
+
+                if (!empty($variant->sku)) {
+                    $selectedLabel .= ' [' . $variant->sku . ']';
                 }
 
                 return [
                     'id' => $variant->id,
                     'variant_id' => $variant->id,
                     'product_id' => $variant->product_id,
-                    'name' => $variant->product->name,
-                    'display_name' => $this->buildVariantDisplayName($variant),
+                    'name' => $productName,
+                    'product_name' => $productName,
+                    'variant_label' => $variantLabel,
+                    'variant_detail' => $variantDetail,
+                    'dropdown_label' => $variantLabel !== '' ? $productName . ' (' . $variantLabel . ')' : $productName,
+                    'selected_label' => $selectedLabel,
+                    'display_name' => $selectedLabel,
                     'sku' => $variant->sku,
+                    'search_rank' => $this->rankPurchaseSearchResult($query, $productName, (string) $variant->sku, $variantLabel),
                 ];
             })
             ->filter()
+            ->sortBy([
+                ['search_rank', 'asc'],
+                ['product_name', 'asc'],
+                ['variant_label', 'asc'],
+                ['sku', 'asc'],
+            ])
+            ->values()
+            ->take(30)
+            ->map(function (array $result) {
+                unset($result['search_rank']);
+                return $result;
+            })
             ->values());
     }
 
@@ -547,9 +593,7 @@ class PurchaseController extends Controller
     private function buildVariantDisplayName(ProductVariant $variant): string
     {
         $productName = trim((string) ($variant->product->name ?? 'Product'));
-        $unitValue = trim((string) ($variant->unit_value ?? ''));
-        $unitShort = trim((string) ($variant->unit->short_name ?? ''));
-        $unitLabel = trim(($unitValue !== '' ? $unitValue : '') . ($unitShort !== '' ? ' ' . $unitShort : ''));
+        $unitLabel = $this->buildVariantLabel($variant);
 
         $name = $productName;
         if ($unitLabel !== '') {
@@ -560,5 +604,92 @@ class PurchaseController extends Controller
         }
 
         return $name;
+    }
+
+    private function buildVariantLabel(ProductVariant $variant): string
+    {
+        $unitValue = trim((string) ($variant->unit_value ?? ''));
+        $unitShort = trim((string) ($variant->unit->short_name ?? ''));
+        $unitName = trim((string) ($variant->unit->name ?? ''));
+        $unitBaseLabel = $unitShort !== '' ? $unitShort : $unitName;
+
+        if ($unitValue !== '') {
+            return trim($unitValue . ($unitBaseLabel !== '' ? ' ' . $unitBaseLabel : ''));
+        }
+
+        return $unitBaseLabel;
+    }
+
+    private function buildVariantDetailLabel(ProductVariant $variant): string
+    {
+        $compact = $this->buildVariantLabel($variant);
+        $unitName = trim((string) ($variant->unit->name ?? ''));
+
+        if ($compact === '') {
+            return $unitName;
+        }
+
+        if ($unitName === '') {
+            return $compact;
+        }
+
+        $compactLower = mb_strtolower($compact);
+        $unitNameLower = mb_strtolower($unitName);
+
+        if ($compactLower === $unitNameLower || str_ends_with($compactLower, $unitNameLower)) {
+            return $compact;
+        }
+
+        return $compact . ' • ' . $unitName;
+    }
+
+    private function rankPurchaseSearchResult(string $query, string $productName, string $sku, string $variantLabel): int
+    {
+        $needle = mb_strtolower(trim($query));
+        $product = mb_strtolower($productName);
+        $sku = mb_strtolower($sku);
+        $variant = mb_strtolower($variantLabel);
+
+        return match (true) {
+            $sku !== '' && $sku === $needle => 0,
+            $product === $needle => 1,
+            $product !== '' && str_starts_with($product, $needle) => 2,
+            $sku !== '' && str_starts_with($sku, $needle) => 3,
+            $variant !== '' && str_starts_with($variant, $needle) => 4,
+            $product !== '' && str_contains($product, $needle) => 5,
+            $sku !== '' && str_contains($sku, $needle) => 6,
+            $variant !== '' && str_contains($variant, $needle) => 7,
+            default => 8,
+        };
+    }
+
+    private function ensureUniquePurchaseItems(array $items): void
+    {
+        $seen = [];
+
+        foreach ($items as $index => $item) {
+            $variantId = isset($item['product_variant_id']) && $item['product_variant_id'] !== ''
+                ? (int) $item['product_variant_id']
+                : null;
+            $productId = isset($item['product_id']) && $item['product_id'] !== ''
+                ? (int) $item['product_id']
+                : null;
+
+            $key = $variantId
+                ? 'variant:' . $variantId
+                : ($productId ? 'product:' . $productId : null);
+
+            if (!$key) {
+                continue;
+            }
+
+            if (isset($seen[$key])) {
+                throw ValidationException::withMessages([
+                    'items' => 'The same product variant cannot be added more than once in a single purchase.',
+                ]);
+            }
+
+            $seen[$key] = $index;
+        }
     }
 }

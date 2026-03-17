@@ -331,7 +331,7 @@
 
                     <div x-show="!isLoading && activeProduct">
                         <!-- Product Header Info -->
-                        <div class="flex gap-4 mb-6">
+                        <div class="flex gap-4 mb-4">
                             <div class="flex-shrink-0">
                                 <template x-if="activeProduct?.image">
                                     <img :src="activeProduct.image" class="w-20 h-20 rounded-lg object-cover bg-gray-100" />
@@ -346,6 +346,33 @@
                                 <h4 class="text-xl font-bold text-gray-900 dark:text-white" x-text="activeProduct?.name"></h4>
                                 <p class="text-sm text-gray-500" x-text="'Category: ' + (activeProduct?.category?.name || 'N/A')"></p>
                                 <p class="text-sm text-gray-600 dark:text-gray-300 mt-2" x-text="activeProduct?.description || 'No description provided.'"></p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-3 mb-6 sm:grid-cols-2 xl:grid-cols-3">
+                            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Sub Category</p>
+                                <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.sub_category?.name || 'N/A'"></p>
+                            </div>
+                            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Warranty</p>
+                                <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.warranty_period ? activeProduct.warranty_period + ' ' + (activeProduct.warranty_period_type || '') : 'No warranty'"></p>
+                            </div>
+                            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Stock</p>
+                                <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.total_quantity ?? '0'"></p>
+                            </div>
+                            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Selling Price Range</p>
+                                <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.price_display ? 'Rs. ' + activeProduct.price_display : 'N/A'"></p>
+                            </div>
+                            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Limit Price Range</p>
+                                <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.limit_price_display && activeProduct.limit_price_display !== 'N/A' ? 'Rs. ' + activeProduct.limit_price_display : 'N/A'"></p>
+                            </div>
+                            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Variants</p>
+                                <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.variants?.length ?? 0"></p>
                             </div>
                         </div>
 

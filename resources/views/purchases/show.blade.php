@@ -46,7 +46,7 @@
         <x-form-section title="Purchase Summary">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
                 <div>
-                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Reference</p>
+                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Purchasing ID</p>
                     <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ $purchase->purchase_number }}</p>
                 </div>
                 <div>

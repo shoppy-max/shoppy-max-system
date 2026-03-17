@@ -123,7 +123,7 @@
     @endif
 
     <div class="space-y-6">
-        <x-form-section title="Purchase Details" description="Supplier, date, and reference information.">
+        <x-form-section title="Purchase Details" description="Supplier, date, and purchasing ID information.">
             <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div class="md:col-span-2" @click.outside="showSupplierDropdown = false">
                     <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Supplier <span class="text-red-500">*</span></label>
@@ -216,15 +216,26 @@
 
                 <div>
                     <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Purchase Date <span class="text-red-500">*</span></label>
-                    <input type="date" name="purchase_date" value="{{ $initialDate }}" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" required>
+                    @if($isEditing)
+                        <input type="hidden" name="purchase_date" value="{{ $initialDate }}">
+                        <input type="date" value="{{ $initialDate }}" class="block w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 p-2.5 text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400" disabled>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Purchase date is locked after creation.</p>
+                    @else
+                        <input type="date" name="purchase_date" value="{{ $initialDate }}" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" required>
+                    @endif
                     @error('purchase_date')
                         <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Reference Number <span class="text-red-500">*</span></label>
-                    <input type="text" name="purchase_number" value="{{ $initialNumber }}" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" required {{ !$isEditing ? 'readonly' : '' }}>
+                    <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Purchasing ID <span class="text-red-500">*</span></label>
+                    @if($isEditing)
+                        <input type="text" name="purchase_number" value="{{ $initialNumber }}" class="block w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 p-2.5 text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400" required readonly>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Purchasing ID is locked after creation.</p>
+                    @else
+                        <input type="text" name="purchase_number" value="{{ $initialNumber }}" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" required readonly>
+                    @endif
                     @error('purchase_number')
                         <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
@@ -257,18 +268,28 @@
                                            x-model="item.product_name"
                                            @input="item.product_variant_id = null; item.product_id = null"
                                            @input.debounce.250ms="searchProducts(index)"
-                                           @focus="if ((item.product_name || '').trim().length >= 2) { searchProducts(index); }"
+                                           @focus="if (!item.product_variant_id && !item.product_id && (item.product_name || '').trim().length >= 2) { searchProducts(index); }"
                                            @keydown.escape="item.showResults = false"
-                                           @keydown.arrow-down.prevent="navigateProduct(index, 1)"
-                                           @keydown.arrow-up.prevent="navigateProduct(index, -1)"
-                                           @keydown.enter.prevent="selectHighlightedProduct(index)"
+                                           @keydown.arrow-down.prevent="if (!item.product_variant_id && !item.product_id) navigateProduct(index, 1)"
+                                           @keydown.arrow-up.prevent="if (!item.product_variant_id && !item.product_id) navigateProduct(index, -1)"
+                                           @keydown.enter.prevent="if (!item.product_variant_id && !item.product_id) selectHighlightedProduct(index)"
+                                           :readonly="!!item.product_variant_id || !!item.product_id"
                                            :class="item.product_variant_id ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700' : 'border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700'"
-                                           class="block w-full rounded-lg border p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:text-white"
+                                           class="block w-full rounded-lg border p-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:text-white"
                                            placeholder="Search product name, SKU, or unit"
                                            autocomplete="off"
                                            required>
 
-                                    <div x-show="item.showResults && item.results.length > 0"
+                                    <button type="button"
+                                            x-show="item.product_variant_id || item.product_id"
+                                            @click="clearProduct(index)"
+                                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 transition-colors hover:text-red-600"
+                                            title="Clear selected product"
+                                            style="display: none;">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+
+                                    <div x-show="item.showResults"
                                          x-transition:enter="transition ease-out duration-150"
                                          x-transition:enter-start="opacity-0"
                                          x-transition:enter-end="opacity-100"
@@ -277,17 +298,28 @@
                                          x-transition:leave-end="opacity-0"
                                          class="absolute z-20 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
                                          :class="shouldOpenUpward($el) ? 'bottom-full mb-1' : 'top-full mt-1'"
-                                         style="display: none;">
+                                        style="display: none;">
                                         <template x-for="(product, pIdx) in item.results" :key="product.id">
                                             <button type="button"
                                                     @click="selectProduct(index, product)"
                                                     @mouseenter="item.highlightedIndex = pIdx"
                                                     :class="item.highlightedIndex === pIdx ? 'bg-blue-50 dark:bg-gray-600' : ''"
                                                     class="block w-full border-b border-gray-100 px-4 py-3 text-left transition-colors hover:bg-blue-50 dark:border-gray-600 dark:hover:bg-gray-600">
-                                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="product.display_name || product.name"></p>
-                                                <p class="text-xs text-gray-500 dark:text-gray-300" x-text="product.sku ? ('SKU: ' + product.sku) : ('Product ID: ' + product.product_id)"></p>
+                                                <div class="flex items-start justify-between gap-3">
+                                                    <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="product.product_name || product.name"></p>
+                                                    <span x-show="product.variant_detail || product.variant_label" class="inline-flex rounded-full border border-blue-200 bg-blue-100 px-2.5 py-1 text-[11px] font-semibold text-blue-700 dark:border-blue-800 dark:bg-blue-900/40 dark:text-blue-300" x-text="product.variant_detail || product.variant_label"></span>
+                                                </div>
+                                                <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-300">
+                                                    <span class="inline-flex rounded border border-gray-200 bg-gray-100 px-2 py-0.5 font-mono text-[10px] text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200" x-text="product.sku ? ('SKU: ' + product.sku) : ('Product ID: ' + product.product_id)"></span>
+                                                </div>
                                             </button>
                                         </template>
+                                        <div x-show="item.loading" class="px-4 py-4 text-center text-xs text-gray-500 dark:text-gray-400" style="display: none;">
+                                            Searching products...
+                                        </div>
+                                        <div x-show="!item.loading && item.results.length === 0" class="px-4 py-4 text-center text-xs text-gray-500 dark:text-gray-400" style="display: none;">
+                                            No matching products found
+                                        </div>
                                     </div>
                                 </div>
 
@@ -298,7 +330,7 @@
 
                             <div class="md:col-span-2">
                                 <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Qty <span class="text-red-500">*</span></label>
-                                <input type="number" min="1" step="1" x-model="item.quantity" :name="`items[${index}][quantity]`" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" required>
+                                <input type="number" min="1" step="1" inputmode="numeric" x-model="item.quantity" @keydown="blockDecimalInput($event)" @blur="normalizeWholeQuantity(item, true)" :name="`items[${index}][quantity]`" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" required>
                             </div>
 
                             <div class="md:col-span-2">
@@ -470,6 +502,25 @@
                 this.payments = (config.initialPayments || []).map((payment, index) => this.normalizePayment(payment, index));
             },
 
+            notify(type, message) {
+                if (typeof window.Swal !== 'undefined') {
+                    window.Swal.fire({
+                        icon: type,
+                        title: message,
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2800,
+                        timerProgressBar: true,
+                        background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#1f2937',
+                    });
+                    return;
+                }
+
+                alert(message);
+            },
+
             normalizeItem(item, index) {
                 return {
                     rowId: `item-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`,
@@ -480,12 +531,32 @@
                     purchase_price: Number(item.purchase_price || 0),
                     results: [],
                     showResults: false,
+                    loading: false,
                     highlightedIndex: -1,
                 };
             },
 
             createItem() {
                 return this.normalizeItem({}, this.items.length + 1);
+            },
+
+            hasDuplicateProduct(product, currentIndex) {
+                const targetVariantId = String(product.variant_id || product.id || '');
+                const targetProductId = String(product.product_id || '');
+
+                return this.items.some((item, index) => {
+                    if (index === currentIndex) {
+                        return false;
+                    }
+
+                    if (targetVariantId && String(item.product_variant_id || '') === targetVariantId) {
+                        return true;
+                    }
+
+                    return !targetVariantId
+                        && targetProductId
+                        && String(item.product_id || '') === targetProductId;
+                });
             },
 
             normalizePayment(payment, index) {
@@ -601,18 +672,24 @@
                 if (query.length < 2) {
                     item.results = [];
                     item.showResults = false;
+                    item.loading = false;
                     return;
                 }
+
+                item.loading = true;
+                item.showResults = true;
 
                 try {
                     const response = await fetch(`${config.productSearchUrl}?q=${encodeURIComponent(query)}`);
                     const data = await response.json();
                     item.results = Array.isArray(data) ? data : [];
-                    item.showResults = item.results.length > 0;
+                    item.showResults = true;
+                    item.loading = false;
                     item.highlightedIndex = -1;
                 } catch (error) {
                     item.results = [];
-                    item.showResults = false;
+                    item.showResults = true;
+                    item.loading = false;
                 }
             },
 
@@ -622,11 +699,36 @@
                     return;
                 }
 
+                if (this.hasDuplicateProduct(product, index)) {
+                    this.notify('warning', 'This product variant is already added to the purchase.');
+                    item.results = [];
+                    item.showResults = false;
+                    item.loading = false;
+                    item.highlightedIndex = -1;
+                    return;
+                }
+
                 item.product_variant_id = product.variant_id || product.id || null;
                 item.product_id = product.product_id || null;
-                item.product_name = product.display_name || product.name || '';
+                item.product_name = product.selected_label || product.display_name || product.product_name || product.name || '';
                 item.results = [];
                 item.showResults = false;
+                item.loading = false;
+                item.highlightedIndex = -1;
+            },
+
+            clearProduct(index) {
+                const item = this.items[index];
+                if (!item) {
+                    return;
+                }
+
+                item.product_variant_id = null;
+                item.product_id = null;
+                item.product_name = '';
+                item.results = [];
+                item.showResults = false;
+                item.loading = false;
                 item.highlightedIndex = -1;
             },
 
@@ -684,6 +786,28 @@
                 return Math.max(qty, 0) * Math.max(price, 0);
             },
 
+            blockDecimalInput(event) {
+                if (['.', ',', 'e', 'E', '+', '-'].includes(event.key)) {
+                    event.preventDefault();
+                }
+            },
+
+            normalizeWholeQuantity(item, notifyIfAdjusted = false) {
+                const raw = Number(item.quantity);
+
+                if (!Number.isFinite(raw) || raw <= 0) {
+                    item.quantity = '';
+                    return;
+                }
+
+                const whole = Math.floor(raw);
+                if (whole !== raw && notifyIfAdjusted) {
+                    this.notify('warning', 'Quantity must be a whole number.');
+                }
+
+                item.quantity = Math.max(whole, 1);
+            },
+
             get subTotal() {
                 return this.items.reduce((sum, item) => sum + this.lineTotal(item), 0);
             },
@@ -719,7 +843,7 @@
 
             submitForm(event) {
                 if (!this.selectedSupplier || !this.selectedSupplier.id) {
-                    alert('Please select a supplier.');
+                    this.notify('warning', 'Please select a supplier.');
                     return;
                 }
 
@@ -729,13 +853,37 @@
                     return !item.product_name
                         || (!item.product_variant_id && !item.product_id)
                         || !Number.isFinite(qty)
+                        || !Number.isInteger(qty)
                         || qty <= 0
                         || !Number.isFinite(price)
                         || price < 0;
                 });
 
                 if (hasInvalidItem) {
-                    alert('Please select a valid product and enter quantity and unit price for each item.');
+                    this.notify('warning', 'Please select a valid product and enter quantity and unit price for each item.');
+                    return;
+                }
+
+                const selectedKeys = new Set();
+                const hasDuplicateItems = this.items.some((item) => {
+                    const key = item.product_variant_id
+                        ? `variant:${item.product_variant_id}`
+                        : (item.product_id ? `product:${item.product_id}` : null);
+
+                    if (!key) {
+                        return false;
+                    }
+
+                    if (selectedKeys.has(key)) {
+                        return true;
+                    }
+
+                    selectedKeys.add(key);
+                    return false;
+                });
+
+                if (hasDuplicateItems) {
+                    this.notify('warning', 'The same product variant cannot be added more than once in a single purchase.');
                     return;
                 }
 
@@ -745,7 +893,7 @@
                 });
 
                 if (hasInvalidPayment) {
-                    alert('Each payment row must have an amount greater than zero.');
+                    this.notify('warning', 'Each payment row must have an amount greater than zero.');
                     return;
                 }
 

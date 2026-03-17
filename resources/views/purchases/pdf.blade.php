@@ -154,7 +154,7 @@
                 <td>
                     <div class="invoice-title">PURCHASE INVOICE</div>
                     <div class="invoice-details">
-                        <strong>Invoice #:</strong> {{ $purchase->purchase_number }}<br>
+                        <strong>Purchasing ID:</strong> {{ $purchase->purchase_number }}<br>
                         <strong>Date:</strong> {{ $purchase->purchase_date->format('d M Y') }}
                     </div>
                 </td>
