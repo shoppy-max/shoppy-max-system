@@ -238,7 +238,7 @@
                 <div class="meta">Order #{{ $order->order_number }}</div>
                 <div class="meta">Date: {{ optional($order->order_date)->format('d M, Y') }}</div>
                 <?php
-                    $status = strtolower((string) ($order->status ?? 'pending'));
+                    $callStatus = strtolower((string) ($order->call_status ?? 'pending'));
                     $deliveryStatus = strtolower((string) ($order->delivery_status ?? 'pending'));
                     $deliveryLabels = [
                         'pending' => 'Pending',
@@ -247,7 +247,6 @@
                         'packed' => 'Packed',
                         'dispatched' => 'Dispatched',
                         'delivered' => 'Delivered',
-                        'return_requested' => 'Return Requested',
                         'returned' => 'Returned',
                         'cancel' => 'Cancel',
                     ];
@@ -257,7 +256,7 @@
                     'confirm' => 'badge-confirm',
                     'hold' => 'badge-hold',
                     'cancel' => 'badge-cancelled',
-                ][$status] ?? 'badge-other' }}">{{ ucfirst($status) }}</span>
+                ][$callStatus] ?? 'badge-other' }}">Call: {{ ucfirst($callStatus) }}</span>
             </div>
             <div class="company">
                 <strong>{{ config('app.name', 'ShoppyMax') }}</strong>
@@ -350,6 +349,11 @@
                         : 0;
                     $remainingAmount = max((float) $order->total_amount - $paidAmount - $returnFeeDeduction, 0);
                     $discountAmount = (float) ($order->discount_amount ?? 0);
+                    $discountType = strtolower((string) ($order->discount_type ?? 'fixed'));
+                    $discountValue = (float) ($order->discount_value ?? $discountAmount);
+                    $discountLabel = $discountType === 'percentage'
+                        ? 'Discount (' . rtrim(rtrim(number_format($discountValue, 2), '0'), '.') . '%)'
+                        : 'Discount (Fixed)';
                     $subTotalBeforeDiscount = max(((float) $order->total_amount - (float) $order->courier_charge) + $discountAmount, 0);
                 @endphp
                 @if($order->order_type === 'reseller')
@@ -363,7 +367,7 @@
                     <span>LKR {{ number_format($subTotalBeforeDiscount, 2) }}</span>
                 </div>
                 <div class="totals-row">
-                    <span>Discount</span>
+                    <span>{{ $discountLabel }}</span>
                     <span>- LKR {{ number_format($discountAmount, 2) }}</span>
                 </div>
                 <div class="totals-row">

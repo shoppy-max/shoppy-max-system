@@ -122,7 +122,7 @@
                             },
                             async cancelOrder() {
                                 const orderNumber = {{ \Illuminate\Support\Js::from($order->order_number) }};
-                                const confirmText = `Cancel ${orderNumber}? This will set Order, Call, and Delivery statuses to Cancel.`;
+                                const confirmText = `Cancel ${orderNumber}? This will cancel the order and set call and delivery statuses to Cancel.`;
 
                                 if (typeof Swal !== 'undefined') {
                                     const result = await Swal.fire({
@@ -330,15 +330,6 @@
                               <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-500">Courier:</span>
                                 <span class="font-medium dark:text-white" x-text="selectedOrder?.courier?.name || (selectedOrder?.courier_id ? 'Assigned' : 'Not Assigned')"></span>
-                             </div>
-                             <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-500">Order Status:</span>
-                                <span class="font-medium capitalize" :class="{
-                                    'text-yellow-600': selectedOrder?.status === 'pending',
-                                    'text-green-600': selectedOrder?.status === 'confirm',
-                                    'text-red-600': selectedOrder?.status === 'cancel',
-                                    'text-orange-600': selectedOrder?.status === 'hold'
-                                }" x-text="formatStatus(selectedOrder?.status)"></span>
                              </div>
                              <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-500">Delivery Status:</span>

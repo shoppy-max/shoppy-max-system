@@ -14,7 +14,8 @@ class PackingController extends Controller
      */
     public function index()
     {
-        $orders = Order::where('status', 'confirm')
+        $orders = Order::where('call_status', 'confirm')
+                       ->whereIn('delivery_status', ['pending', 'waybill_printed', 'picked_from_rack'])
                        ->orderBy('created_at', 'asc')
                        ->get();
         return view('orders.packing.index', compact('orders'));
@@ -35,9 +36,9 @@ class PackingController extends Controller
     public function markPacked(Request $request, $id)
     {
         $order = Order::findOrFail($id);
-        $order->status = 'confirm';
         $order->packed_by = Auth::id();
         $order->delivery_status = 'packed';
+        $order->status = $order->call_status === 'hold' ? 'hold' : 'confirm';
         if (!$order->packed_at) {
             $order->packed_at = now();
         }

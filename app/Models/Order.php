@@ -32,6 +32,8 @@ class Order extends Model
         'paid_amount',
         'payments_data',
         'discount_amount',
+        'discount_type',
+        'discount_value',
         'total_cost',       // New
         'total_commission', // New
         'sales_note',
@@ -56,6 +58,7 @@ class Order extends Model
         'paid_amount' => 'decimal:2',
         'payments_data' => 'array',
         'discount_amount' => 'decimal:2',
+        'discount_value' => 'decimal:2',
         'total_cost' => 'decimal:2',
         'total_commission' => 'decimal:2',
         'courier_cost' => 'decimal:2',

@@ -51,7 +51,7 @@
                                       x-text="form.order_type === 'reseller' ? 'Reseller Order' : 'Direct Order'"></span>
                             </div>
                             <div x-show="isEditLocked" class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300">
-                                Core order details are locked because this order is no longer pending. You can update payment entries and note only.
+                                Core order details are locked because call or delivery processing has already started. You can update payment entries and note only.
                             </div>
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 mb-4">
@@ -81,24 +81,10 @@
                             </div>
 
                             <div class="mb-4">
-                                <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Order Status</label>
-                                <select
-                                    x-model="form.order_status"
-                                    :disabled="isEditLocked"
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
-                                >
-                                    <option value="pending">Pending</option>
-                                    <option value="hold">Hold</option>
-                                    <option value="confirm">Confirm</option>
-                                    <option value="cancel">Cancel</option>
-                                </select>
-                            </div>
-
-                            <div class="mb-4">
                                 <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Delivery Status</label>
                                 <select
                                     x-model="form.delivery_status"
-                                    :disabled="isEditLocked || form.order_status === 'cancel'"
+                                    :disabled="isEditLocked"
                                     class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
                                 >
                                     <option value="pending">Pending</option>
@@ -107,13 +93,8 @@
                                     <option value="packed">Packed</option>
                                     <option value="dispatched">Dispatched</option>
                                     <option value="delivered">Delivered</option>
-                                    <option value="return_requested">Return Requested</option>
                                     <option value="returned">Returned</option>
-                                    <option value="cancel" x-show="form.delivery_status === 'cancel'">Cancel (Auto)</option>
                                 </select>
-                                <p x-show="form.order_status === 'cancel'" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                                    Delivery status is auto-set to Cancel when order status is Cancel.
-                                </p>
                             </div>
 
                             <div x-show="form.order_type === 'reseller'" x-transition>
@@ -438,15 +419,10 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Discount</label>
-                                        <input type="number"
-                                               x-model="form.discount_amount"
-                                               :disabled="isEditLocked"
-                                               min="0"
-                                               step="0.01"
-                                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
-                                               placeholder="0.00">
-                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Discount cannot exceed subtotal.</p>
+                                        <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Commission</label>
+                                        <div class="w-full bg-gray-100 border border-gray-300 text-gray-800 text-sm rounded-lg p-2.5 font-bold dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                            <span x-text="totalCommission"></span>
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Courier</label>
@@ -468,6 +444,26 @@
                                         <p x-show="form.courier_id && selectedCourierRates.length === 0" class="mt-1 text-xs text-amber-600 dark:text-amber-400">No delivery charge values configured for selected courier.</p>
                                     </div>
                                     <div>
+                                        <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Discount</label>
+                                        <input
+                                            type="number"
+                                            x-model="form.discount_value"
+                                            :disabled="isEditLocked"
+                                            min="0"
+                                            step="0.01"
+                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
+                                            :placeholder="form.discount_type === 'percentage' ? '0.00%' : '0.00'"
+                                        >
+                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400" x-text="discountHelperText"></p>
+                                    </div>
+                                    <div>
+                                        <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Discount Type</label>
+                                        <select x-model="form.discount_type" :disabled="isEditLocked" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400">
+                                            <option value="fixed">Fixed Amount</option>
+                                            <option value="percentage">Percentage</option>
+                                        </select>
+                                    </div>
+                                    <div>
                                         <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Payment Method</label>
                                         <select x-model="form.payment_method" :disabled="isEditLocked" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400">
                                             <option value="COD">Cash on Delivery (COD)</option>
@@ -476,24 +472,26 @@
                                     </div>
                                     <div>
                                         <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Payment Status</label>
+                                        <div class="w-full bg-gray-100 border border-gray-300 text-gray-800 text-sm rounded-lg p-2.5 font-medium dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                            <span x-text="paymentStatusLabel"></span>
+                                        </div>
+                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400" x-text="paymentStatusHelperText"></p>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Call Status</label>
                                         <select
-                                            x-model="form.payment_status"
-                                            :disabled="isPaymentStatusForcedPaid"
+                                            x-model="form.call_status"
+                                            :disabled="isEditLocked"
                                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
                                         >
                                             <option value="pending">Pending</option>
-                                            <option value="paid">Paid</option>
+                                            <option value="confirm">Confirm</option>
+                                            <option value="hold">Hold</option>
                                         </select>
-                                        <p x-show="isPaymentStatusForcedPaid" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                                            Auto-set to Paid because delivery is marked Delivered or Online Payment is fully paid.
-                                        </p>
                                     </div>
-                                    <div class="md:col-span-2">
+                                    <div class="md:col-span-2" x-show="form.payment_method === 'Online Payment'" x-cloak>
                                         <div class="flex items-center justify-between mb-2">
-                                            <label class="block text-sm font-medium text-gray-900 dark:text-white">
-                                                Payment Entries
-                                                <span class="text-xs text-gray-500 dark:text-gray-400" x-show="form.payment_method === 'COD'">(Optional for COD)</span>
-                                            </label>
+                                            <label class="block text-sm font-medium text-gray-900 dark:text-white">Payment Entries</label>
                                             <button
                                                 type="button"
                                                 @click="addPaymentEntry()"
@@ -543,28 +541,6 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Call Status</label>
-                                        <select
-                                            x-model="form.call_status"
-                                            :disabled="isEditLocked || form.order_status === 'cancel'"
-                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
-                                        >
-                                            <option value="pending">Pending</option>
-                                            <option value="confirm">Confirm</option>
-                                            <option value="hold">Hold</option>
-                                            <option value="cancel" x-show="form.call_status === 'cancel'">Cancel (Auto)</option>
-                                        </select>
-                                        <p x-show="form.order_status === 'cancel'" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                                            Call status is auto-set to Cancel when order status is Cancel.
-                                        </p>
-                                    </div>
-                                    <div x-show="form.order_type === 'reseller'">
-                                        <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Commission</label>
-                                        <div class="w-full bg-gray-100 border border-gray-300 text-gray-800 text-sm rounded-lg p-2.5 font-bold dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                            <span x-text="totalCommission"></span>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
 
@@ -586,7 +562,7 @@
                                             <span class="font-semibold" x-text="subTotal.toFixed(2)"></span>
                                         </div>
                                         <div class="flex items-center justify-between text-gray-600 dark:text-gray-300">
-                                            <span>Discount</span>
+                                            <span x-text="discountSummaryLabel"></span>
                                             <span class="font-semibold">- <span x-text="discountAmount.toFixed(2)"></span></span>
                                         </div>
                                         <div class="flex items-center justify-between text-gray-600 dark:text-gray-300">
@@ -634,7 +610,10 @@
         function orderManager(initialOrder) {
             return {
                 isSubmitting: false,
-                isEditLocked: String(initialOrder.status || '').toLowerCase() !== 'pending',
+                isEditLocked: !(
+                    String(initialOrder.call_status || 'pending').toLowerCase() === 'pending'
+                    && String(initialOrder.delivery_status || 'pending').toLowerCase() === 'pending'
+                ),
                 resellerSearch: '',
                 resellers: [],
                 selectedReseller: initialOrder.reseller || null,
@@ -668,13 +647,13 @@
                 form: {
                     order_type: initialOrder.order_type,
                     order_date: initialOrder.order_date,
-                    order_status: initialOrder.status,
                     reseller_id: initialOrder.reseller_id,
                     
                     // Fulfillment
                     courier_id: initialOrder.courier_id,
                     courier_charge: initialOrder.courier_charge,
-                    discount_amount: initialOrder.discount_amount || 0,
+                    discount_type: initialOrder.discount_type || 'fixed',
+                    discount_value: initialOrder.discount_value ?? initialOrder.discount_amount ?? 0,
                     payment_method: initialOrder.payment_method || 'COD',
                     payment_status: initialOrder.payment_status || 'pending',
                     paid_amount: initialOrder.paid_amount || 0,
@@ -849,24 +828,30 @@
                     });
                     this.$watch('form.courier_id', () => this.onCourierChange());
                     this.$watch('form.payment_method', (value) => {
-                        if (value === 'Online Payment' && this.form.payments.length === 0) {
+                        if (value === 'Online Payment' && this.totalAmountNumber > 0 && this.form.payments.length === 0) {
                             this.addPaymentEntry();
+                        } else if (value !== 'Online Payment' && this.form.payments.length > 0) {
+                            this.form.payments = [];
+                            this.form.paid_amount = 0;
                         }
                         this.syncPaymentStatusRules();
                     });
-                    this.$watch('form.order_status', () => this.syncCallStatusFromOrderStatus());
+                    this.$watch('form.discount_type', () => this.syncPaymentStatusRules());
                     this.$watch('form.delivery_status', () => this.syncPaymentStatusRules());
                     this.$watch('form.payments', () => this.syncPaymentStatusRules());
                     this.$watch('form.items', () => this.syncPaymentStatusRules());
-                    this.$watch('form.discount_amount', () => this.syncPaymentStatusRules());
+                    this.$watch('form.discount_value', () => this.syncPaymentStatusRules());
                     this.$watch('form.courier_charge', () => this.syncPaymentStatusRules());
                     this.$watch('form.customer.mobile', (value) => {
                         if (this.selectedCustomer && String(value || '') !== String(this.selectedCustomer.mobile || '')) {
                             this.selectedCustomer = null;
                         }
                     });
-                    if (this.form.payment_method === 'Online Payment' && this.form.payments.length === 0) {
+                    if (this.form.payment_method === 'Online Payment' && this.totalAmountNumber > 0 && this.form.payments.length === 0) {
                         this.addPaymentEntry();
+                    } else if (this.form.payment_method !== 'Online Payment' && this.form.payments.length > 0) {
+                        this.form.payments = [];
+                        this.form.paid_amount = 0;
                     }
 
                     const selected = this.cities.find((city) => String(city.id) === String(this.form.customer.city_id));
@@ -883,7 +868,6 @@
                     }
                     this.onCourierChange();
                     this.filterCities();
-                    this.syncCallStatusFromOrderStatus();
                     this.syncPaymentStatusRules();
                 },
 
@@ -892,6 +876,9 @@
                 },
 
                 addPaymentEntry() {
+                    if (this.form.payment_method !== 'Online Payment') {
+                        return;
+                    }
                     this.form.payments.push({
                         amount: '',
                         date: this.currentDate(),
@@ -904,6 +891,10 @@
                 },
 
                 normalizePayments() {
+                    if (this.form.payment_method !== 'Online Payment') {
+                        return [];
+                    }
+
                     const normalized = [];
 
                     for (let i = 0; i < this.form.payments.length; i++) {
@@ -911,6 +902,11 @@
                         const amount = parseFloat(payment.amount);
                         const date = (payment.date || '').toString().trim();
                         const note = (payment.note || '').toString().trim();
+                        const rawAmount = (payment.amount ?? '').toString().trim();
+
+                        if (!rawAmount && !date && !note) {
+                            continue;
+                        }
 
                         if (!Number.isFinite(amount) || amount <= 0) {
                             this.notify('warning', `Enter a valid payment amount for entry ${i + 1}.`);
@@ -1181,12 +1177,41 @@
                 },
 
                 get discountAmount() {
-                    const discount = parseFloat(this.form.discount_amount);
+                    const discount = this.discountValueNumber;
+                    if (discount <= 0) {
+                        return 0;
+                    }
+
+                    if (this.form.discount_type === 'percentage') {
+                        return Math.min((this.subTotal * discount) / 100, this.subTotal);
+                    }
+
+                    return Math.min(discount, this.subTotal);
+                },
+
+                get discountValueNumber() {
+                    const discount = parseFloat(this.form.discount_value);
                     if (!Number.isFinite(discount) || discount <= 0) {
                         return 0;
                     }
 
-                    return Math.min(discount, this.subTotal);
+                    return discount;
+                },
+
+                get discountHelperText() {
+                    if (this.form.discount_type === 'percentage') {
+                        return 'Enter a percentage from 0 to 100. The system calculates the actual discount amount.';
+                    }
+
+                    return 'Fixed discount cannot exceed subtotal.';
+                },
+
+                get discountSummaryLabel() {
+                    if (this.form.discount_type === 'percentage' && this.discountValueNumber > 0) {
+                        return `Discount (${this.discountValueNumber.toFixed(2)}%)`;
+                    }
+
+                    return 'Discount';
                 },
 
                 get paidAmount() {
@@ -1210,45 +1235,43 @@
                 },
 
                 syncPaymentStatusRules() {
-                    if (this.isPaymentStatusForcedPaid) {
-                        this.form.payment_status = 'paid';
-                        return;
-                    }
-
-                    if (!['pending', 'paid'].includes(this.form.payment_status)) {
-                        this.form.payment_status = 'pending';
-                    }
+                    this.form.payment_status = this.isPaymentStatusForcedPaid ? 'paid' : 'pending';
                 },
 
-                syncCallStatusFromOrderStatus() {
-                    if (this.form.order_status === 'cancel') {
-                        this.form.call_status = 'cancel';
-                        this.form.delivery_status = 'cancel';
-                        return;
+                get paymentStatusLabel() {
+                    return this.form.payment_status === 'paid' ? 'Paid' : 'Pending';
+                },
+
+                get paymentStatusHelperText() {
+                    if (this.form.delivery_status === 'delivered') {
+                        return 'Auto-set to Paid because delivery is marked Delivered.';
                     }
 
-                    if (this.form.call_status === 'cancel') {
-                        this.form.call_status = 'pending';
+                    if (this.isOnlinePaymentFullyPaid) {
+                        return 'Auto-set to Paid because online payment is fully recorded.';
                     }
 
-                    if (this.form.delivery_status === 'cancel') {
-                        this.form.delivery_status = 'pending';
+                    if (this.form.payment_method === 'Online Payment') {
+                        return 'Pending until the recorded online payments cover the full net total.';
                     }
+
+                    return 'Pending until delivery or courier settlement completes the collection.';
                 },
 
                 get totalCommission() {
                     if (this.form.order_type !== 'reseller') return '0.00';
-                    return this.form.items.reduce((sum, item) => {
+                    const grossCommission = this.form.items.reduce((sum, item) => {
                         const commissionPerUnit = item.selling_price - item.limit_price;
                         return sum + (item.quantity * commissionPerUnit);
-                    }, 0).toFixed(2);
+                    }, 0);
+
+                    return Math.max(grossCommission - this.discountAmount, 0).toFixed(2);
                 },
                 
                 // --- Submission ---
                 async submitOrder() {
                     this.syncPaymentStatusRules();
                     if (!this.isEditLocked) {
-                        this.syncCallStatusFromOrderStatus();
                         if (this.form.order_type === 'reseller' && !this.form.reseller_id) {
                             this.notify('warning', 'Please select a reseller.');
                             return;
@@ -1287,11 +1310,16 @@
                             return;
                         }
 
-                        const rawDiscount = parseFloat(this.form.discount_amount);
-                        if (Number.isFinite(rawDiscount) && rawDiscount > this.subTotal) {
+                        const rawDiscount = this.discountValueNumber;
+                        if (this.form.discount_type === 'percentage' && rawDiscount > 100) {
+                            this.notify('warning', 'Percentage discount cannot exceed 100.');
+                            return;
+                        }
+                        if (this.form.discount_type === 'fixed' && rawDiscount > this.subTotal) {
                             this.notify('warning', 'Discount cannot exceed subtotal.');
                             return;
                         }
+                        this.form.discount_value = rawDiscount.toFixed(2);
                         this.form.discount_amount = this.discountAmount.toFixed(2);
                     }
 
@@ -1303,7 +1331,7 @@
                     this.form.payments = normalizedPayments;
                     this.form.paid_amount = this.paidAmount.toFixed(2);
 
-                    if (this.form.payment_method === 'Online Payment' && this.form.payments.length === 0) {
+                    if (this.form.payment_method === 'Online Payment' && this.totalAmountNumber > 0 && this.form.payments.length === 0) {
                         this.notify('warning', 'Add at least one payment entry for online payment orders.');
                         return;
                     }

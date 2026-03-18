@@ -74,6 +74,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
 Route::middleware(['auth'])->prefix('orders')->name('orders.')->group(function () {
     // General Orders
     Route::get('/', [\App\Http\Controllers\OrderController::class, 'index'])->name('index');
+    Route::get('/export', [\App\Http\Controllers\OrderController::class, 'export'])->name('export');
     Route::get('/create', [\App\Http\Controllers\OrderController::class, 'create'])->name('create');
     Route::post('/', [\App\Http\Controllers\OrderController::class, 'store'])->name('store');
     Route::get('/call-list', [\App\Http\Controllers\OrderController::class, 'callList'])->name('call-list');

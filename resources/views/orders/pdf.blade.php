@@ -202,7 +202,8 @@
 </head>
 <body>
     @php
-        $statusClass = match ($order->status) {
+        $callStatus = strtolower((string) ($order->call_status ?? 'pending'));
+        $callStatusClass = match ($callStatus) {
             'pending' => 'badge-pending',
             'confirm' => 'badge-confirm',
             'hold' => 'badge-hold',
@@ -217,7 +218,6 @@
             'packed' => 'Packed',
             'dispatched' => 'Dispatched',
             'delivered' => 'Delivered',
-            'return_requested' => 'Return Requested',
             'returned' => 'Returned',
             'cancel' => 'Cancel',
         ];
@@ -230,7 +230,7 @@
                     <div class="title">Invoice</div>
                     <div class="meta">Order #{{ $order->order_number }}</div>
                     <div class="meta">Date: {{ optional($order->order_date)->format('d M, Y') }}</div>
-                    <span class="badge {{ $statusClass }}">{{ $order->status }}</span>
+                    <span class="badge {{ $callStatusClass }}">Call: {{ ucfirst($callStatus) }}</span>
                 </td>
                 <td class="company">
                     <div class="company-name">{{ config('app.name', 'ShoppyMax') }}</div>
@@ -323,6 +323,11 @@
                     : 0;
                 $remainingAmount = max((float) $order->total_amount - $paidAmount - $returnFeeDeduction, 0);
                 $discountAmount = (float) ($order->discount_amount ?? 0);
+                $discountType = strtolower((string) ($order->discount_type ?? 'fixed'));
+                $discountValue = (float) ($order->discount_value ?? $discountAmount);
+                $discountLabel = $discountType === 'percentage'
+                    ? 'Discount (' . rtrim(rtrim(number_format($discountValue, 2), '0'), '.') . '%)'
+                    : 'Discount (Fixed)';
                 $subTotalBeforeDiscount = max(((float) $order->total_amount - (float) $order->courier_charge) + $discountAmount, 0);
             @endphp
             <tr>
@@ -340,7 +345,7 @@
                             <td class="text-right">LKR {{ number_format($subTotalBeforeDiscount, 2) }}</td>
                         </tr>
                         <tr>
-                            <td>Discount</td>
+                            <td>{{ $discountLabel }}</td>
                             <td class="text-right">- LKR {{ number_format($discountAmount, 2) }}</td>
                         </tr>
                         <tr>

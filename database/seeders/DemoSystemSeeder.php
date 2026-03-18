@@ -722,6 +722,8 @@ class DemoSystemSeeder extends Seeder
                 'call_status' => 'confirm',
                 'delivery_status' => 'delivered',
                 'payment_method' => 'COD',
+                'discount_type' => 'fixed',
+                'discount_value' => 0.00,
                 'discount_amount' => 0.00,
                 'customer' => 'Amila Perera',
                 'reseller' => null,
@@ -744,6 +746,8 @@ class DemoSystemSeeder extends Seeder
                 'call_status' => 'pending',
                 'delivery_status' => 'pending',
                 'payment_method' => 'COD',
+                'discount_type' => 'fixed',
+                'discount_value' => 250.00,
                 'discount_amount' => 250.00,
                 'customer' => 'Nadeesha Silva',
                 'reseller' => 'Glow Wholesale Traders',
@@ -764,6 +768,8 @@ class DemoSystemSeeder extends Seeder
                 'call_status' => 'pending',
                 'delivery_status' => 'pending',
                 'payment_method' => 'Online Payment',
+                'discount_type' => 'percentage',
+                'discount_value' => 10.00,
                 'discount_amount' => 0.00,
                 'customer' => 'Kavindi Jayasekara',
                 'reseller' => 'Bright Cart Direct',
@@ -784,6 +790,8 @@ class DemoSystemSeeder extends Seeder
                 'call_status' => 'cancel',
                 'delivery_status' => 'cancel',
                 'payment_method' => 'COD',
+                'discount_type' => 'fixed',
+                'discount_value' => 0.00,
                 'discount_amount' => 0.00,
                 'customer' => 'Ruwan Maduranga',
                 'reseller' => null,
@@ -803,6 +811,8 @@ class DemoSystemSeeder extends Seeder
                 'call_status' => 'confirm',
                 'delivery_status' => 'dispatched',
                 'payment_method' => 'COD',
+                'discount_type' => 'fixed',
+                'discount_value' => 0.00,
                 'discount_amount' => 0.00,
                 'customer' => 'Anjana Fernando',
                 'reseller' => null,
@@ -825,6 +835,8 @@ class DemoSystemSeeder extends Seeder
                 'call_status' => 'confirm',
                 'delivery_status' => 'delivered',
                 'payment_method' => 'COD',
+                'discount_type' => 'fixed',
+                'discount_value' => 0.00,
                 'discount_amount' => 0.00,
                 'customer' => 'Nadeesha Silva',
                 'reseller' => null,
@@ -873,13 +885,15 @@ class DemoSystemSeeder extends Seeder
             $order->courier_charge = $row['courier_charge'];
             $order->courier_cost = round((float) ($row['courier_cost'] ?? 0), 2);
             $order->waybill_number = $row['waybill_number'] ?? null;
+            $order->discount_type = $row['discount_type'] ?? 'fixed';
+            $order->discount_value = round((float) ($row['discount_value'] ?? ($row['discount_amount'] ?? 0)), 2);
             $order->call_status = $order->status === 'cancel'
                 ? 'cancel'
                 : ($row['call_status'] ?? 'pending');
             $order->delivery_status = $order->status === 'cancel'
                 ? 'cancel'
                 : ($row['delivery_status'] ?? 'pending');
-            $order->discount_amount = round((float) ($row['discount_amount'] ?? 0), 2);
+            $order->discount_amount = 0;
             $order->customer_city = $city->city_name;
             $order->customer_district = $city->district;
             $order->customer_province = $city->province;
@@ -933,7 +947,9 @@ class DemoSystemSeeder extends Seeder
                 }
             }
 
-            $discountAmount = min((float) ($order->discount_amount ?? 0), $subTotal);
+            $discountAmount = strtolower((string) ($order->discount_type ?? 'fixed')) === 'percentage'
+                ? min($subTotal * ((float) ($order->discount_value ?? 0) / 100), $subTotal)
+                : min((float) ($order->discount_value ?? 0), $subTotal);
             $order->discount_amount = round($discountAmount, 2);
             $netTotal = max($subTotal - $discountAmount, 0);
             $order->total_amount = round($netTotal + (float) $row['courier_charge'], 2);

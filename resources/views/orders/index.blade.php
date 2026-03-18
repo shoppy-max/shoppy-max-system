@@ -51,9 +51,9 @@
                     </a>
                 </div>
 
-                <a href="{{ route('orders.create') }}" class="w-full sm:w-64 inline-flex items-center justify-center px-8 py-2.5 text-sm font-medium text-white transition-colors bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 shadow-md">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    Add Order
+                <a href="{{ route('orders.export', array_merge(request()->except('page'), ['view' => $viewMode])) }}" class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-white transition-colors bg-emerald-600 rounded-lg hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 focus:outline-none dark:focus:ring-emerald-800 shadow-md">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16V4m0 12 4-4m-4 4-4-4M4 20h16"></path></svg>
+                    Download Excel
                 </a>
             </div>
 
@@ -65,23 +65,6 @@
                     <input type="text" name="search" value="{{ request('search') }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" placeholder="Search order #/ID, customer, reseller, user, mobile, waybill...">
                 </div>
 
-                <!-- Order Status -->
-                <div>
-                    @if($viewMode === 'cancelled')
-                        <input type="hidden" name="status" value="cancel">
-                        <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg block w-full p-2.5 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300">
-                            Status: Cancel (Fixed)
-                        </div>
-                    @else
-                        <select name="status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
-                        <option value="">All Active Status</option>
-                        <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="hold" {{ request('status') == 'hold' ? 'selected' : '' }}>Hold</option>
-                        <option value="confirm" {{ request('status') == 'confirm' ? 'selected' : '' }}>Confirm</option>
-                    </select>
-                    @endif
-                </div>
-                
                 <!-- Call Status -->
                 <div>
                         <select name="call_status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
@@ -115,7 +98,6 @@
                         <option value="packed" {{ request('delivery_status') == 'packed' ? 'selected' : '' }}>Packed</option>
                         <option value="dispatched" {{ request('delivery_status') == 'dispatched' ? 'selected' : '' }}>Dispatched</option>
                         <option value="delivered" {{ request('delivery_status') == 'delivered' ? 'selected' : '' }}>Delivered</option>
-                        <option value="return_requested" {{ request('delivery_status') == 'return_requested' ? 'selected' : '' }}>Return Requested</option>
                         <option value="returned" {{ request('delivery_status') == 'returned' ? 'selected' : '' }}>Returned</option>
                         @if($viewMode === 'cancelled')
                             <option value="cancel" {{ request('delivery_status') == 'cancel' ? 'selected' : '' }}>Cancel</option>
@@ -172,7 +154,6 @@
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Order ID</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Waybill</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Call Status</th>
-                        <th scope="col" class="px-6 py-3 whitespace-nowrap">Order Status</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Delivery Status</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Payment Status</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Payment Method</th>
@@ -225,20 +206,6 @@
                             </td>
                             <td class="px-6 py-4">
                                 @php
-                                    $orderStatus = strtolower((string) $order->status);
-                                    $orderStatusColors = [
-                                        'pending' => 'text-yellow-800 bg-yellow-100 border-yellow-300',
-                                        'hold' => 'text-orange-800 bg-orange-100 border-orange-300',
-                                        'confirm' => 'text-green-800 bg-green-100 border-green-300',
-                                        'cancel' => 'text-red-800 bg-red-100 border-red-300',
-                                    ];
-                                @endphp
-                                <span class="{{ $orderStatusColors[$orderStatus] ?? 'text-gray-700 bg-gray-100 border-gray-300' }} border px-2.5 py-0.5 rounded text-xs font-medium capitalize">
-                                    {{ $orderStatus ? ucfirst($orderStatus) : '-' }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                @php
                                     $deliveryStatus = strtolower((string) ($order->delivery_status ?? 'pending'));
                                     $deliveryStatusColors = [
                                         'pending' => 'text-gray-700 bg-gray-100 border-gray-300',
@@ -247,7 +214,6 @@
                                         'packed' => 'text-blue-700 bg-blue-100 border-blue-300',
                                         'dispatched' => 'text-cyan-700 bg-cyan-100 border-cyan-300',
                                         'delivered' => 'text-green-700 bg-green-100 border-green-300',
-                                        'return_requested' => 'text-amber-700 bg-amber-100 border-amber-300',
                                         'returned' => 'text-orange-700 bg-orange-100 border-orange-300',
                                         'cancel' => 'text-red-700 bg-red-100 border-red-300',
                                     ];
@@ -258,7 +224,6 @@
                                         'packed' => 'Packed',
                                         'dispatched' => 'Dispatched',
                                         'delivered' => 'Delivered',
-                                        'return_requested' => 'Return Requested',
                                         'returned' => 'Returned',
                                         'cancel' => 'Cancel',
                                     ];
@@ -357,16 +322,11 @@
                         </tr>
                     @empty
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                            <td colspan="18" class="px-6 py-8 text-center">
+                            <td colspan="17" class="px-6 py-8 text-center">
                                 <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                                     <svg class="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                                     <p class="text-lg font-medium">No orders found</p>
-                                    <p class="text-sm">Create a new order to get started.</p>
-                                    <div class="mt-4">
-                                        <a href="{{ route('orders.create') }}" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
-                                            Create Order
-                                        </a>
-                                    </div>
+                                    <p class="text-sm">Adjust the filters or search to find matching orders.</p>
                                 </div>
                             </td>
                         </tr>
@@ -377,7 +337,7 @@
         
         <!-- Pagination -->
         <div class="mt-4">
-            {{ $orders->withQueryString()->links() }}
+            {{ $orders->links() }}
         </div>
 
         <div

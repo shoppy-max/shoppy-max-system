@@ -22,13 +22,13 @@
     </x-slot>
 
     @php
-        $statusLabels = [
+        $callLabels = [
             'pending' => 'Pending',
             'confirm' => 'Confirm',
             'hold' => 'Hold',
             'cancel' => 'Cancel',
         ];
-        $statusColors = [
+        $callColors = [
             'pending' => 'bg-yellow-100 text-yellow-800',
             'confirm' => 'bg-green-100 text-green-800',
             'hold' => 'bg-amber-100 text-amber-800',
@@ -41,7 +41,6 @@
             'packed' => 'Packed',
             'dispatched' => 'Dispatched',
             'delivered' => 'Delivered',
-            'return_requested' => 'Return requested',
             'returned' => 'Returned',
             'cancel' => 'Cancel',
         ];
@@ -52,17 +51,21 @@
             'packed' => 'bg-blue-100 text-blue-800',
             'dispatched' => 'bg-cyan-100 text-cyan-800',
             'delivered' => 'bg-green-100 text-green-800',
-            'return_requested' => 'bg-amber-100 text-amber-800',
             'returned' => 'bg-orange-100 text-orange-800',
             'cancel' => 'bg-red-100 text-red-800',
         ];
-        $orderStatus = strtolower((string) ($order->status ?? 'pending'));
+        $callStatus = strtolower((string) ($order->call_status ?? 'pending'));
         $deliveryStatus = strtolower((string) ($order->delivery_status ?? 'pending'));
         $customerName = $order->customer->name ?? $order->customer_name ?? '-';
         $customerMobile = $order->customer->mobile ?? $order->customer_phone ?? '-';
         $customerAddress = $order->customer->address ?? $order->customer_address ?? '-';
         $itemSubTotal = (float) $order->items->sum(fn ($item) => (float) ($item->subtotal ?? ($item->unit_price * $item->quantity)));
         $discountAmount = (float) ($order->discount_amount ?? 0);
+        $discountType = strtolower((string) ($order->discount_type ?? 'fixed'));
+        $discountValue = (float) ($order->discount_value ?? $discountAmount);
+        $discountTypeLabel = $discountType === 'percentage'
+            ? rtrim(rtrim(number_format($discountValue, 2), '0'), '.') . '%'
+            : 'Fixed Amount';
         $courierCharge = (float) ($order->courier_charge ?? 0);
         $commission = (float) ($order->total_commission ?? 0);
         $onlinePayment = (string) ($order->payment_method ?? '') === 'Online Payment' ? (float) ($order->paid_amount ?? 0) : 0.0;
@@ -83,8 +86,8 @@
                         </p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide {{ $statusColors[$orderStatus] ?? 'bg-gray-100 text-gray-800' }}">
-                            {{ $statusLabels[$orderStatus] ?? ucfirst($orderStatus) }}
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide {{ $callColors[$callStatus] ?? 'bg-gray-100 text-gray-800' }}">
+                            Call: {{ $callLabels[$callStatus] ?? ucfirst($callStatus) }}
                         </span>
                         <span class="px-3 py-1 rounded-full text-xs font-semibold tracking-wide {{ $deliveryColors[$deliveryStatus] ?? 'bg-gray-100 text-gray-800' }}">
                             Delivery: {{ $deliveryLabels[$deliveryStatus] ?? ucfirst($deliveryStatus) }}
@@ -268,6 +271,10 @@
                         <div class="flex items-center justify-between">
                             <dt class="text-gray-500 dark:text-gray-400">Discount</dt>
                             <dd class="font-medium text-gray-900 dark:text-gray-100">LKR {{ number_format($discountAmount, 2) }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <dt class="text-gray-500 dark:text-gray-400">Discount Type</dt>
+                            <dd class="font-medium text-gray-900 dark:text-gray-100">{{ $discountTypeLabel }}</dd>
                         </div>
                         <div class="flex items-center justify-between">
                             <dt class="text-gray-500 dark:text-gray-400">Online Payment</dt>

@@ -18,7 +18,7 @@ class WaybillController extends Controller
             ->withCount([
                 'orders as printable_orders_count' => function ($query) {
                     $query->where('call_status', 'confirm')
-                        ->where('status', '!=', 'cancel')
+                        ->where('delivery_status', '!=', 'cancel')
                         ->where(function ($waybillQuery) {
                             $waybillQuery->whereNull('waybill_number')
                                 ->orWhere('waybill_number', '');
@@ -44,7 +44,7 @@ class WaybillController extends Controller
             ->with('customer')
             ->where('courier_id', $courier->id)
             ->where('call_status', 'confirm')
-            ->where('status', '!=', 'cancel')
+            ->where('delivery_status', '!=', 'cancel')
             ->where(function ($waybillQuery) {
                 $waybillQuery->whereNull('waybill_number')
                     ->orWhere('waybill_number', '');
@@ -81,7 +81,7 @@ class WaybillController extends Controller
         $statsBaseQuery = Order::query()
             ->where('courier_id', $courier->id)
             ->where('call_status', 'confirm')
-            ->where('status', '!=', 'cancel');
+            ->where('delivery_status', '!=', 'cancel');
 
         $stats = [
             'eligible' => (clone $statsBaseQuery)
@@ -120,7 +120,7 @@ class WaybillController extends Controller
         $orders = Order::query()
             ->whereIn('id', $orderIds)
             ->where('call_status', 'confirm')
-            ->where('status', '!=', 'cancel')
+            ->where('delivery_status', '!=', 'cancel')
             ->where(function ($waybillQuery) {
                 $waybillQuery->whereNull('waybill_number')
                     ->orWhere('waybill_number', '');

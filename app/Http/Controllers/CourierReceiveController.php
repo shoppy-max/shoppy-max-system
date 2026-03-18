@@ -240,7 +240,7 @@ class CourierReceiveController extends Controller
     {
         return Order::query()
             ->where('courier_id', $courier->id)
-            ->where('status', 'confirm')
+            ->where('call_status', 'confirm')
             ->where('payment_method', 'COD')
             ->where('delivery_status', 'dispatched')
             ->whereNotNull('waybill_number')

@@ -254,7 +254,7 @@ class CourierPaymentController extends Controller
     private function applyEligibleCourierOrderConstraints(Builder $query, int $courierId): void
     {
         $query->where('courier_id', $courierId)
-            ->where('status', 'confirm')
+            ->where('call_status', 'confirm')
             ->where('payment_method', 'COD')
             ->where('delivery_status', 'dispatched')
             ->whereNotNull('waybill_number')

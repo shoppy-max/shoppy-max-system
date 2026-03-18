@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\OrdersExport;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductVariant;
@@ -12,12 +13,14 @@ use App\Models\Courier;
 use App\Models\City;
 use App\Services\InventoryUnitService;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\QueryException;
+use Maatwebsite\Excel\Facades\Excel;
 
 class OrderController extends Controller
 {
@@ -30,7 +33,6 @@ class OrderController extends Controller
         'packed',
         'dispatched',
         'delivered',
-        'return_requested',
         'returned',
         'cancel',
     ];
@@ -40,98 +42,27 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        $viewMode = $request->input('view', 'active');
-        if (!in_array($viewMode, ['active', 'cancelled'], true)) {
-            $viewMode = 'active';
-        }
-
-        $query = Order::with(['user', 'reseller', 'customer', 'items', 'courier']); 
-
-        if ($viewMode === 'cancelled') {
-            $query->where('status', 'cancel');
-        } else {
-            $query->where('status', '!=', 'cancel');
-        }
-
-        // 1. Search (Order Number, Customer Name, Mobile)
-        if ($request->filled('search')) {
-            $search = trim((string) $request->search);
-            $numericSearch = ctype_digit($search) ? (int) $search : null;
-
-            $query->where(function ($q) use ($search, $numericSearch) {
-                if ($numericSearch !== null) {
-                    $q->where('id', $numericSearch)
-                        ->orWhere('user_id', $numericSearch)
-                        ->orWhere('reseller_id', $numericSearch)
-                        ->orWhere('customer_id', $numericSearch);
-                }
-
-                $q->orWhere('order_number', 'like', "%{$search}%")
-                    ->orWhere('waybill_number', 'like', "%{$search}%")
-                    ->orWhere('customer_name', 'like', "%{$search}%")
-                    ->orWhere('customer_phone', 'like', "%{$search}%")
-                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
-                        $customerQuery->where('name', 'like', "%{$search}%")
-                            ->orWhere('mobile', 'like', "%{$search}%")
-                            ->orWhere('landline', 'like', "%{$search}%")
-                            ->orWhere('business_name', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('reseller', function ($resellerQuery) use ($search) {
-                        $resellerQuery->where('name', 'like', "%{$search}%")
-                            ->orWhere('business_name', 'like', "%{$search}%")
-                            ->orWhere('mobile', 'like', "%{$search}%")
-                            ->orWhere('landline', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%")
-                            ->orWhere('phone', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        // 2. Filter by Order Status
-        if ($request->filled('status')) {
-            $status = (string) $request->status;
-
-            if ($viewMode === 'cancelled') {
-                $query->where('status', 'cancel');
-            } elseif (in_array($status, ['pending', 'hold', 'confirm'], true)) {
-                $query->where('status', $status);
-            }
-        }
-
-        if ($request->filled('delivery_status') && in_array($request->delivery_status, self::DELIVERY_STATUSES, true)) {
-            $query->where('delivery_status', $request->delivery_status);
-        }
-
-        // 3. Filter by Call Status
-        if ($request->filled('call_status')) {
-            $query->where('call_status', $request->call_status);
-        }
-
-        // 4. Filter by Courier
-        if ($request->filled('courier_id')) {
-            $query->where('courier_id', $request->courier_id);
-        }
-
-        // 5. Filter by Date Range
-        if ($request->filled('date_from')) {
-            $query->whereDate('order_date', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $query->whereDate('order_date', '<=', $request->date_to);
-        }
-
-        // 6. Payment Method
-        if ($request->filled('payment_method')) {
-            $query->where('payment_method', $request->payment_method);
-        }
-
-        $orders = $query->latest()->paginate(20)->withQueryString();
+        $viewMode = $this->resolveOrderListViewMode($request->input('view'));
+        $orders = $this->buildFilteredOrdersQuery($request, $viewMode)
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
         $couriers = Courier::all();
 
         return view('orders.index', compact('orders', 'couriers', 'viewMode'));
+    }
+
+    public function export(Request $request)
+    {
+        $viewMode = $this->resolveOrderListViewMode($request->input('view'));
+        $orders = $this->buildFilteredOrdersQuery($request, $viewMode)
+            ->latest()
+            ->get();
+
+        return Excel::download(
+            new OrdersExport($orders),
+            'orders_' . now()->format('Y-m-d_H-i') . '.xlsx'
+        );
     }
 
     /**
@@ -392,6 +323,8 @@ class OrderController extends Controller
             // Fulfillment & Address
             'courier_id' => 'nullable|exists:couriers,id',
             'courier_charge' => 'nullable|numeric|min:0',
+            'discount_type' => 'nullable|in:fixed,percentage',
+            'discount_value' => 'nullable|numeric|min:0',
             'discount_amount' => 'nullable|numeric|min:0',
             'payment_method' => 'nullable|string|in:COD,Online Payment,Bank Transfer',
             'paid_amount' => 'nullable|numeric|min:0',
@@ -402,7 +335,6 @@ class OrderController extends Controller
             'payment_status' => 'nullable|in:pending,paid',
             'call_status' => 'nullable|in:pending,confirm,hold,cancel',
             'sales_note' => 'nullable|string',
-            'order_status' => 'nullable|in:pending,hold,confirm,cancel',
             'delivery_status' => 'nullable|in:' . implode(',', self::DELIVERY_STATUSES),
             'customer.district' => 'nullable|string',
             'customer.province' => 'nullable|string',
@@ -418,9 +350,9 @@ class OrderController extends Controller
         } else {
             $validated['courier_charge'] = (float) $this->normalizeRateForComparison($validated['courier_charge']);
         }
-        $validated['discount_amount'] = isset($validated['discount_amount'])
-            ? round((float) $validated['discount_amount'], 2)
-            : 0.0;
+        $discountInput = $this->normalizeOrderDiscountInput($validated);
+        $validated['discount_type'] = $discountInput['discount_type'];
+        $validated['discount_value'] = $discountInput['discount_value'];
 
         DB::beginTransaction();
         try {
@@ -450,22 +382,20 @@ class OrderController extends Controller
             $order->customer_phone = $customer->mobile;
             $order->customer_address = $customer->address;
 
-            $order->status = $this->resolveOrderStatus(
-                $validated['order_status'] ?? 'pending',
-                (float) ($validated['discount_amount'] ?? 0),
-                $validated['payment_method'] ?? 'COD'
-            );
-            
             // New Fields
             $order->courier_id = $validated['courier_id'] ?? null;
             $order->courier_charge = $validated['courier_charge'] ?? 0;
-            $order->discount_amount = $validated['discount_amount'] ?? 0;
+            $order->discount_type = $validated['discount_type'];
+            $order->discount_value = $validated['discount_value'];
+            $order->discount_amount = 0;
             $order->payment_method = $validated['payment_method'] ?? 'COD';
-            $requestedCallStatus = $validated['call_status'] ?? 'pending';
-            $order->call_status = $order->status === 'cancel'
-                ? 'cancel'
-                : ($requestedCallStatus === 'cancel' ? 'pending' : $requestedCallStatus);
-            $order->delivery_status = $this->normalizeDeliveryStatus('pending', (string) $order->status);
+            $order->call_status = $this->resolveCreateCallStatus(
+                $validated['call_status'] ?? 'pending',
+                (float) ($validated['discount_value'] ?? 0),
+                $validated['payment_method'] ?? 'COD'
+            );
+            $order->delivery_status = $this->normalizeDeliveryStatus('pending', 'pending');
+            $order->status = $this->deriveInternalOrderStatus($order->call_status, $order->delivery_status);
             $this->applyDeliveryTimelineTimestamps($order);
             $order->sales_note = $validated['sales_note'] ?? null;
             
@@ -527,13 +457,11 @@ class OrderController extends Controller
             }
 
             // 4. Update Order Totals
-            if (($validated['discount_amount'] ?? 0) > $totalAmount) {
-                throw ValidationException::withMessages([
-                    'discount_amount' => 'Discount cannot exceed item subtotal.',
-                ]);
-            }
-
-            $order->discount_amount = min($validated['discount_amount'] ?? 0, $totalAmount);
+            $order->discount_amount = $this->calculateOrderDiscountAmount(
+                (float) $totalAmount,
+                (string) $validated['discount_type'],
+                (float) $validated['discount_value']
+            );
             $order->total_amount = max($totalAmount - $order->discount_amount, 0) + $order->courier_charge;
             $order->total_cost = $totalCost;
             $order->total_commission = $totalCommission;
@@ -762,7 +690,7 @@ class OrderController extends Controller
      */
     public function update(Request $request, Order $order)
     {
-        $isCoreLocked = strtolower((string) $order->status) !== 'pending';
+        $isCoreLocked = $this->isCoreDetailsLocked($order);
         if ($isCoreLocked) {
             $validated = $request->validate([
                 'paid_amount' => 'nullable|numeric|min:0',
@@ -841,6 +769,8 @@ class OrderController extends Controller
             // Fulfillment & Address
             'courier_id' => 'nullable|exists:couriers,id',
             'courier_charge' => 'nullable|numeric|min:0',
+            'discount_type' => 'nullable|in:fixed,percentage',
+            'discount_value' => 'nullable|numeric|min:0',
             'discount_amount' => 'nullable|numeric|min:0',
             'payment_method' => 'nullable|string|in:COD,Online Payment,Bank Transfer',
             'paid_amount' => 'nullable|numeric|min:0',
@@ -849,10 +779,9 @@ class OrderController extends Controller
             'payments.*.date' => 'required_with:payments|date',
             'payments.*.note' => 'nullable|string|max:255',
             'payment_status' => 'nullable|in:pending,paid',
-            'call_status' => 'nullable|in:pending,confirm,hold,cancel',
+            'call_status' => 'nullable|in:pending,confirm,hold',
             'sales_note' => 'nullable|string',
-            'order_status' => 'nullable|in:pending,hold,confirm,cancel',
-            'delivery_status' => 'nullable|in:' . implode(',', self::DELIVERY_STATUSES),
+            'delivery_status' => 'nullable|in:pending,waybill_printed,picked_from_rack,packed,dispatched,delivered,returned',
             'customer.district' => 'nullable|string',
             'customer.province' => 'nullable|string',
         ]);
@@ -867,9 +796,9 @@ class OrderController extends Controller
         } else {
             $validated['courier_charge'] = (float) $this->normalizeRateForComparison($validated['courier_charge']);
         }
-        $validated['discount_amount'] = isset($validated['discount_amount'])
-            ? round((float) $validated['discount_amount'], 2)
-            : 0.0;
+        $discountInput = $this->normalizeOrderDiscountInput($validated);
+        $validated['discount_type'] = $discountInput['discount_type'];
+        $validated['discount_value'] = $discountInput['discount_value'];
 
         DB::beginTransaction();
         try {
@@ -899,20 +828,18 @@ class OrderController extends Controller
             $previousOrderStatus = (string) $order->status;
             $previousDeliveryStatus = (string) ($order->delivery_status ?? 'pending');
 
-            $order->status = $validated['order_status'] ?? $order->status;
             $order->courier_id = $validated['courier_id'] ?? null;
             $order->courier_charge = $validated['courier_charge'] ?? 0;
-            $order->discount_amount = $validated['discount_amount'] ?? 0;
+            $order->discount_type = $validated['discount_type'];
+            $order->discount_value = $validated['discount_value'];
+            $order->discount_amount = 0;
             $order->payment_method = $validated['payment_method'] ?? 'COD';
             $requestedCallStatus = $validated['call_status'] ?? $order->call_status;
-            $order->call_status = $order->status === 'cancel'
-                ? 'cancel'
-                : (($requestedCallStatus === 'cancel' || empty($requestedCallStatus)) ? 'pending' : $requestedCallStatus);
+            $order->call_status = ($requestedCallStatus === 'cancel' || empty($requestedCallStatus)) ? 'pending' : $requestedCallStatus;
             $requestedDeliveryStatus = $validated['delivery_status'] ?? $order->delivery_status;
-            if (strtolower((string) $order->status) !== 'cancel') {
-                $this->assertDeliveryStatusTransitionAllowed($requestedDeliveryStatus, $previousDeliveryStatus);
-            }
-            $order->delivery_status = $this->normalizeDeliveryStatus($requestedDeliveryStatus, (string) $order->status);
+            $this->assertDeliveryStatusTransitionAllowed($requestedDeliveryStatus, $previousDeliveryStatus);
+            $order->delivery_status = $this->normalizeDeliveryStatus($requestedDeliveryStatus, 'pending');
+            $order->status = $this->deriveInternalOrderStatus($order->call_status, $order->delivery_status);
             $this->applyDeliveryTimelineTimestamps($order, $previousOrderStatus, $previousDeliveryStatus);
             $order->sales_note = $validated['sales_note'] ?? null;
              // Capture Address Snapshot
@@ -972,13 +899,11 @@ class OrderController extends Controller
             }
 
             // 5. Update Order Totals
-            if (($validated['discount_amount'] ?? 0) > $totalAmount) {
-                throw ValidationException::withMessages([
-                    'discount_amount' => 'Discount cannot exceed item subtotal.',
-                ]);
-            }
-
-            $order->discount_amount = min($validated['discount_amount'] ?? 0, $totalAmount);
+            $order->discount_amount = $this->calculateOrderDiscountAmount(
+                (float) $totalAmount,
+                (string) $validated['discount_type'],
+                (float) $validated['discount_value']
+            );
             $order->total_amount = max($totalAmount - $order->discount_amount, 0) + $order->courier_charge;
             $order->total_cost = $totalCost;
             $order->total_commission = $totalCommission;
@@ -1085,9 +1010,9 @@ class OrderController extends Controller
     {
         $order = Order::findOrFail($id);
         $validated = $request->validate([
-            'status' => 'nullable|in:pending,hold,confirm,cancel',
+            'status' => 'nullable|in:cancel',
             'call_status' => 'nullable|in:pending,confirm,hold',
-            'delivery_status' => 'nullable|in:' . implode(',', self::DELIVERY_STATUSES),
+            'delivery_status' => 'nullable|in:pending,waybill_printed,picked_from_rack,packed,dispatched,delivered,returned',
             'sales_note' => 'nullable|string',
         ]);
 
@@ -1097,27 +1022,25 @@ class OrderController extends Controller
             $previousOrderStatus = (string) $order->status;
             $previousDeliveryStatus = (string) ($order->delivery_status ?? 'pending');
 
-            $statusChanged = false;
-            if (array_key_exists('status', $validated)) {
-                $order->status = $validated['status'];
-                $statusChanged = true;
-            }
-
-            if ($order->status === 'cancel') {
+            if (($validated['status'] ?? null) === 'cancel') {
                 $order->call_status = 'cancel';
                 $order->delivery_status = 'cancel';
-            } elseif (array_key_exists('call_status', $validated)) {
-                $order->call_status = $validated['call_status'];
-            } elseif ($statusChanged && $order->call_status === 'cancel') {
-                $order->call_status = 'pending';
+            } else {
+                if (array_key_exists('call_status', $validated)) {
+                    $order->call_status = $validated['call_status'];
+                } elseif ($order->call_status === 'cancel') {
+                    $order->call_status = 'pending';
+                }
+
+                if (array_key_exists('delivery_status', $validated)) {
+                    $this->assertDeliveryStatusTransitionAllowed($validated['delivery_status'], $previousDeliveryStatus);
+                    $order->delivery_status = $this->normalizeDeliveryStatus($validated['delivery_status'], 'pending');
+                } elseif ($order->delivery_status === 'cancel') {
+                    $order->delivery_status = 'pending';
+                }
             }
 
-            if ($order->status !== 'cancel' && array_key_exists('delivery_status', $validated)) {
-                $this->assertDeliveryStatusTransitionAllowed($validated['delivery_status'], $previousDeliveryStatus);
-                $order->delivery_status = $this->normalizeDeliveryStatus($validated['delivery_status'], (string) $order->status);
-            } elseif ($statusChanged && $order->status !== 'cancel' && $order->delivery_status === 'cancel') {
-                $order->delivery_status = 'pending';
-            }
+            $order->status = $this->deriveInternalOrderStatus($order->call_status, $order->delivery_status);
 
             if (array_key_exists('sales_note', $validated)) {
                 $order->sales_note = $validated['sales_note'];
@@ -1169,18 +1092,168 @@ class OrderController extends Controller
             ->all();
     }
 
+    private function normalizeOrderDiscountInput(array $validated): array
+    {
+        $discountType = in_array(($validated['discount_type'] ?? 'fixed'), ['fixed', 'percentage'], true)
+            ? (string) $validated['discount_type']
+            : 'fixed';
+
+        $rawValue = $validated['discount_value']
+            ?? $validated['discount_amount']
+            ?? 0;
+
+        $discountValue = round(max((float) $rawValue, 0), 2);
+
+        if ($discountType === 'percentage' && $discountValue > 100) {
+            throw ValidationException::withMessages([
+                'discount_value' => 'Percentage discount cannot exceed 100.',
+            ]);
+        }
+
+        return [
+            'discount_type' => $discountType,
+            'discount_value' => $discountValue,
+        ];
+    }
+
+    private function calculateOrderDiscountAmount(float $subTotal, string $discountType, float $discountValue): float
+    {
+        $normalizedSubTotal = max(round($subTotal, 2), 0);
+        $normalizedValue = max(round($discountValue, 2), 0);
+
+        if ($normalizedSubTotal <= 0 || $normalizedValue <= 0) {
+            return 0.0;
+        }
+
+        if ($discountType === 'percentage') {
+            return round(min(($normalizedSubTotal * $normalizedValue) / 100, $normalizedSubTotal), 2);
+        }
+
+        if ($normalizedValue > $normalizedSubTotal) {
+            throw ValidationException::withMessages([
+                'discount_value' => 'Discount cannot exceed item subtotal.',
+            ]);
+        }
+
+        return round(min($normalizedValue, $normalizedSubTotal), 2);
+    }
+
     private function mustKeepOrderPending(float $discountAmount, ?string $paymentMethod): bool
     {
         return $discountAmount > 0 || $paymentMethod === 'Online Payment';
     }
 
-    private function resolveOrderStatus(?string $requestedStatus, float $discountAmount, ?string $paymentMethod): string
+    private function resolveOrderListViewMode(?string $viewMode): string
+    {
+        return in_array($viewMode, ['active', 'cancelled'], true) ? $viewMode : 'active';
+    }
+
+    private function buildFilteredOrdersQuery(Request $request, string $viewMode): Builder
+    {
+        $query = Order::with(['user', 'reseller', 'customer', 'items', 'courier']);
+
+        if ($viewMode === 'cancelled') {
+            $query->where('status', 'cancel');
+        } else {
+            $query->where('status', '!=', 'cancel');
+        }
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $numericSearch = ctype_digit($search) ? (int) $search : null;
+
+            $query->where(function ($q) use ($search, $numericSearch) {
+                if ($numericSearch !== null) {
+                    $q->where('id', $numericSearch)
+                        ->orWhere('user_id', $numericSearch)
+                        ->orWhere('reseller_id', $numericSearch)
+                        ->orWhere('customer_id', $numericSearch);
+                }
+
+                $q->orWhere('order_number', 'like', "%{$search}%")
+                    ->orWhere('waybill_number', 'like', "%{$search}%")
+                    ->orWhere('customer_name', 'like', "%{$search}%")
+                    ->orWhere('customer_phone', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('mobile', 'like', "%{$search}%")
+                            ->orWhere('landline', 'like', "%{$search}%")
+                            ->orWhere('business_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('reseller', function ($resellerQuery) use ($search) {
+                        $resellerQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('business_name', 'like', "%{$search}%")
+                            ->orWhere('mobile', 'like', "%{$search}%")
+                            ->orWhere('landline', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('delivery_status') && in_array($request->delivery_status, self::DELIVERY_STATUSES, true)) {
+            $query->where('delivery_status', $request->delivery_status);
+        }
+
+        if ($request->filled('call_status')) {
+            $query->where('call_status', $request->call_status);
+        }
+
+        if ($request->filled('courier_id')) {
+            $query->where('courier_id', $request->courier_id);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('order_date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('order_date', '<=', $request->date_to);
+        }
+
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        return $query;
+    }
+
+    private function resolveCreateCallStatus(?string $requestedStatus, float $discountAmount, ?string $paymentMethod): string
     {
         if ($this->mustKeepOrderPending($discountAmount, $paymentMethod)) {
             return 'pending';
         }
 
-        return $requestedStatus ?: 'pending';
+        return ($requestedStatus === 'cancel' || empty($requestedStatus)) ? 'pending' : $requestedStatus;
+    }
+
+    private function deriveInternalOrderStatus(?string $callStatus, ?string $deliveryStatus): string
+    {
+        $normalizedCallStatus = strtolower((string) ($callStatus ?? 'pending'));
+        $normalizedDeliveryStatus = strtolower((string) ($deliveryStatus ?? 'pending'));
+
+        if ($normalizedCallStatus === 'cancel' || $normalizedDeliveryStatus === 'cancel') {
+            return 'cancel';
+        }
+
+        return in_array($normalizedCallStatus, ['pending', 'hold', 'confirm'], true)
+            ? $normalizedCallStatus
+            : 'pending';
+    }
+
+    private function isCoreDetailsLocked(Order $order): bool
+    {
+        $callStatus = strtolower((string) ($order->call_status ?? 'pending'));
+        $deliveryStatus = strtolower((string) ($order->delivery_status ?? 'pending'));
+
+        if ($callStatus === 'cancel' || $deliveryStatus === 'cancel') {
+            return true;
+        }
+
+        return $callStatus !== 'pending' || $deliveryStatus !== 'pending';
     }
 
     private function normalizeDeliveryStatus(?string $requestedStatus, string $orderStatus): string
@@ -1191,6 +1264,10 @@ class OrderController extends Controller
 
         if (!in_array($requestedStatus, self::DELIVERY_STATUSES, true)) {
             return 'pending';
+        }
+
+        if ($requestedStatus === 'return_requested') {
+            return 'returned';
         }
 
         if ($requestedStatus === 'cancel') {
@@ -1629,6 +1706,14 @@ class OrderController extends Controller
     {
         $normalizedTotal = max(round($totalAmount, 2), 0);
 
+        if (trim($paymentMethod) !== 'Online Payment') {
+            return [
+                'paid_amount' => 0.0,
+                'payments_data' => null,
+                'payment_status' => 'pending',
+            ];
+        }
+
         $paymentsData = collect($paymentsInput)
             ->filter(fn ($payment) => is_array($payment))
             ->map(function (array $payment) {
@@ -1673,7 +1758,7 @@ class OrderController extends Controller
             }
         }
 
-        if ($paymentMethod === 'Online Payment' && empty($paymentsData)) {
+        if ($paymentMethod === 'Online Payment' && $normalizedTotal > 0 && empty($paymentsData)) {
             throw ValidationException::withMessages([
                 'payments' => 'Add at least one payment entry for Online Payment orders.',
             ]);
@@ -1701,10 +1786,6 @@ class OrderController extends Controller
         float $totalAmount,
         string $deliveryStatus
     ): string {
-        $normalizedRequested = in_array($requestedStatus, ['pending', 'paid'], true)
-            ? $requestedStatus
-            : 'pending';
-
         $normalizedDelivery = strtolower(trim($deliveryStatus));
         $isOnlinePayment = trim($paymentMethod) === 'Online Payment';
         $normalizedTotal = max(round($totalAmount, 2), 0);
@@ -1715,7 +1796,7 @@ class OrderController extends Controller
             return 'paid';
         }
 
-        return $normalizedRequested;
+        return 'pending';
     }
 
     private function inventoryUnits(): InventoryUnitService
