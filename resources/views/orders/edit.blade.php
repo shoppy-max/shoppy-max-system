@@ -82,19 +82,12 @@
 
                             <div class="mb-4">
                                 <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Delivery Status</label>
-                                <select
-                                    x-model="form.delivery_status"
-                                    :disabled="isEditLocked"
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
-                                >
-                                    <option value="pending">Pending</option>
-                                    <option value="waybill_printed">Waybill printed</option>
-                                    <option value="picked_from_rack">Picked from rack</option>
-                                    <option value="packed">Packed</option>
-                                    <option value="dispatched">Dispatched</option>
-                                    <option value="delivered">Delivered</option>
-                                    <option value="returned">Returned</option>
-                                </select>
+                                <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900/40 dark:text-white">
+                                    <span x-text="formatDeliveryStatus(form.delivery_status)"></span>
+                                </div>
+                                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                    Delivery progress is system-driven: Waybill Printed -> Picked From Rack -> Packed -> Dispatched -> Delivered -> Returned.
+                                </p>
                             </div>
 
                             <div x-show="form.order_type === 'reseller'" x-transition>
@@ -721,6 +714,21 @@
                         return;
                     }
                     alert(message);
+                },
+
+                formatDeliveryStatus(status) {
+                    const labels = {
+                        pending: 'Pending',
+                        waybill_printed: 'Waybill Printed',
+                        picked_from_rack: 'Picked From Rack',
+                        packed: 'Packed',
+                        dispatched: 'Dispatched',
+                        delivered: 'Delivered',
+                        returned: 'Returned',
+                        cancel: 'Cancel',
+                    };
+
+                    return labels[String(status || 'pending').toLowerCase()] || 'Pending';
                 },
 
                 findCityMatchForCustomer(customer) {

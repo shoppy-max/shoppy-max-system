@@ -106,7 +106,9 @@ Route::middleware(['auth'])->prefix('orders')->name('orders.')->group(function (
     // Packing
     Route::get('/packing', [\App\Http\Controllers\PackingController::class, 'index'])->name('packing.index');
     Route::get('/packing/{id}/process', [\App\Http\Controllers\PackingController::class, 'process'])->name('packing.process');
+    Route::post('/packing/{id}/mark-picked', [\App\Http\Controllers\PackingController::class, 'markPicked'])->name('packing.mark-picked');
     Route::post('/packing/{id}/mark-packed', [\App\Http\Controllers\PackingController::class, 'markPacked'])->name('packing.mark-packed');
+    Route::post('/packing/{id}/mark-dispatched', [\App\Http\Controllers\PackingController::class, 'markDispatched'])->name('packing.mark-dispatched');
 });
 
 // Reseller Targets

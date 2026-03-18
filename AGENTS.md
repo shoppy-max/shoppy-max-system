@@ -23,7 +23,7 @@ Shoppy Max is a Laravel 12 operations platform for:
 - product and variant management
 - purchase intake with moderation and GRN scanning
 - unit-level inventory traceability
-- order intake, call flow, packing, waybill generation, and returns
+- order intake, call flow, waybill generation, returns, and a partial packing flow that still needs completion
 - reseller/direct-reseller balances and payments
 - courier settlement and bank-account tracking
 - reporting and print/PDF exports
@@ -428,6 +428,10 @@ Check:
 - call list
 - waybill queue and print
 - packing flow
+  - treat as partial / TODO, not production-finished
+  - current screen still matches by SKU, not by per-piece tracked unit code
+  - current scan progress is client-side only and not persisted
+  - current completion logic does not verify repeated scans against ordered quantity per SKU
 - cancel/return behavior
 - payment entries and payment status
 

@@ -32,7 +32,7 @@ This system manages:
 - Contacts: customers, suppliers, resellers, direct resellers, cities
 - Product catalog: categories, sub-categories, units, products, variants, pricing
 - Inventory movement: purchases, GRN intake, unit-level stock tracking, and orders
-- Orders: create/edit/view/print/PDF, call list, waybill queue, packing flow, returns
+- Orders: create/edit/view/print/PDF, call list, waybill queue, returns, and a partial packing module that still needs completion
 - Finance flows: reseller targets/payments/dues, courier payments, bank accounts
 - Reports: province sales, profit/loss, stock, packet count, product sales, user sales
 
@@ -57,6 +57,7 @@ Authentication is provided by Laravel Breeze, and permissions are handled by Spa
   - call status tracking
   - payment entries and derived payment status
   - order lock behavior after status moves away from `pending`
+  - note: the packing module is not yet fully production-ready; it still needs per-piece scan persistence and quantity-accurate verification
 - Purchase workflow with:
   - forward-only moderation (`pending -> checking -> verified -> complete`)
   - GRN checking by barcode scan

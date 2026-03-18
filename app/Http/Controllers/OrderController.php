@@ -1324,9 +1324,42 @@ class OrderController extends Controller
         $requestedStatus = strtolower((string) ($requestedStatus ?? 'pending'));
         $previousStatus = strtolower((string) ($previousStatus ?? 'pending'));
 
-        if ($requestedStatus === 'delivered' && !in_array($previousStatus, ['dispatched', 'delivered'], true)) {
+        if ($requestedStatus === $previousStatus) {
+            return;
+        }
+
+        $allowedTransitions = [
+            'pending' => ['waybill_printed'],
+            'waybill_printed' => ['picked_from_rack'],
+            'picked_from_rack' => ['packed'],
+            'packed' => ['dispatched'],
+            'dispatched' => ['delivered'],
+            'delivered' => ['returned'],
+            'returned' => [],
+            'cancel' => [],
+        ];
+
+        $allowedNextStatuses = $allowedTransitions[$previousStatus] ?? [];
+
+        if (!in_array($requestedStatus, $allowedNextStatuses, true)) {
+            $labels = [
+                'pending' => 'Pending',
+                'waybill_printed' => 'Waybill Printed',
+                'picked_from_rack' => 'Picked From Rack',
+                'packed' => 'Packed',
+                'dispatched' => 'Dispatched',
+                'delivered' => 'Delivered',
+                'returned' => 'Returned',
+                'cancel' => 'Cancel',
+            ];
+
+            $previousLabel = $labels[$previousStatus] ?? ucfirst(str_replace('_', ' ', $previousStatus));
+            $nextLabel = $allowedNextStatuses[0] ?? null;
+
             throw ValidationException::withMessages([
-                'delivery_status' => 'Only dispatched orders can be marked as delivered.',
+                'delivery_status' => $nextLabel
+                    ? "{$previousLabel} orders can only move to " . ($labels[$nextLabel] ?? ucfirst(str_replace('_', ' ', $nextLabel))) . '.'
+                    : "{$previousLabel} is a final delivery status and cannot be advanced.",
             ]);
         }
     }
