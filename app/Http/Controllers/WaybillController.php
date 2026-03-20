@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\WaybillPdfService;
 use App\Models\Order;
 use App\Models\Courier;
 use App\Models\CourierWaybill;
@@ -13,6 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class WaybillController extends Controller
 {
+    public function __construct(private WaybillPdfService $waybillPdfService)
+    {
+    }
+
     /**
      * Show Waybill Print Selection - List of Couriers
      */
@@ -277,21 +281,6 @@ class WaybillController extends Controller
 
     private function streamWaybillPdf(Collection $orders, string $paperSize, string $filePrefix = 'waybills')
     {
-        $view = $paperSize === 'four_by_six'
-            ? 'orders.waybill.pdf-4x6'
-            : 'orders.waybill.pdf-a4';
-
-        $pdf = Pdf::loadView($view, [
-            'orders' => $orders,
-            'generatedAt' => now(),
-        ]);
-
-        if ($paperSize === 'four_by_six') {
-            $pdf->setPaper([0, 0, 288, 432], 'portrait');
-        } else {
-            $pdf->setPaper('a4', 'portrait');
-        }
-
-        return $pdf->download($filePrefix . '_' . $paperSize . '_' . now()->format('Ymd_His') . '.pdf');
+        return $this->waybillPdfService->download($orders, $paperSize, $filePrefix, now());
     }
 }
