@@ -43,8 +43,7 @@
                     Back
                 </a>
                 <button
-                    type="submit"
-                    form="waybillForm"
+                    type="button"
                     id="printSelectedBtn"
                     class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled
@@ -136,9 +135,10 @@
             </form>
         </div>
 
-        <form action="{{ route('orders.waybill.print') }}" method="POST" target="_blank" id="waybillForm">
+        <form action="{{ route('orders.waybill.print') }}" method="POST" target="waybillDownloadFrame" id="waybillForm">
             @csrf
             <input type="hidden" name="courier_id" value="{{ $courier->id }}">
+            <input type="hidden" name="paper_size" id="paperSizeInput" value="">
 
             <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div class="px-4 py-3 bg-gray-50 dark:bg-gray-900/30 border-b border-gray-200 dark:border-gray-700 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -218,12 +218,66 @@
         </div>
     </div>
 
+    <div id="paperSizeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+        <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
+            <div class="flex items-start justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Choose Waybill Print Size</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">This generates a PDF with exact waybill sizing for the selected orders. The PDF download starts automatically.</p>
+                </div>
+                <button type="button" id="closePaperSizeModal" class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 gap-4 p-6 md:grid-cols-2">
+                <button type="button" class="paper-size-option rounded-2xl border border-gray-200 bg-gray-50 p-5 text-left transition hover:border-blue-400 hover:bg-blue-50 dark:border-gray-700 dark:bg-gray-900/20 dark:hover:border-blue-500 dark:hover:bg-blue-900/20" data-paper-size="a4">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-base font-semibold text-gray-900 dark:text-white">A4 Size</p>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Print up to 4 waybills in a 2 x 2 A4 grid. Best for office printers and batch printing.</p>
+                        </div>
+                        <div class="flex h-24 w-16 shrink-0 items-center justify-center rounded-xl border border-gray-300 bg-white shadow-sm dark:border-gray-600 dark:bg-gray-800">
+                            <div class="flex h-[4.6rem] w-[2.9rem] flex-col justify-between rounded-md border border-dashed border-gray-300 bg-gray-50 p-1 dark:border-gray-500 dark:bg-gray-700/50">
+                                <div class="space-y-0.5">
+                                    <div class="h-1 rounded bg-gray-300 dark:bg-gray-500"></div>
+                                    <div class="h-1 rounded bg-gray-200 dark:bg-gray-600"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-0.5">
+                                    <div class="h-4 rounded-sm border border-gray-300 bg-white dark:border-gray-500 dark:bg-gray-800"></div>
+                                    <div class="h-4 rounded-sm border border-gray-300 bg-white dark:border-gray-500 dark:bg-gray-800"></div>
+                                    <div class="h-4 rounded-sm border border-gray-300 bg-white dark:border-gray-500 dark:bg-gray-800"></div>
+                                    <div class="h-4 rounded-sm border border-gray-300 bg-white dark:border-gray-500 dark:bg-gray-800"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </button>
+                <button type="button" class="paper-size-option rounded-2xl border border-gray-200 bg-gray-50 p-5 text-left transition hover:border-blue-400 hover:bg-blue-50 dark:border-gray-700 dark:bg-gray-900/20 dark:hover:border-blue-500 dark:hover:bg-blue-900/20" data-paper-size="four_by_six">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-base font-semibold text-gray-900 dark:text-white">4 x 6 Size</p>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Print one waybill per 4 x 6 label page. Best for dedicated waybill and sticker printers.</p>
+                        </div>
+                        <div class="flex h-16 w-24 items-center justify-center rounded-lg border border-gray-300 bg-white text-[10px] font-semibold text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                            4 x 6
+                        </div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <iframe name="waybillDownloadFrame" class="hidden"></iframe>
+
     <script>
         (function () {
             const form = document.getElementById('waybillForm');
             const selectAll = document.getElementById('selectAll');
             const selectedCountLabel = document.getElementById('selectedCountLabel');
             const printBtn = document.getElementById('printSelectedBtn');
+            const paperSizeInput = document.getElementById('paperSizeInput');
+            const paperSizeModal = document.getElementById('paperSizeModal');
+            const closePaperSizeModalBtn = document.getElementById('closePaperSizeModal');
             const availableCount = {{ (int) ($stats['available_waybills'] ?? 0) }};
 
             if (!form) {
@@ -231,6 +285,29 @@
             }
 
             const checkboxes = Array.from(form.querySelectorAll('.order-checkbox'));
+            const paperSizeButtons = Array.from(document.querySelectorAll('.paper-size-option'));
+
+            const openPaperSizeModal = () => {
+                if (!paperSizeModal) {
+                    return;
+                }
+
+                paperSizeModal.classList.remove('hidden');
+                paperSizeModal.classList.add('flex');
+            };
+
+            const closePaperSizeModal = () => {
+                if (!paperSizeModal) {
+                    return;
+                }
+
+                paperSizeModal.classList.add('hidden');
+                paperSizeModal.classList.remove('flex');
+            };
+
+            const refreshQueuePage = () => {
+                window.location.reload();
+            };
 
             const syncSelection = () => {
                 const checkedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
@@ -248,6 +325,40 @@
                 }
             };
 
+            const validateSelection = () => {
+                const checkedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+
+                if (checkedCount === 0) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            text: 'Select at least one order to print waybills.',
+                        });
+                    } else {
+                        alert('Select at least one order to print waybills.');
+                    }
+
+                    return false;
+                }
+
+                if (checkedCount > availableCount) {
+                    const message = `Only ${availableCount} waybill ID${availableCount === 1 ? '' : 's'} are available for this courier. Add more waybill IDs or reduce the selected orders.`;
+
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            text: message,
+                        });
+                    } else {
+                        alert(message);
+                    }
+
+                    return false;
+                }
+
+                return true;
+            };
+
             if (selectAll) {
                 selectAll.addEventListener('change', function () {
                     checkboxes.forEach((checkbox) => {
@@ -261,36 +372,39 @@
                 checkbox.addEventListener('change', syncSelection);
             });
 
-            form.addEventListener('submit', (event) => {
-                const checkedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
-                if (checkedCount === 0) {
-                    event.preventDefault();
-
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'warning',
-                            text: 'Select at least one order to print waybills.',
-                        });
-                    } else {
-                        alert('Select at least one order to print waybills.');
+            if (printBtn) {
+                printBtn.addEventListener('click', () => {
+                    if (!validateSelection()) {
+                        return;
                     }
-                    return;
-                }
 
-                if (checkedCount > availableCount) {
-                    event.preventDefault();
+                    openPaperSizeModal();
+                });
+            }
 
-                    const message = `Only ${availableCount} waybill ID${availableCount === 1 ? '' : 's'} are available for this courier. Add more waybill IDs or reduce the selected orders.`;
+            if (closePaperSizeModalBtn) {
+                closePaperSizeModalBtn.addEventListener('click', closePaperSizeModal);
+            }
 
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'warning',
-                            text: message,
-                        });
-                    } else {
-                        alert(message);
+            if (paperSizeModal) {
+                paperSizeModal.addEventListener('click', (event) => {
+                    if (event.target === paperSizeModal) {
+                        closePaperSizeModal();
                     }
-                }
+                });
+            }
+
+            paperSizeButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    if (!paperSizeInput) {
+                        return;
+                    }
+
+                    paperSizeInput.value = button.dataset.paperSize || '';
+                    closePaperSizeModal();
+                    form.submit();
+                    window.setTimeout(refreshQueuePage, 900);
+                });
             });
 
             syncSelection();

@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Order;
 use App\Models\Courier;
 use App\Models\CourierWaybill;
+use Illuminate\Support\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -116,6 +118,7 @@ class WaybillController extends Controller
     {
         $validated = $request->validate([
             'courier_id' => 'required|exists:couriers,id',
+            'paper_size' => 'required|in:a4,four_by_six',
             'order_ids' => 'required|array|min:1',
             'order_ids.*' => 'integer|exists:orders,id',
         ]);
@@ -126,66 +129,78 @@ class WaybillController extends Controller
             ->unique()
             ->values();
         $courierId = (int) $validated['courier_id'];
+        $paperSize = (string) $validated['paper_size'];
 
         try {
-            $orders = DB::transaction(function () use ($orderIds, $courierId) {
-                $ordersQuery = Order::query()
-                    ->where('courier_id', $courierId)
-                    ->whereIn('id', $orderIds)
-                    ->with('items', 'city', 'customer')
-                    ->lockForUpdate();
-
-                $this->applyPrintableOrderConstraints($ordersQuery);
-
-                $orders = $ordersQuery->get()
-                    ->sortBy(fn (Order $order) => $orderIds->search($order->id))
-                    ->values();
-
-                if ($orders->count() !== $orderIds->count()) {
-                    throw ValidationException::withMessages([
-                        'order_ids' => 'Only call-confirmed orders with pending delivery and no waybill numbers can be printed.',
-                    ]);
-                }
-
-                $availableWaybills = CourierWaybill::query()
-                    ->where('courier_id', $courierId)
-                    ->available()
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->limit($orderIds->count())
-                    ->get()
-                    ->values();
-
-                if ($availableWaybills->count() < $orderIds->count()) {
-                    throw ValidationException::withMessages([
-                        'order_ids' => 'Not enough available waybill IDs for this courier. Add more waybill IDs before printing.',
-                    ]);
-                }
-
-                $timestamp = now();
-
-                foreach ($orders as $index => $order) {
-                    $waybill = $availableWaybills[$index];
-
-                    $order->waybill_number = $waybill->code;
-                    $order->delivery_status = 'waybill_printed';
-                    if (!$order->waybill_printed_at) {
-                        $order->waybill_printed_at = $timestamp;
-                    }
-                    $order->save();
-
-                    $waybill->order_id = $order->id;
-                    $waybill->allocated_at = $timestamp;
-                    $waybill->save();
-                }
-
-                return $orders;
-            });
+            $orders = $this->allocateWaybills($courierId, $orderIds);
         } catch (ValidationException $e) {
             return back()->with('error', collect($e->errors())->flatten()->first() ?: 'Unable to print waybills.');
         }
 
-        return view('orders.waybill.print', compact('orders'));
+        return $this->streamWaybillPdf($orders, $paperSize);
+    }
+
+    /**
+     * Reprint an existing waybill without allocating a new waybill ID
+     */
+    public function reprint(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'paper_size' => 'required|in:a4,four_by_six',
+        ]);
+
+        $order->loadMissing([
+            'items',
+            'city',
+            'customer',
+            'courier',
+        ]);
+
+        if (blank($order->waybill_number)) {
+            abort(404, 'This order does not have a saved waybill to reprint.');
+        }
+
+        return $this->streamWaybillPdf(collect([$order]), (string) $validated['paper_size'], 'waybill_reprint');
+    }
+
+    /**
+     * Reprint multiple existing waybills without allocating new waybill IDs
+     */
+    public function bulkReprint(Request $request)
+    {
+        $validated = $request->validate([
+            'paper_size' => 'required|in:a4,four_by_six',
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:orders,id',
+        ]);
+
+        $orderIds = collect($request->input('order_ids', []))
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $orders = Order::query()
+            ->whereIn('id', $orderIds)
+            ->whereNotNull('waybill_number')
+            ->where('waybill_number', '!=', '')
+            ->with([
+                'items',
+                'city',
+                'customer',
+                'courier',
+            ])
+            ->get()
+            ->sortBy(fn (Order $order) => $orderIds->search($order->id))
+            ->values();
+
+        if ($orders->count() !== $orderIds->count()) {
+            throw ValidationException::withMessages([
+                'order_ids' => 'Only orders with existing saved waybills can be reprinted.',
+            ]);
+        }
+
+        return $this->streamWaybillPdf($orders, (string) $validated['paper_size'], 'waybill_reprint');
     }
 
     private function applyPrintableOrderConstraints($query): void
@@ -196,5 +211,87 @@ class WaybillController extends Controller
                 $waybillQuery->whereNull('waybill_number')
                     ->orWhere('waybill_number', '');
             });
+    }
+
+    private function allocateWaybills(int $courierId, Collection $orderIds): Collection
+    {
+        return DB::transaction(function () use ($courierId, $orderIds) {
+            $ordersQuery = Order::query()
+                ->where('courier_id', $courierId)
+                ->whereIn('id', $orderIds)
+                ->with([
+                    'items',
+                    'city',
+                    'customer',
+                    'courier',
+                ])
+                ->lockForUpdate();
+
+            $this->applyPrintableOrderConstraints($ordersQuery);
+
+            $orders = $ordersQuery->get()
+                ->sortBy(fn (Order $order) => $orderIds->search($order->id))
+                ->values();
+
+            if ($orders->count() !== $orderIds->count()) {
+                throw ValidationException::withMessages([
+                    'order_ids' => 'Only call-confirmed orders with pending delivery and no waybill numbers can be printed.',
+                ]);
+            }
+
+            $availableWaybills = CourierWaybill::query()
+                ->where('courier_id', $courierId)
+                ->available()
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->limit($orderIds->count())
+                ->get()
+                ->values();
+
+            if ($availableWaybills->count() < $orderIds->count()) {
+                throw ValidationException::withMessages([
+                    'order_ids' => 'Not enough available waybill IDs for this courier. Add more waybill IDs before printing.',
+                ]);
+            }
+
+            $timestamp = now();
+
+            foreach ($orders as $index => $order) {
+                $waybill = $availableWaybills[$index];
+
+                $order->waybill_number = $waybill->code;
+                $order->delivery_status = 'waybill_printed';
+                if (! $order->waybill_printed_at) {
+                    $order->waybill_printed_at = $timestamp;
+                }
+                $order->save();
+
+                $waybill->order_id = $order->id;
+                $waybill->allocated_at = $timestamp;
+                $waybill->save();
+            }
+
+            return $orders;
+        });
+    }
+
+    private function streamWaybillPdf(Collection $orders, string $paperSize, string $filePrefix = 'waybills')
+    {
+        $view = $paperSize === 'four_by_six'
+            ? 'orders.waybill.pdf-4x6'
+            : 'orders.waybill.pdf-a4';
+
+        $pdf = Pdf::loadView($view, [
+            'orders' => $orders,
+            'generatedAt' => now(),
+        ]);
+
+        if ($paperSize === 'four_by_six') {
+            $pdf->setPaper([0, 0, 288, 432], 'portrait');
+        } else {
+            $pdf->setPaper('a4', 'portrait');
+        }
+
+        return $pdf->download($filePrefix . '_' . $paperSize . '_' . now()->format('Ymd_His') . '.pdf');
     }
 }

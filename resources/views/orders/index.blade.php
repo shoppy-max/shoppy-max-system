@@ -32,9 +32,13 @@
         class="p-6 overflow-hidden bg-white rounded-md shadow-md dark:bg-gray-800"
         x-data="orderManager({
             visibleOrderIds: @js($orders->pluck('id')->values()->all()),
+            waybillEligibleOrderIds: @js($orders->filter(fn ($order) => filled($order->waybill_number))->pluck('id')->values()->all()),
             bulkPdfUrl: @js(route('orders.bulk-pdf')),
+            bulkReprintWaybillUrl: @js(route('orders.waybill.reprint-bulk')),
             csrf: @js(csrf_token()),
+            reprintWaybillUrlTemplate: @js(route('orders.waybill.reprint', ['order' => '__ORDER__'])),
         })"
+        @open-waybill-reprint.window="openReprintWaybillModal($event.detail.orderId, $event.detail.orderNumber)"
     >
         
         <!-- Filter bar -->
@@ -310,6 +314,18 @@
                                     <a href="{{ route('orders.pdf', $order) }}" target="_blank" class="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg dark:text-indigo-400 dark:hover:bg-gray-700 transition-colors" title="Download PDF">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                     </a>
+                                    @if(filled($order->waybill_number))
+                                        <button
+                                            type="button"
+                                            @click="openReprintWaybillModal({{ $order->id }}, @js($order->order_number))"
+                                            class="p-2 text-amber-600 hover:bg-amber-100 rounded-lg dark:text-amber-400 dark:hover:bg-gray-700 transition-colors"
+                                            title="Reprint Waybill"
+                                        >
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V4a1 1 0 011-1h10a1 1 0 011 1v5M6 13H5a2 2 0 00-2 2v3h4m13-5h1a2 2 0 012 2v3h-4m-9 0h8a1 1 0 001-1v-5H9v5a1 1 0 001 1zm0 0v2m8-2v2"></path>
+                                            </svg>
+                                        </button>
+                                    @endif
                                     <a href="{{ route('orders.show', $order) }}" class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg dark:text-gray-400 dark:hover:bg-gray-700 transition-colors" title="View Details">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     </a>
@@ -364,6 +380,11 @@
                     <div class="text-sm text-gray-700 dark:text-gray-200">
                         <span class="font-semibold" x-text="selectedOrders.length"></span>
                         orders selected
+                        <template x-if="selectedReprintableWaybillCount() > 0">
+                            <span class="text-gray-500 dark:text-gray-400">
+                                • <span x-text="selectedReprintableWaybillCount()"></span> with saved waybills
+                            </span>
+                        </template>
                     </div>
                     <div class="flex items-center gap-2">
                         <button
@@ -380,10 +401,21 @@
                         >
                             Download PDFs
                         </button>
+                        <button
+                            type="button"
+                            @click="openBulkReprintWaybillModal()"
+                            x-bind:disabled="selectedReprintableWaybillCount() === 0"
+                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 focus:ring-4 focus:ring-amber-300 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-amber-600 dark:hover:bg-amber-700 dark:focus:ring-amber-800"
+                        >
+                            Reprint Waybills
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
+
+        @include('orders.partials.reprint-waybill-modal')
+        @include('orders.partials.bulk-reprint-waybill-modal')
     </div>
     
     <script>
@@ -391,8 +423,15 @@
             return {
                 selectedOrders: [],
                 visibleOrderIds: (config.visibleOrderIds || []).map(id => String(id)),
+                waybillEligibleOrderIds: (config.waybillEligibleOrderIds || []).map(id => String(id)),
                 bulkPdfUrl: config.bulkPdfUrl || '',
+                bulkReprintWaybillUrl: config.bulkReprintWaybillUrl || '',
                 csrf: config.csrf || '',
+                reprintWaybillModalOpen: false,
+                bulkReprintWaybillModalOpen: false,
+                reprintWaybillOrderId: null,
+                reprintWaybillOrderNumber: '',
+                reprintWaybillUrlTemplate: config.reprintWaybillUrlTemplate || '',
                 isAllVisibleSelected() {
                     if (this.visibleOrderIds.length === 0) {
                         return false;
@@ -414,6 +453,82 @@
                 },
                 clearSelection() {
                     this.selectedOrders = [];
+                },
+                selectedReprintableWaybillIds() {
+                    const waybillEligible = new Set(this.waybillEligibleOrderIds.map(id => String(id)));
+                    return this.selectedOrders
+                        .map(id => String(id))
+                        .filter(id => waybillEligible.has(id));
+                },
+                selectedReprintableWaybillCount() {
+                    return this.selectedReprintableWaybillIds().length;
+                },
+                openReprintWaybillModal(orderId, orderNumber) {
+                    this.reprintWaybillOrderId = String(orderId);
+                    this.reprintWaybillOrderNumber = orderNumber || '';
+                    this.reprintWaybillModalOpen = true;
+                },
+                closeReprintWaybillModal() {
+                    this.reprintWaybillModalOpen = false;
+                },
+                reprintWaybillUrl(paperSize) {
+                    if (!this.reprintWaybillUrlTemplate || !this.reprintWaybillOrderId || !paperSize) {
+                        return '#';
+                    }
+
+                    const url = new URL(
+                        this.reprintWaybillUrlTemplate.replace('__ORDER__', this.reprintWaybillOrderId),
+                        window.location.origin
+                    );
+                    url.searchParams.set('paper_size', paperSize);
+                    return url.toString();
+                },
+                openBulkReprintWaybillModal() {
+                    if (this.selectedReprintableWaybillCount() === 0) {
+                        return;
+                    }
+
+                    this.bulkReprintWaybillModalOpen = true;
+                },
+                closeBulkReprintWaybillModal() {
+                    this.bulkReprintWaybillModalOpen = false;
+                },
+                submitBulkWaybillReprint(paperSize) {
+                    const reprintableIds = this.selectedReprintableWaybillIds();
+
+                    if (reprintableIds.length === 0 || !this.bulkReprintWaybillUrl || !paperSize) {
+                        return;
+                    }
+
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = this.bulkReprintWaybillUrl;
+                    form.target = 'waybillDownloadFrame';
+
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = '_token';
+                    csrfInput.value = this.csrf;
+                    form.appendChild(csrfInput);
+
+                    const paperInput = document.createElement('input');
+                    paperInput.type = 'hidden';
+                    paperInput.name = 'paper_size';
+                    paperInput.value = paperSize;
+                    form.appendChild(paperInput);
+
+                    reprintableIds.forEach((orderId) => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'order_ids[]';
+                        input.value = orderId;
+                        form.appendChild(input);
+                    });
+
+                    document.body.appendChild(form);
+                    form.submit();
+                    form.remove();
+                    this.closeBulkReprintWaybillModal();
                 },
                 downloadSelectedPdfs() {
                     if (this.selectedOrders.length === 0 || !this.bulkPdfUrl) {

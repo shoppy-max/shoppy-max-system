@@ -24,6 +24,16 @@
                 <a href="{{ route('orders.pdf', $order) }}" target="_blank" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
                     Download PDF
                 </a>
+                @if(filled($order->waybill_number))
+                    <button
+                        type="button"
+                        x-data
+                        @click="$dispatch('open-waybill-reprint', { orderId: {{ $order->id }}, orderNumber: @js($order->order_number) })"
+                        class="inline-flex items-center px-4 py-2 bg-amber-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition"
+                    >
+                        Reprint Waybill
+                    </button>
+                @endif
                 <a href="{{ route('orders.print', ['order' => $order, 'autoprint' => 1]) }}" target="_blank" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
                     Print
                 </a>
@@ -85,7 +95,13 @@
         $balance = max((float) ($order->total_amount ?? 0) - $paidAmount - $returnFeeDeduction, 0);
     @endphp
 
-    <div class="py-8">
+    <div
+        class="py-8"
+        x-data="waybillReprintManager({
+            baseUrl: @js(route('orders.waybill.reprint', $order)),
+        })"
+        @open-waybill-reprint.window="openReprintWaybillModal($event.detail.orderId, $event.detail.orderNumber)"
+    >
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             @if($manualEditLocked)
                 <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300">
@@ -313,5 +329,35 @@
                 </section>
             </div>
         </div>
+
+        @include('orders.partials.reprint-waybill-modal')
     </div>
+
+    <script>
+        function waybillReprintManager(config = {}) {
+            return {
+                reprintWaybillModalOpen: false,
+                reprintWaybillOrderId: null,
+                reprintWaybillOrderNumber: '',
+                reprintWaybillBaseUrl: config.baseUrl || '',
+                openReprintWaybillModal(orderId, orderNumber) {
+                    this.reprintWaybillOrderId = orderId;
+                    this.reprintWaybillOrderNumber = orderNumber || '';
+                    this.reprintWaybillModalOpen = true;
+                },
+                closeReprintWaybillModal() {
+                    this.reprintWaybillModalOpen = false;
+                },
+                reprintWaybillUrl(paperSize) {
+                    if (!this.reprintWaybillBaseUrl || !paperSize) {
+                        return '#';
+                    }
+
+                    const url = new URL(this.reprintWaybillBaseUrl, window.location.origin);
+                    url.searchParams.set('paper_size', paperSize);
+                    return url.toString();
+                },
+            };
+        }
+    </script>
 </x-app-layout>
