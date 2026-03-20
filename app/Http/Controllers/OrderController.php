@@ -403,8 +403,7 @@ class OrderController extends Controller
             $order->discount_value = $validated['discount_value'];
             $order->discount_amount = 0;
             $order->payment_method = $validated['payment_method'] ?? 'COD';
-            $order->call_status = $this->resolveCreateCallStatus(
-                $validated['call_status'] ?? 'pending',
+            $order->call_status = $this->resolveCrudCallStatus(
                 (float) ($validated['discount_value'] ?? 0),
                 $validated['payment_method'] ?? 'COD'
             );
@@ -886,9 +885,7 @@ class OrderController extends Controller
             $order->discount_value = $validated['discount_value'];
             $order->discount_amount = 0;
             $order->payment_method = $validated['payment_method'] ?? 'COD';
-            $requestedCallStatus = $validated['call_status'] ?? $order->call_status;
-            $order->call_status = $this->resolveCreateCallStatus(
-                $requestedCallStatus,
+            $order->call_status = $this->resolveCrudCallStatus(
                 (float) ($validated['discount_value'] ?? 0),
                 $validated['payment_method'] ?? 'COD'
             );
@@ -1314,13 +1311,13 @@ class OrderController extends Controller
         return $query;
     }
 
-    private function resolveCreateCallStatus(?string $requestedStatus, float $discountAmount, ?string $paymentMethod): string
+    private function resolveCrudCallStatus(float $discountAmount, ?string $paymentMethod): string
     {
         if ($this->mustKeepOrderPending($discountAmount, $paymentMethod)) {
             return 'pending';
         }
 
-        return ($requestedStatus === 'cancel' || empty($requestedStatus)) ? 'pending' : $requestedStatus;
+        return trim((string) $paymentMethod) === 'COD' ? 'confirm' : 'pending';
     }
 
     private function deriveInternalOrderStatus(?string $callStatus, ?string $deliveryStatus): string

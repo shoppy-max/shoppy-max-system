@@ -476,15 +476,10 @@
                                     </div>
                                     <div class="md:col-span-2">
                                         <label class="block mb-1.5 text-sm font-medium text-gray-900 dark:text-white">Call Status</label>
-                                        <select
-                                            x-model="form.call_status"
-                                            :disabled="isEditLocked"
-                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400"
-                                        >
-                                            <option value="pending">Pending</option>
-                                            <option value="confirm">Confirm</option>
-                                            <option value="hold">Hold</option>
-                                        </select>
+                                        <div class="w-full bg-gray-100 border border-gray-300 text-gray-800 text-sm rounded-lg p-2.5 font-medium dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                            <span x-text="crudCallStatusLabel"></span>
+                                        </div>
+                                        <p class="mt-1 text-xs text-amber-600 dark:text-amber-400" x-text="crudCallStatusHelperText"></p>
                                     </div>
                                     <div class="md:col-span-2" x-show="showsPaymentEntries()" x-cloak>
                                         <div class="flex items-center justify-between mb-2">
@@ -861,13 +856,20 @@
                             this.form.paid_amount = 0;
                         }
                         this.lastPaymentMethod = value;
+                        this.syncCrudCallStatusRule();
                         this.syncPaymentStatusRules();
                     });
-                    this.$watch('form.discount_type', () => this.syncPaymentStatusRules());
+                    this.$watch('form.discount_type', () => {
+                        this.syncCrudCallStatusRule();
+                        this.syncPaymentStatusRules();
+                    });
                     this.$watch('form.delivery_status', () => this.syncPaymentStatusRules());
                     this.$watch('form.payments', () => this.syncPaymentStatusRules());
                     this.$watch('form.items', () => this.syncPaymentStatusRules());
-                    this.$watch('form.discount_value', () => this.syncPaymentStatusRules());
+                    this.$watch('form.discount_value', () => {
+                        this.syncCrudCallStatusRule();
+                        this.syncPaymentStatusRules();
+                    });
                     this.$watch('form.courier_charge', () => this.syncPaymentStatusRules());
                     this.$watch('form.customer.mobile', (value) => {
                         if (this.selectedCustomer && String(value || '') !== String(this.selectedCustomer.mobile || '')) {
@@ -895,6 +897,7 @@
                     }
                     this.onCourierChange();
                     this.filterCities();
+                    this.syncCrudCallStatusRule();
                     this.syncPaymentStatusRules();
                 },
 
@@ -1330,6 +1333,43 @@
                     return 'Pending until delivery or courier settlement completes the COD collection.';
                 },
 
+                get isCrudCallStatusPending() {
+                    return this.usesRecordedPayments() || this.discountValueNumber > 0;
+                },
+
+                get forcedCrudCallStatus() {
+                    return this.isCrudCallStatusPending ? 'pending' : 'confirm';
+                },
+
+                get crudCallStatusLabel() {
+                    if (this.isEditLocked) {
+                        const current = String(this.form.call_status || 'pending').toLowerCase();
+                        return current.charAt(0).toUpperCase() + current.slice(1);
+                    }
+
+                    return this.forcedCrudCallStatus === 'confirm' ? 'Confirm' : 'Pending';
+                },
+
+                get crudCallStatusHelperText() {
+                    if (this.isEditLocked) {
+                        return 'Call status is managed from the operational queues after the order leaves the initial intake stage.';
+                    }
+
+                    if (this.isCrudCallStatusPending) {
+                        return 'Call status is fixed to Pending here because the order has a discount or uses Cash Deposit / Online Payment.';
+                    }
+
+                    return 'Call status is fixed to Confirm here for COD orders without a discount.';
+                },
+
+                syncCrudCallStatusRule() {
+                    if (this.isEditLocked) {
+                        return;
+                    }
+
+                    this.form.call_status = this.forcedCrudCallStatus;
+                },
+                
                 get totalCommission() {
                     if (this.form.order_type !== 'reseller') return '0.00';
                     const grossCommission = this.form.items.reduce((sum, item) => {
@@ -1344,6 +1384,7 @@
                 async submitOrder() {
                     this.syncPaymentStatusRules();
                     if (!this.isEditLocked) {
+                        this.syncCrudCallStatusRule();
                         if (this.form.order_type === 'reseller' && !this.form.reseller_id) {
                             this.notify('warning', 'Please select a reseller.');
                             return;
