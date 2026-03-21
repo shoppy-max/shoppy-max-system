@@ -114,14 +114,17 @@ class ReportController extends Controller
      */
     public function stockReport()
     {
-        $products = Product::with(['variants.inventoryUnits' => function ($q) {
-            $q->where('status', 'available');
-        }, 'variants.unit', 'purchaseItems'])->get();
+        $products = Product::with([
+            'variants.unit',
+            'purchaseItems.inventoryUnits' => function ($q) {
+                $q->where('status', 'available');
+            },
+        ])->get();
 
         // Calculate stock value from available inventory units linked to purchase prices
         $products->each(function ($product) {
             $product->stock_value = $product->purchaseItems->sum(function ($item) {
-                $availableCount = $item->inventoryUnits()
+                $availableCount = $item->inventoryUnits
                     ->where('status', 'available')
                     ->count();
                 return $availableCount * ($item->purchase_price ?? 0);

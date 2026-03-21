@@ -77,7 +77,7 @@
                                 <div class="space-y-1">
                                     @foreach($product->purchaseItems as $batch)
                                         @php
-                                            $availableUnits = $batch->inventoryUnits()->where('status', 'available')->count();
+                                            $availableUnits = $batch->inventoryUnits->where('status', 'available')->count();
                                         @endphp
                                         @if($availableUnits > 0)
                                         <div class="flex items-center gap-2">
