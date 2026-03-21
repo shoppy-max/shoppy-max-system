@@ -114,18 +114,23 @@ class ReportController extends Controller
      */
     public function stockReport()
     {
-        $products = Product::with(['purchaseItems' => function($q) {
-            $q->where('remaining_quantity', '>', 0);
-        }])->get();
-        
-        // Calculate Valuation per product based on FIFO batches
-        $products->map(function($product) {
-            $product->stock_value = $product->purchaseItems->sum(function($item) {
-                return $item->remaining_quantity * $item->purchasing_price;
+        $products = Product::with([
+            'variants.unit',
+            'purchaseItems.inventoryUnits' => function ($q) {
+                $q->where('status', 'available');
+            },
+        ])->get();
+
+        // Calculate stock value from available inventory units linked to purchase prices
+        $products->each(function ($product) {
+            $product->stock_value = $product->purchaseItems->sum(function ($item) {
+                $availableCount = $item->inventoryUnits
+                    ->where('status', 'available')
+                    ->count();
+                return $availableCount * ($item->purchase_price ?? 0);
             });
-            return $product;
         });
-        
+
         return view('reports.stock', compact('products'));
     }
 
@@ -134,10 +139,10 @@ class ReportController extends Controller
      */
     public function packetCount()
     {
-        $packers = User::withCount(['packedOrders' => function($q){
-             $q->where('status', 'confirm');
-        }])->get(); // Filter by role if needed
-        
+        $packers = User::withCount(['packedOrders' => function ($q) {
+            $q->where('status', 'confirm');
+        }])->get();
+
         return view('reports.packet_count', compact('packers'));
     }
 

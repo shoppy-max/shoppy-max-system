@@ -45,7 +45,7 @@
             </div>
              <div class="p-4 bg-green-50 dark:bg-gray-700 rounded-lg border border-green-100 dark:border-gray-600">
                 <span class="text-xs font-bold text-green-600 dark:text-green-300 uppercase">Total Items In Stock</span>
-                <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $products->sum('quantity') }}</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $products->sum('total_quantity') }}</div>
             </div>
         </div>
 
@@ -64,10 +64,10 @@
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
                         <td class="px-6 py-4">
                             <div class="font-bold text-gray-900 dark:text-white">{{ $product->name }}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $product->sku }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $product->category?->name }}</div>
                         </td>
                         <td class="px-6 py-4 font-bold text-right text-gray-900 dark:text-white">
-                            {{ $product->quantity }}
+                            {{ $product->total_quantity }}
                         </td>
                         <td class="px-6 py-4 font-bold text-right text-green-600 dark:text-green-400">
                             {{ number_format($product->stock_value, 2) }}
@@ -76,17 +76,22 @@
                              @if($product->purchaseItems->count() > 0)
                                 <div class="space-y-1">
                                     @foreach($product->purchaseItems as $batch)
+                                        @php
+                                            $availableUnits = $batch->inventoryUnits->where('status', 'available')->count();
+                                        @endphp
+                                        @if($availableUnits > 0)
                                         <div class="flex items-center gap-2">
                                             <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300 font-mono">
-                                                Batch #{{ $batch->purchase->purchasing_number }}
+                                                PO #{{ $batch->purchase->purchase_number ?? $batch->purchase_id }}
                                             </span>
                                             <span class="text-gray-900 dark:text-white font-semibold">
-                                                {{ $batch->remaining_quantity }} left
+                                                {{ $availableUnits }} available
                                             </span>
                                             <span class="text-gray-500 dark:text-gray-400">
-                                                @ {{ number_format($batch->purchasing_price, 2) }}
+                                                @ {{ number_format($batch->purchase_price ?? 0, 2) }}
                                             </span>
                                         </div>
+                                        @endif
                                     @endforeach
                                 </div>
                             @else
