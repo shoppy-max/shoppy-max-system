@@ -38,6 +38,11 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class);
     }
 
+    public function purchaseItems()
+    {
+        return $this->hasMany(PurchaseItem::class);
+    }
+
     public function getTotalQuantityAttribute()
     {
         return $this->variants->sum('quantity');
