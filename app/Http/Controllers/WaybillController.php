@@ -268,6 +268,9 @@ class WaybillController extends Controller
                 if (! $order->waybill_printed_at) {
                     $order->waybill_printed_at = $timestamp;
                 }
+                if (! $order->waybill_printed_by && auth()->check()) {
+                    $order->waybill_printed_by = auth()->id();
+                }
                 $order->save();
 
                 $waybill->order_id = $order->id;

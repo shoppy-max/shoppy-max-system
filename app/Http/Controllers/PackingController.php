@@ -72,6 +72,9 @@ class PackingController extends Controller
                 if (!$order->picked_at) {
                     $order->picked_at = now();
                 }
+                if (!$order->picked_by) {
+                    $order->picked_by = Auth::id();
+                }
                 $order->save();
 
                 OrderLog::create([
@@ -129,6 +132,9 @@ class PackingController extends Controller
         $order->status = $order->call_status === 'hold' ? 'hold' : 'confirm';
         if (!$order->picked_at) {
             $order->picked_at = now();
+        }
+        if (!$order->picked_by) {
+            $order->picked_by = Auth::id();
         }
         $order->save();
 
@@ -193,6 +199,9 @@ class PackingController extends Controller
         $order->status = $order->call_status === 'hold' ? 'hold' : 'confirm';
         if (!$order->dispatched_at) {
             $order->dispatched_at = now();
+        }
+        if (!$order->dispatched_by) {
+            $order->dispatched_by = Auth::id();
         }
         $order->save();
 

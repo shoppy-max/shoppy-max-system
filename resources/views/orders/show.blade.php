@@ -93,6 +93,62 @@
             ? (float) ($order->reseller_return_fee_applied ?? 0)
             : 0.0;
         $balance = max((float) ($order->total_amount ?? 0) - $paidAmount - $returnFeeDeduction, 0);
+        $formatActor = function ($user) {
+            if (!$user) {
+                return '-';
+            }
+
+            $name = trim((string) ($user->name ?? ''));
+            $email = trim((string) ($user->email ?? ''));
+
+            if ($name !== '' && $email !== '') {
+                return $name . ' • ' . $email;
+            }
+
+            return $name !== '' ? $name : ($email !== '' ? $email : '-');
+        };
+        $timelineEntries = [
+            [
+                'label' => 'Created',
+                'at' => $order->created_at,
+                'actor' => $order->user,
+            ],
+            [
+                'label' => 'Waybill Printed',
+                'at' => $order->waybill_printed_at,
+                'actor' => $order->waybillPrinter,
+            ],
+            [
+                'label' => 'Picked',
+                'at' => $order->picked_at,
+                'actor' => $order->picker,
+            ],
+            [
+                'label' => 'Packed',
+                'at' => $order->packed_at,
+                'actor' => $order->packer,
+            ],
+            [
+                'label' => 'Dispatched',
+                'at' => $order->dispatched_at,
+                'actor' => $order->dispatcher,
+            ],
+            [
+                'label' => 'Cancelled',
+                'at' => $order->cancelled_at,
+                'actor' => $order->canceller,
+            ],
+            [
+                'label' => 'Delivered',
+                'at' => $order->delivered_at,
+                'actor' => $order->deliverer,
+            ],
+            [
+                'label' => 'Returned',
+                'at' => $order->returned_at,
+                'actor' => $order->returnHandler,
+            ],
+        ];
     @endphp
 
     <div
@@ -150,40 +206,15 @@
                     </section>
 
                     <section class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 xl:col-span-2">
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Delivery Info</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                            <div class="flex justify-between gap-4">
-                                <span class="text-gray-500 dark:text-gray-400">Order Create Date & Time</span>
-                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ optional($order->created_at)->format('d M Y, h:i A') ?? '-' }}</span>
-                            </div>
-                            <div class="flex justify-between gap-4">
-                                <span class="text-gray-500 dark:text-gray-400">Waybill Print Date & Time</span>
-                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ optional($order->waybill_printed_at)->format('d M Y, h:i A') ?? '-' }}</span>
-                            </div>
-                            <div class="flex justify-between gap-4">
-                                <span class="text-gray-500 dark:text-gray-400">Pick Date & Time</span>
-                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ optional($order->picked_at)->format('d M Y, h:i A') ?? '-' }}</span>
-                            </div>
-                            <div class="flex justify-between gap-4">
-                                <span class="text-gray-500 dark:text-gray-400">Pack Date & Time</span>
-                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ optional($order->packed_at)->format('d M Y, h:i A') ?? '-' }}</span>
-                            </div>
-                            <div class="flex justify-between gap-4">
-                                <span class="text-gray-500 dark:text-gray-400">Dispatched Date & Time</span>
-                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ optional($order->dispatched_at)->format('d M Y, h:i A') ?? '-' }}</span>
-                            </div>
-                            <div class="flex justify-between gap-4">
-                                <span class="text-gray-500 dark:text-gray-400">Cancel Date & Time</span>
-                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ optional($order->cancelled_at)->format('d M Y, h:i A') ?? '-' }}</span>
-                            </div>
-                            <div class="flex justify-between gap-4">
-                                <span class="text-gray-500 dark:text-gray-400">Delivered Date & Time</span>
-                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ optional($order->delivered_at)->format('d M Y, h:i A') ?? '-' }}</span>
-                            </div>
-                            <div class="flex justify-between gap-4">
-                                <span class="text-gray-500 dark:text-gray-400">Return Date & Time</span>
-                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ optional($order->returned_at)->format('d M Y, h:i A') ?? '-' }}</span>
-                            </div>
+                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Timeline</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
+                            @foreach($timelineEntries as $entry)
+                                <div class="rounded-lg border border-gray-200 bg-gray-50/70 p-3 dark:border-gray-700 dark:bg-gray-900/30">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $entry['label'] }}</p>
+                                    <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">{{ optional($entry['at'])->format('d M Y, h:i A') ?? '-' }}</p>
+                                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 break-words">{{ $formatActor($entry['actor']) }}</p>
+                                </div>
+                            @endforeach
                         </div>
                     </section>
 
@@ -205,10 +236,6 @@
                             <div>
                                 <p class="text-gray-500 dark:text-gray-400">Payment Method</p>
                                 <p class="font-medium text-gray-900 dark:text-gray-100">{{ $order->payment_method ?: '-' }}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-500 dark:text-gray-400">Order Create User</p>
-                                <p class="font-medium text-gray-900 dark:text-gray-100">{{ $order->user->name ?? '-' }}</p>
                             </div>
                         </div>
                     </section>

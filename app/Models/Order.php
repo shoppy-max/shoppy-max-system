@@ -22,7 +22,9 @@ class Order extends Model
         'status',
         'delivery_status',
         'waybill_printed_at',
+        'waybill_printed_by',
         'picked_at',
+        'picked_by',
         'packed_at',
         'reseller_return_fee_applied',
         'return_fee_reseller_id',
@@ -47,9 +49,13 @@ class Order extends Model
         'courier_payment_id',
         'packed_by',
         'dispatched_at',
+        'dispatched_by',
         'cancelled_at',
+        'cancelled_by',
         'delivered_at',
+        'delivered_by',
         'returned_at',
+        'returned_by',
     ];
 
     protected $casts = [
@@ -89,6 +95,16 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function waybillPrinter()
+    {
+        return $this->belongsTo(User::class, 'waybill_printed_by');
+    }
+
+    public function picker()
+    {
+        return $this->belongsTo(User::class, 'picked_by');
+    }
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);
@@ -102,6 +118,26 @@ class Order extends Model
     public function packer()
     {
         return $this->belongsTo(User::class, 'packed_by');
+    }
+
+    public function dispatcher()
+    {
+        return $this->belongsTo(User::class, 'dispatched_by');
+    }
+
+    public function canceller()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    public function deliverer()
+    {
+        return $this->belongsTo(User::class, 'delivered_by');
+    }
+
+    public function returnHandler()
+    {
+        return $this->belongsTo(User::class, 'returned_by');
     }
 
     public function city()

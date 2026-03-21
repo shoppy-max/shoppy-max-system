@@ -604,7 +604,22 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        $order->load(['items.variant.unit', 'items.variant.product', 'items.inventoryUnits.purchase', 'customer', 'reseller', 'user', 'courier']);
+        $order->load([
+            'items.variant.unit',
+            'items.variant.product',
+            'items.inventoryUnits.purchase',
+            'customer',
+            'reseller',
+            'user',
+            'courier',
+            'waybillPrinter',
+            'picker',
+            'packer',
+            'dispatcher',
+            'canceller',
+            'deliverer',
+            'returnHandler',
+        ]);
         $this->decorateOrderUiFlags($order);
         return view('orders.show', compact('order'));
     }
@@ -1519,42 +1534,46 @@ class OrderController extends Controller
             $orderStatus === 'cancel'
             && ($previousOrderStatus !== 'cancel' || !$order->cancelled_at)
         ) {
-            $this->setOrderTimelineTimestamp($order, 'cancelled_at');
+            $this->setOrderTimelineAudit($order, 'cancelled_at', 'cancelled_by');
         }
 
         if ($deliveryStatus === 'waybill_printed' && ($previousDeliveryStatus !== 'waybill_printed' || !$order->waybill_printed_at)) {
-            $this->setOrderTimelineTimestamp($order, 'waybill_printed_at');
+            $this->setOrderTimelineAudit($order, 'waybill_printed_at', 'waybill_printed_by');
         }
 
         if ($deliveryStatus === 'picked_from_rack' && ($previousDeliveryStatus !== 'picked_from_rack' || !$order->picked_at)) {
-            $this->setOrderTimelineTimestamp($order, 'picked_at');
+            $this->setOrderTimelineAudit($order, 'picked_at', 'picked_by');
         }
 
         if ($deliveryStatus === 'packed' && ($previousDeliveryStatus !== 'packed' || !$order->packed_at)) {
-            $this->setOrderTimelineTimestamp($order, 'packed_at');
+            $this->setOrderTimelineAudit($order, 'packed_at', 'packed_by');
         }
 
         if ($deliveryStatus === 'dispatched' && ($previousDeliveryStatus !== 'dispatched' || !$order->dispatched_at)) {
-            $this->setOrderTimelineTimestamp($order, 'dispatched_at');
+            $this->setOrderTimelineAudit($order, 'dispatched_at', 'dispatched_by');
         }
 
         if ($deliveryStatus === 'delivered' && ($previousDeliveryStatus !== 'delivered' || !$order->delivered_at)) {
-            $this->setOrderTimelineTimestamp($order, 'delivered_at');
+            $this->setOrderTimelineAudit($order, 'delivered_at', 'delivered_by');
         }
 
         if ($deliveryStatus === 'returned' && ($previousDeliveryStatus !== 'returned' || !$order->returned_at)) {
-            $this->setOrderTimelineTimestamp($order, 'returned_at');
+            $this->setOrderTimelineAudit($order, 'returned_at', 'returned_by');
         }
 
         if ($deliveryStatus === 'cancel' && ($previousDeliveryStatus !== 'cancel' || !$order->cancelled_at)) {
-            $this->setOrderTimelineTimestamp($order, 'cancelled_at');
+            $this->setOrderTimelineAudit($order, 'cancelled_at', 'cancelled_by');
         }
     }
 
-    private function setOrderTimelineTimestamp(Order $order, string $field): void
+    private function setOrderTimelineAudit(Order $order, string $timestampField, ?string $userField = null): void
     {
-        if (!isset($order->{$field}) || !$order->{$field}) {
-            $order->{$field} = now();
+        if (!isset($order->{$timestampField}) || !$order->{$timestampField}) {
+            $order->{$timestampField} = now();
+        }
+
+        if ($userField && empty($order->{$userField}) && Auth::check()) {
+            $order->{$userField} = Auth::id();
         }
     }
 

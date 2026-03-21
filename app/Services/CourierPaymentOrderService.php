@@ -29,6 +29,9 @@ class CourierPaymentOrderService
         if (!$order->delivered_at) {
             $order->delivered_at = now();
         }
+        if (!$order->delivered_by && $userId) {
+            $order->delivered_by = $userId;
+        }
 
         $order->save();
 
@@ -67,6 +70,7 @@ class CourierPaymentOrderService
 
         $order->delivery_status = 'dispatched';
         $order->delivered_at = null;
+        $order->delivered_by = null;
         $order->save();
 
         $this->inventoryUnits->markOrderUnitsAllocated($order, $userId);

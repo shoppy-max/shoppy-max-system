@@ -1179,12 +1179,37 @@ class DemoSystemSeeder extends Seeder
             )
                 ? 'paid'
                 : 'pending';
+            $timelineBase = now()->subDay();
+            $order->waybill_printed_at = filled($order->waybill_number)
+                ? $timelineBase->copy()->addHours(2)
+                : null;
+            $order->waybill_printed_by = filled($order->waybill_number)
+                ? $creator->id
+                : null;
+            $order->picked_at = in_array($order->delivery_status, ['picked_from_rack', 'packed', 'dispatched', 'delivered', 'returned'], true)
+                ? $timelineBase->copy()->addHours(4)
+                : null;
+            $order->picked_by = $order->picked_at ? $creator->id : null;
+            $order->packed_at = in_array($order->delivery_status, ['packed', 'dispatched', 'delivered', 'returned'], true)
+                ? $timelineBase->copy()->addHours(6)
+                : null;
+            $order->packed_by = $order->packed_at ? $creator->id : null;
             $order->dispatched_at = $order->delivery_status === 'dispatched' || $order->delivery_status === 'delivered'
-                ? now()->subHours(12)
+                ? $timelineBase->copy()->addHours(8)
                 : null;
+            $order->dispatched_by = $order->dispatched_at ? $creator->id : null;
+            $order->cancelled_at = $order->status === 'cancel' || $order->delivery_status === 'cancel'
+                ? $timelineBase->copy()->addHours(3)
+                : null;
+            $order->cancelled_by = $order->cancelled_at ? $creator->id : null;
             $order->delivered_at = $order->delivery_status === 'delivered'
-                ? now()->subHours(4)
+                ? $timelineBase->copy()->addHours(12)
                 : null;
+            $order->delivered_by = $order->delivered_at ? $creator->id : null;
+            $order->returned_at = $order->delivery_status === 'returned'
+                ? $timelineBase->copy()->addHours(14)
+                : null;
+            $order->returned_by = $order->returned_at ? $creator->id : null;
             $order->save();
 
             OrderLog::query()->where('order_id', $order->id)->delete();
