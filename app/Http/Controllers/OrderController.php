@@ -1045,11 +1045,7 @@ class OrderController extends Controller
     {
         $query = Order::with(['customer', 'reseller', 'items.inventoryUnits.purchase', 'user', 'courier'])
             ->where('status', '!=', 'cancel');
-        
-        // Default to 'pending' call status if not specified, 
-        // OR user might want to see all. Let's start with all but maybe sort by pending.
-        // Actually, user said "Focused and filtering on call status".
-        
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -1061,8 +1057,11 @@ class OrderController extends Controller
             });
         }
 
-        if ($request->filled('call_status')) {
-            $query->where('call_status', $request->call_status);
+        $requestedCallStatus = trim((string) $request->input('call_status', ''));
+        if (in_array($requestedCallStatus, ['pending', 'confirm', 'hold'], true)) {
+            $query->where('call_status', $requestedCallStatus);
+        } else {
+            $query->whereIn('call_status', ['pending', 'hold']);
         }
         
         if ($request->filled('date_from')) {
