@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('purchase_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('purchase_id')->constrained()->onDelete('cascade');
+            // The FK is added in a later migration because the paired purchases
+            // migration shares the same timestamp and may run after this file.
+            $table->foreignId('purchase_id');
             $table->foreignId('product_id')->nullable()->constrained()->onDelete('set null');
             $table->string('product_name'); // Backup incase product is deleted
             $table->integer('quantity')->default(1);

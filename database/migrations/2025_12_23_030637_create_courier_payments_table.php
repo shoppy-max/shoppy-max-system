@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('courier_payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('courier_id')->constrained()->onDelete('cascade');
+            // The FK is added in a later migration because the paired couriers
+            // migration shares the same timestamp and may run after this file.
+            $table->foreignId('courier_id');
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             
             $table->decimal('amount', 10, 2);
