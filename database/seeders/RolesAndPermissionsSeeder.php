@@ -82,11 +82,13 @@ class RolesAndPermissionsSeeder extends Seeder
             ]
         );
 
-        // Ensure password is correct if user already existed
+        // Do not reset the password on repeated deploys. If the admin user already
+        // exists, keep the current password and only ensure the account is verified.
         if (!$superAdmin->wasRecentlyCreated) {
-             $superAdmin->password = 'password';
-             $superAdmin->email_verified_at = now();
-             $superAdmin->save();
+            if (!$superAdmin->email_verified_at) {
+                $superAdmin->email_verified_at = now();
+                $superAdmin->save();
+            }
         }
 
         $superAdmin->syncRoles(['super admin']);
