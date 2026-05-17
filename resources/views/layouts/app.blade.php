@@ -29,6 +29,17 @@
         <!-- Sidebar -->
         @include('layouts.sidebar')
 
+        <div class="sm:hidden sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+            <button type="button" data-drawer-target="main-sidebar" data-drawer-toggle="main-sidebar" aria-controls="main-sidebar" class="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                <span class="sr-only">Open sidebar</span>
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <a href="{{ route('dashboard') }}" class="text-lg font-bold tracking-tight text-gray-900 dark:text-white">Shoppy<span class="text-primary-600">Max</span></a>
+            <div class="h-10 w-10"></div>
+        </div>
+
         <!-- Main Content (Pushed right by sidebar on desktop) -->
         <div class="p-4 sm:ml-64 min-h-screen flex flex-col">
             

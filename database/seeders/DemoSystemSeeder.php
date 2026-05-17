@@ -69,9 +69,8 @@ class DemoSystemSeeder extends Seeder
             ]
         );
 
-        if (!$superAdmin->wasRecentlyCreated) {
+        if (! $superAdmin->wasRecentlyCreated) {
             $superAdmin->name = 'Super Admin';
-            $superAdmin->password = 'password';
             $superAdmin->phone = $superAdmin->phone ?: '0710000000';
             $superAdmin->email_verified_at = now();
             $superAdmin->save();
@@ -105,7 +104,7 @@ class DemoSystemSeeder extends Seeder
 
     private function seedInventoryUnits(): void
     {
-        if (!Schema::hasTable('inventory_units') || !Schema::hasTable('inventory_unit_events')) {
+        if (! Schema::hasTable('inventory_units') || ! Schema::hasTable('inventory_unit_events')) {
             return;
         }
 
@@ -204,7 +203,7 @@ class DemoSystemSeeder extends Seeder
                 ]
             );
 
-            $map[$row['city_name'] . '|' . $row['district']] = $city;
+            $map[$row['city_name'].'|'.$row['district']] = $city;
         }
 
         return $map;
@@ -478,7 +477,7 @@ class DemoSystemSeeder extends Seeder
 
         foreach ($targets as $target) {
             $reseller = $resellers[$target['reseller']] ?? null;
-            if (!$reseller || $reseller->reseller_type !== Reseller::TYPE_RESELLER) {
+            if (! $reseller || $reseller->reseller_type !== Reseller::TYPE_RESELLER) {
                 continue;
             }
 
@@ -1046,7 +1045,7 @@ class DemoSystemSeeder extends Seeder
             $courier = $couriers[$row['courier']] ?? null;
             $creator = $users['super_admin'];
 
-            if (!$customer || !$city || !$courier) {
+            if (! $customer || ! $city || ! $courier) {
                 continue;
             }
 
@@ -1096,7 +1095,7 @@ class DemoSystemSeeder extends Seeder
 
             foreach ($row['items'] as $itemRow) {
                 $variant = $variants[$itemRow['sku']] ?? ProductVariant::query()->where('sku', $itemRow['sku'])->first();
-                if (!$variant) {
+                if (! $variant) {
                     continue;
                 }
 
@@ -1145,14 +1144,14 @@ class DemoSystemSeeder extends Seeder
                 ->map(function (array $payment) use ($order) {
                     return [
                         'amount' => round((float) ($payment['amount'] ?? 0), 2),
-                        'date' => !empty($payment['date']) ? (string) $payment['date'] : $order->order_date->format('Y-m-d'),
+                        'date' => ! empty($payment['date']) ? (string) $payment['date'] : $order->order_date->format('Y-m-d'),
                         'note' => trim((string) ($payment['note'] ?? '')),
                     ];
                 })
                 ->filter(fn (array $payment) => $payment['amount'] > 0)
                 ->values()
                 ->all();
-            $usesRecordedPayments = !empty($seededPayments)
+            $usesRecordedPayments = ! empty($seededPayments)
                 || in_array((string) $order->payment_method, ['Online Payment', 'Cash Deposit'], true);
 
             if ($usesRecordedPayments) {
@@ -1166,7 +1165,7 @@ class DemoSystemSeeder extends Seeder
                     ]];
                 }
 
-                $order->payments_data = !empty($paymentsData) ? $paymentsData : null;
+                $order->payments_data = ! empty($paymentsData) ? $paymentsData : null;
                 $order->paid_amount = round((float) collect($paymentsData)->sum('amount'), 2);
             } else {
                 $order->paid_amount = 0;
@@ -1234,7 +1233,7 @@ class DemoSystemSeeder extends Seeder
                 'order_id' => $order->id,
                 'user_id' => $creator->id,
                 'action' => 'status_updated',
-                'description' => 'Seeded status set to ' . $order->status . '.',
+                'description' => 'Seeded status set to '.$order->status.'.',
             ]);
 
             $orderMap[$row['order_number']] = $order->fresh();
@@ -1274,7 +1273,7 @@ class DemoSystemSeeder extends Seeder
         foreach ($rows as $row) {
             $courier = $couriers[$row['courier']] ?? null;
             $bankAccount = $bankAccounts[$row['bank_account']] ?? null;
-            if (!$courier) {
+            if (! $courier) {
                 continue;
             }
 
@@ -1316,7 +1315,7 @@ class DemoSystemSeeder extends Seeder
 
     private function seedCourierWaybills(array $couriers, array $orders): void
     {
-        if (!Schema::hasTable('courier_waybills')) {
+        if (! Schema::hasTable('courier_waybills')) {
             return;
         }
 
@@ -1328,7 +1327,7 @@ class DemoSystemSeeder extends Seeder
 
         foreach ($orders as $order) {
             $waybillNumber = trim((string) ($order->waybill_number ?? ''));
-            if ($waybillNumber === '' || !$order->courier_id) {
+            if ($waybillNumber === '' || ! $order->courier_id) {
                 continue;
             }
 
@@ -1357,12 +1356,12 @@ class DemoSystemSeeder extends Seeder
 
         foreach ($ranges as $range) {
             $courier = $couriers[$range['courier']] ?? null;
-            if (!$courier) {
+            if (! $courier) {
                 continue;
             }
 
             for ($number = $range['start']; $number <= $range['end']; $number++) {
-                $code = $range['prefix'] . $number . $range['suffix'];
+                $code = $range['prefix'].$number.$range['suffix'];
                 if (isset($existingCodes[$code])) {
                     continue;
                 }
@@ -1411,7 +1410,7 @@ class DemoSystemSeeder extends Seeder
 
         foreach ($rows as $row) {
             $reseller = $resellers[$row['reseller']] ?? null;
-            if (!$reseller || $reseller->reseller_type !== Reseller::TYPE_RESELLER) {
+            if (! $reseller || $reseller->reseller_type !== Reseller::TYPE_RESELLER) {
                 continue;
             }
 
@@ -1491,7 +1490,7 @@ class DemoSystemSeeder extends Seeder
 
         foreach ($rows as $row) {
             $supplier = $suppliers[$row['supplier']] ?? null;
-            if (!$supplier) {
+            if (! $supplier) {
                 continue;
             }
 
@@ -1500,7 +1499,7 @@ class DemoSystemSeeder extends Seeder
                 ? PurchaseItem::query()->where('purchase_id', $purchase->id)->get()
                 : collect();
 
-            if ($purchase->exists && !is_null($purchase->stock_applied_at)) {
+            if ($purchase->exists && ! is_null($purchase->stock_applied_at)) {
                 foreach ($existingItems as $existingItem) {
                     $variantId = (int) ($existingItem->stock_variant_id ?? 0);
                     $quantity = (int) ($existingItem->quantity ?? 0);
@@ -1510,7 +1509,7 @@ class DemoSystemSeeder extends Seeder
                     }
 
                     $variant = ProductVariant::query()->find($variantId);
-                    if (!$variant) {
+                    if (! $variant) {
                         continue;
                     }
 
@@ -1550,7 +1549,7 @@ class DemoSystemSeeder extends Seeder
                     ->with('product')
                     ->where('sku', $itemRow['sku'])
                     ->first();
-                if (!$variant) {
+                if (! $variant) {
                     continue;
                 }
 

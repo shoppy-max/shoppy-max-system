@@ -83,7 +83,7 @@ Authentication is provided by Laravel Breeze, and permissions are handled by Spa
 
 - PHP 8.2+
 - Laravel 12
-- SQLite (default) or MySQL/PostgreSQL
+- SQLite (default) or MySQL/MariaDB
 - Blade + Alpine.js + Tailwind CSS + Flowbite
 - SweetAlert2
 - Spatie Permission
@@ -97,7 +97,7 @@ Authentication is provided by Laravel Breeze, and permissions are handled by Spa
 - PHP `^8.2`
 - Composer
 - Node.js + npm
-- SQLite (default) or another supported DB
+- SQLite (default) or MySQL/MariaDB
 
 ## Quick Start (SQLite)
 
@@ -151,7 +151,7 @@ Open:
 
 ## Alternative Database Setup
 
-For MySQL/PostgreSQL, update `.env` DB values, then:
+For MySQL/MariaDB, update `.env` DB values, then:
 
 ```bash
 php artisan migrate:fresh --seed
@@ -426,6 +426,9 @@ Setup helper:
 composer run setup
 ```
 
+This runs migrations, seeds the production-safe roles/default-admin bootstrap, installs npm
+dependencies, and builds frontend assets. It does not seed demo operational data.
+
 Migrate:
 
 ```bash
@@ -476,8 +479,7 @@ Note:
 - The automated test suite is currently light and does not cover the main operational workflows.
 - After changing purchases, GRN, orders, courier settlement, or stock logic, manual workflow
   verification is still required even if `php artisan test` passes.
-- The default Laravel sample test `Tests\Feature\ExampleTest` expects `/` to return `200`.
-- In this app, `/` redirects to login, so that sample test can fail with `302` unless adjusted.
+- `Tests\Feature\ExampleTest` expects `/` to redirect to the login page, matching the current app entry point.
 
 ## Troubleshooting
 

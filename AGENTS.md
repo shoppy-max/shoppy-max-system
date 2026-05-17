@@ -385,13 +385,20 @@ relationships again.
 
 ## Test Reality
 
-The automated test suite in this repo is currently minimal.
+The automated test suite in this repo is still lighter than the operational surface.
 
-Existing tests are only basic examples/profile coverage:
+Existing tests cover Breeze auth, profile basics, root redirect behavior, and a few
+operational safeguards:
 
 - `tests/Feature/ExampleTest.php`
+- `tests/Feature/OrderRoutingTest.php`
+- `tests/Feature/OperationalSafeguardsTest.php`
 - `tests/Feature/ProfileTest.php`
+- `tests/Feature/Auth/*`
 - `tests/Unit/ExampleTest.php`
+
+`OrderRoutingTest` currently protects the `/orders/packing` route from being captured by
+the `/orders/{order}` wildcard.
 
 That means `php artisan test` is necessary but not sufficient for operational changes.
 

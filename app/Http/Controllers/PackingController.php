@@ -15,8 +15,7 @@ class PackingController extends Controller
 {
     public function __construct(
         private readonly InventoryUnitService $inventoryUnits
-    ) {
-    }
+    ) {}
 
     /**
      * List orders for packing.
@@ -24,25 +23,28 @@ class PackingController extends Controller
     public function index()
     {
         $orders = Order::where('call_status', 'confirm')
-                       ->whereIn('delivery_status', ['waybill_printed', 'picked_from_rack', 'packed'])
-                       ->orderBy('created_at', 'asc')
-                       ->with(['items.inventoryUnits'])
-                       ->get();
+            ->whereIn('delivery_status', ['waybill_printed', 'picked_from_rack', 'packed'])
+            ->orderBy('created_at', 'asc')
+            ->with(['items.inventoryUnits'])
+            ->get();
+
         return view('orders.packing.index', compact('orders'));
     }
-    
+
     /**
      * Packing Interface for a specific order (Scanner UI).
      */
     public function process($id)
     {
         $order = Order::with(['items.inventoryUnits' => function ($query) {
-            $query->where('status', InventoryUnit::STATUS_ALLOCATED)
-                ->orWhereNotNull('packed_scan_at')
+            $query->where(function ($unitQuery) {
+                $unitQuery->where('status', InventoryUnit::STATUS_ALLOCATED)
+                    ->orWhereNotNull('packed_scan_at');
+            })
                 ->orderBy('id');
         }])->findOrFail($id);
 
-        if ((string) ($order->call_status ?? '') !== 'confirm' || !in_array((string) ($order->delivery_status ?? ''), ['waybill_printed', 'picked_from_rack'], true)) {
+        if ((string) ($order->call_status ?? '') !== 'confirm' || ! in_array((string) ($order->delivery_status ?? ''), ['waybill_printed', 'picked_from_rack'], true)) {
             return redirect()->route('orders.packing.index')->with('error', 'Only call-confirmed orders in the picking queue can be packed.');
         }
 
@@ -57,7 +59,7 @@ class PackingController extends Controller
 
         $order = Order::with(['items.inventoryUnits'])->findOrFail($id);
 
-        if ((string) ($order->call_status ?? '') !== 'confirm' || !in_array((string) ($order->delivery_status ?? ''), ['waybill_printed', 'picked_from_rack'], true)) {
+        if ((string) ($order->call_status ?? '') !== 'confirm' || ! in_array((string) ($order->delivery_status ?? ''), ['waybill_printed', 'picked_from_rack'], true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only call-confirmed orders in the picking queue can be scanned.',
@@ -69,10 +71,10 @@ class PackingController extends Controller
         try {
             if ((string) ($order->delivery_status ?? '') === 'waybill_printed') {
                 $order->delivery_status = 'picked_from_rack';
-                if (!$order->picked_at) {
+                if (! $order->picked_at) {
                     $order->picked_at = now();
                 }
-                if (!$order->picked_by) {
+                if (! $order->picked_by) {
                     $order->picked_by = Auth::id();
                 }
                 $order->save();
@@ -130,10 +132,10 @@ class PackingController extends Controller
 
         $order->delivery_status = 'picked_from_rack';
         $order->status = $order->call_status === 'hold' ? 'hold' : 'confirm';
-        if (!$order->picked_at) {
+        if (! $order->picked_at) {
             $order->picked_at = now();
         }
-        if (!$order->picked_by) {
+        if (! $order->picked_by) {
             $order->picked_by = Auth::id();
         }
         $order->save();
@@ -150,7 +152,7 @@ class PackingController extends Controller
             'delivery_status' => $order->delivery_status,
         ]);
     }
-    
+
     /**
      * Mark as packed.
      */
@@ -172,18 +174,18 @@ class PackingController extends Controller
         $order->packed_by = Auth::id();
         $order->delivery_status = 'packed';
         $order->status = $order->call_status === 'hold' ? 'hold' : 'confirm';
-        if (!$order->packed_at) {
+        if (! $order->packed_at) {
             $order->packed_at = now();
         }
         $order->save();
-        
+
         OrderLog::create([
             'order_id' => $order->id,
             'user_id' => Auth::id(),
             'action' => 'packed_confirm',
             'description' => 'Order packed and marked confirm.',
         ]);
-        
+
         return redirect()->route('orders.packing.index')->with('success', 'Order packed successfully.');
     }
 
@@ -197,10 +199,10 @@ class PackingController extends Controller
 
         $order->delivery_status = 'dispatched';
         $order->status = $order->call_status === 'hold' ? 'hold' : 'confirm';
-        if (!$order->dispatched_at) {
+        if (! $order->dispatched_at) {
             $order->dispatched_at = now();
         }
-        if (!$order->dispatched_by) {
+        if (! $order->dispatched_by) {
             $order->dispatched_by = Auth::id();
         }
         $order->save();
@@ -214,7 +216,7 @@ class PackingController extends Controller
 
         return redirect()->route('orders.packing.index')->with('success', 'Order marked as dispatched.');
     }
-    
+
     /**
      * Create Packing Batch (Placeholder).
      */
@@ -232,7 +234,7 @@ class PackingController extends Controller
                 ->sortBy('id')
                 ->values();
 
-            $scannedUnits = $units->filter(fn ($unit) => !empty($unit->packed_scan_at))->values();
+            $scannedUnits = $units->filter(fn ($unit) => ! empty($unit->packed_scan_at))->values();
 
             return [
                 'order_item_id' => $item->id,

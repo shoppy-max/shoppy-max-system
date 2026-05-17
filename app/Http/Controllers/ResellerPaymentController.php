@@ -62,7 +62,7 @@ class ResellerPaymentController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'reseller_id' => [
                 'required',
                 Rule::exists('resellers', 'id')->where('reseller_type', Reseller::TYPE_RESELLER),
@@ -73,13 +73,20 @@ class ResellerPaymentController extends Controller
             'payment_date' => 'required|date',
         ]);
 
-        DB::transaction(function () use ($request) {
+        DB::transaction(function () use ($validated) {
             // Create Payment
-            ResellerPayment::create($request->all());
+            ResellerPayment::create([
+                'reseller_id' => $validated['reseller_id'],
+                'amount' => $validated['amount'],
+                'payment_method' => $validated['payment_method'],
+                'reference_id' => $validated['reference_id'] ?? null,
+                'payment_date' => $validated['payment_date'],
+                'status' => 'paid',
+            ]);
 
             // Deduct amount from Reseller Due
-            $reseller = Reseller::regular()->findOrFail($request->reseller_id);
-            $reseller->due_amount -= $request->amount;
+            $reseller = Reseller::regular()->findOrFail($validated['reseller_id']);
+            $reseller->due_amount -= $validated['amount'];
             $reseller->save();
         });
 
@@ -106,7 +113,8 @@ class ResellerPaymentController extends Controller
         $this->ensureRegularPayment($resellerPayment);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('resellers.payments.invoice', ['payment' => $resellerPayment]);
-        return $pdf->download('receipt-' . str_pad($resellerPayment->id, 6, '0', STR_PAD_LEFT) . '.pdf');
+
+        return $pdf->download('receipt-'.str_pad($resellerPayment->id, 6, '0', STR_PAD_LEFT).'.pdf');
     }
 
     /**
@@ -115,13 +123,13 @@ class ResellerPaymentController extends Controller
     public function downloadBulkInvoices(Request $request)
     {
         $zip = new \ZipArchive;
-        $fileName = 'payment_vouchers_' . date('Y-m-d_His') . '.zip';
+        $fileName = 'payment_vouchers_'.date('Y-m-d_His').'.zip';
 
         // Ensure the directory exists
-        if (!file_exists(storage_path('app/public/temp'))) {
+        if (! file_exists(storage_path('app/public/temp'))) {
             mkdir(storage_path('app/public/temp'), 0755, true);
         }
-        $zipPath = storage_path('app/public/temp/' . $fileName);
+        $zipPath = storage_path('app/public/temp/'.$fileName);
 
         if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             return back()->with('error', 'Could not create Zip file.');
@@ -181,7 +189,7 @@ class ResellerPaymentController extends Controller
         foreach ($payments as $payment) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('resellers.payments.invoice', ['payment' => $payment]);
             $content = $pdf->output();
-            $zip->addFromString('voucher-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT) . '.pdf', $content);
+            $zip->addFromString('voucher-'.str_pad($payment->id, 6, '0', STR_PAD_LEFT).'.pdf', $content);
         }
         $zip->close();
 
@@ -195,7 +203,11 @@ class ResellerPaymentController extends Controller
     {
         $this->ensureRegularPayment($resellerPayment);
 
-        $request->validate([
+        if ($resellerPayment->status === 'cancelled') {
+            return redirect()->route('reseller-payments.index')->with('error', 'Cancelled payments cannot be edited.');
+        }
+
+        $validated = $request->validate([
             'reseller_id' => [
                 'required',
                 Rule::exists('resellers', 'id')->where('reseller_type', Reseller::TYPE_RESELLER),
@@ -206,21 +218,37 @@ class ResellerPaymentController extends Controller
             'payment_date' => 'required|date',
         ]);
 
-        DB::transaction(function () use ($request, $resellerPayment) {
-            $oldAmount = $resellerPayment->amount;
-            $newAmount = $request->amount;
-            $difference = $newAmount - $oldAmount;
+        DB::transaction(function () use ($validated, $resellerPayment) {
+            $oldResellerId = (int) $resellerPayment->reseller_id;
+            $newResellerId = (int) $validated['reseller_id'];
+            $oldAmount = (float) $resellerPayment->amount;
+            $newAmount = (float) $validated['amount'];
 
             // Update Payment
-            $resellerPayment->update($request->all());
+            $resellerPayment->update([
+                'reseller_id' => $newResellerId,
+                'amount' => $newAmount,
+                'payment_method' => $validated['payment_method'],
+                'reference_id' => $validated['reference_id'] ?? null,
+                'payment_date' => $validated['payment_date'],
+            ]);
 
-            // Adjust Reseller Due (Subtracting difference: if new amount is higher, due decreases more)
-            $reseller = Reseller::regular()->findOrFail($request->reseller_id);
-            // Example: Due 1000. Paid 500 (Old). Due becomes 500.
-            // Update Payment to 800 (diff +300).
-            // Due should be 200. (500 - 300).
-            $reseller->due_amount -= $difference;
-            $reseller->save();
+            if ($oldResellerId === $newResellerId) {
+                $reseller = Reseller::regular()->lockForUpdate()->findOrFail($newResellerId);
+                $reseller->due_amount -= ($newAmount - $oldAmount);
+                $reseller->save();
+
+                return;
+            }
+
+            $oldReseller = Reseller::regular()->lockForUpdate()->findOrFail($oldResellerId);
+            $newReseller = Reseller::regular()->lockForUpdate()->findOrFail($newResellerId);
+
+            $oldReseller->due_amount += $oldAmount;
+            $oldReseller->save();
+
+            $newReseller->due_amount -= $newAmount;
+            $newReseller->save();
         });
 
         return redirect()->route('reseller-payments.index')->with('success', 'Payment updated successfully.');

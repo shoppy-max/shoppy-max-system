@@ -10,9 +10,7 @@ use App\Models\ProductVariant;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class InventoryUnitService
@@ -62,6 +60,11 @@ class InventoryUnitService
 
     public function scanPendingUnitForPurchase(Purchase $purchase, string $rawUnitCode, ?int $userId = null): array
     {
+        $purchase = Purchase::query()
+            ->whereKey($purchase->id)
+            ->lockForUpdate()
+            ->firstOrFail();
+
         $unitCode = strtoupper(preg_replace('/\s+/', '', trim($rawUnitCode)));
 
         if ($unitCode === '') {
@@ -76,7 +79,7 @@ class InventoryUnitService
             ->lockForUpdate()
             ->first();
 
-        if (!$unit) {
+        if (! $unit) {
             throw ValidationException::withMessages([
                 'unit_code' => 'Scanned barcode was not found. Use a valid GRN label.',
             ]);
@@ -133,7 +136,7 @@ class InventoryUnitService
         }
 
         $purchaseItem = $unit->purchaseItem;
-        if (!$purchaseItem) {
+        if (! $purchaseItem) {
             throw ValidationException::withMessages([
                 'unit_code' => 'This label is not linked to a purchase item.',
             ]);
@@ -242,7 +245,7 @@ class InventoryUnitService
             ->lockForUpdate()
             ->first();
 
-        if (!$unit) {
+        if (! $unit) {
             throw ValidationException::withMessages([
                 'unit_code' => 'Scanned barcode was not found.',
             ]);
@@ -272,7 +275,7 @@ class InventoryUnitService
             ]);
         }
 
-        if (!$unit->orderItem) {
+        if (! $unit->orderItem) {
             throw ValidationException::withMessages([
                 'unit_code' => 'This label is not linked to an order item.',
             ]);
@@ -329,7 +332,7 @@ class InventoryUnitService
 
     public function backfillFromCurrentState(?callable $progress = null): array
     {
-        if (!Schema::hasTable('inventory_units') || !Schema::hasTable('inventory_unit_events')) {
+        if (! Schema::hasTable('inventory_units') || ! Schema::hasTable('inventory_unit_events')) {
             throw ValidationException::withMessages([
                 'inventory' => 'Inventory unit tables are not available. Run migrations first.',
             ]);
@@ -440,7 +443,7 @@ class InventoryUnitService
         $item->loadMissing(['purchase', 'variant.product', 'variant.unit']);
 
         $quantity = max((int) ($item->quantity ?? 0), 0);
-        if ($quantity < 1 || !$item->variant) {
+        if ($quantity < 1 || ! $item->variant) {
             return collect();
         }
 
@@ -476,8 +479,7 @@ class InventoryUnitService
         ?int $userId = null,
         ?string $note = null,
         string $source = 'grn_scan'
-    ): void
-    {
+    ): void {
         $now = now();
 
         $unit->status = InventoryUnit::STATUS_AVAILABLE;
@@ -528,7 +530,7 @@ class InventoryUnitService
         $item->loadMissing(['variant.product', 'variant.unit', 'order']);
 
         $variant = $item->variant;
-        if (!$variant) {
+        if (! $variant) {
             throw ValidationException::withMessages([
                 'items' => 'A selected order item variant is invalid.',
             ]);
@@ -645,7 +647,7 @@ class InventoryUnitService
     private function backfillAllocateOrderItemUnits(Order $order, OrderItem $item, string $targetStatus): array
     {
         $qty = max((int) ($item->quantity ?? 0), 0);
-        if ($qty < 1 || !$item->product_variant_id) {
+        if ($qty < 1 || ! $item->product_variant_id) {
             return ['allocated' => 0, 'delivered' => 0, 'legacy_allocated' => 0];
         }
 
@@ -779,7 +781,7 @@ class InventoryUnitService
         $unitValue = trim((string) ($variant->unit_value ?? ''));
 
         if ($unitValue !== '' && $unitName !== '') {
-            return $unitValue . ' ' . $unitName;
+            return $unitValue.' '.$unitName;
         }
 
         return $unitValue !== '' ? $unitValue : $unitName;
@@ -787,7 +789,7 @@ class InventoryUnitService
 
     private function generateUnitCode(InventoryUnit $unit, string $prefix = 'IU'): string
     {
-        return strtoupper($prefix . '-' . str_pad((string) $unit->id, 10, '0', STR_PAD_LEFT));
+        return strtoupper($prefix.'-'.str_pad((string) $unit->id, 10, '0', STR_PAD_LEFT));
     }
 
     public function syncVariantQuantityToAvailableUnits(ProductVariant $variant): void

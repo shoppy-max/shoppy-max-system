@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
-use App\Models\Category;
-use App\Models\SubCategory; // Make sure SubCategory model is imported
-use App\Models\Unit;
-use App\Models\Attribute;
-use App\Models\InventoryUnit;
-use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ProductsExport;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-use Picqer\Barcode\BarcodeGeneratorPNG;
+use App\Models\Category;
+use App\Models\InventoryUnit;
+use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\PurchaseItem;
+use App\Models\SubCategory;
+use App\Models\Unit;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
@@ -24,14 +24,14 @@ class ProductController extends Controller
         [$selectedUnitId, $selectedUnitValue, $isValueSpecificUnitFilter] = $this->resolveVariantUnitFilter($request);
 
         $applyVariantUnitFilter = function ($variantQuery) use ($selectedUnitId, $selectedUnitValue, $isValueSpecificUnitFilter) {
-            if (!$selectedUnitId) {
+            if (! $selectedUnitId) {
                 return;
             }
 
             $variantQuery->where('unit_id', $selectedUnitId)
                 ->where('quantity', '>', 0);
 
-            if (!$isValueSpecificUnitFilter) {
+            if (! $isValueSpecificUnitFilter) {
                 return;
             }
 
@@ -55,12 +55,12 @@ class ProductController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('barcode_data', 'like', "%{$search}%")
-                  ->orWhereHas('variants', function($subQ) use ($search) {
-                      $subQ->where('sku', 'like', "%{$search}%");
-                  });
+                    ->orWhere('barcode_data', 'like', "%{$search}%")
+                    ->orWhereHas('variants', function ($subQ) use ($search) {
+                        $subQ->where('sku', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -108,11 +108,11 @@ class ProductController extends Controller
                 $unitLabel = $unitShortName !== '' ? $unitShortName : $unitName;
 
                 $text = $unitValue !== ''
-                    ? trim($unitValue . ' ' . $unitLabel)
-                    : ($unitName . ($unitShortName !== '' ? ' (' . $unitShortName . ')' : ''));
+                    ? trim($unitValue.' '.$unitLabel)
+                    : ($unitName.($unitShortName !== '' ? ' ('.$unitShortName.')' : ''));
 
                 return [
-                    'id' => $option->unit_id . '::' . rawurlencode($unitValue),
+                    'id' => $option->unit_id.'::'.rawurlencode($unitValue),
                     'text' => $text,
                 ];
             })
@@ -121,24 +121,25 @@ class ProductController extends Controller
         return view('product_management.products.index', compact('products', 'categories', 'subCategories', 'variantUnitOptions'));
     }
 
-    public function export(Request $request) 
+    public function export(Request $request)
     {
-        return Excel::download(new ProductsExport($request->all()), 'products_' . date('Y-m-d_H-i') . '.xlsx');
+        return Excel::download(new ProductsExport($request->all()), 'products_'.date('Y-m-d_H-i').'.xlsx');
     }
 
     public function create()
     {
         $categories = Category::all();
-        $subCategories = SubCategory::all(); 
+        $subCategories = SubCategory::all();
         $units = Unit::all();
-        return view('product_management.products.create', compact('categories', 'subCategories', 'units')); 
+
+        return view('product_management.products.create', compact('categories', 'subCategories', 'units'));
     }
 
     public function store(Request $request)
     {
         // Guard: detect if PHP silently discarded the POST body (post_max_size exceeded)
         if ($request->method() === 'POST' && empty($request->all()) && empty($_FILES)) {
-            return back()->with('error', 'Upload failed: The file(s) you selected may be too large. Please reduce image sizes and try again. (Server limit: ' . ini_get('post_max_size') . ')');
+            return back()->with('error', 'Upload failed: The file(s) you selected may be too large. Please reduce image sizes and try again. (Server limit: '.ini_get('post_max_size').')');
         }
 
         $validated = $request->validate([
@@ -149,7 +150,7 @@ class ProductController extends Controller
             'warranty_period' => 'nullable|integer|min:0',
             'warranty_period_type' => 'nullable|in:years,months,days',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
-            
+
             // Variants Validation
             'variants' => 'required|array|min:1',
             'variants.*.unit_id' => 'required|exists:units,id',
@@ -203,10 +204,11 @@ class ProductController extends Controller
             return redirect()->route('products.success', $product)->with('success', 'Product created successfully.');
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Product creation failed: ' . $e->getMessage(), [
+            \Illuminate\Support\Facades\Log::error('Product creation failed: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
-            return back()->withInput()->with('error', 'Failed to create product: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'Failed to create product: '.$e->getMessage());
         }
     }
 
@@ -216,6 +218,7 @@ class ProductController extends Controller
         $categories = Category::all();
         $subCategories = SubCategory::all();
         $units = Unit::all();
+
         return view('product_management.products.edit', compact('product', 'categories', 'subCategories', 'units'));
     }
 
@@ -223,7 +226,7 @@ class ProductController extends Controller
     {
         // Guard: detect if PHP silently discarded the POST body (post_max_size exceeded)
         if (empty($request->all()) && empty($_FILES)) {
-            return back()->with('error', 'Upload failed: The file(s) you selected may be too large. Please reduce image sizes and try again. (Server limit: ' . ini_get('post_max_size') . ')');
+            return back()->with('error', 'Upload failed: The file(s) you selected may be too large. Please reduce image sizes and try again. (Server limit: '.ini_get('post_max_size').')');
         }
 
         $validated = $request->validate([
@@ -247,13 +250,14 @@ class ProductController extends Controller
         ]);
 
         $this->ensureUniqueProductNameIgnoreCase($validated['name'], $product->id);
+        $this->ensureSubmittedVariantSkusAreUnique($validated['variants'], $product);
 
         try {
             // Update Product Image
             if ($request->hasFile('image')) {
                 $validated['image'] = $this->safeCloudinaryUpload($request->file('image'));
             }
-            
+
             $product->update([
                 'name' => trim($validated['name']),
                 'category_id' => $validated['category_id'],
@@ -303,31 +307,42 @@ class ProductController extends Controller
             }
 
             // Delete removed variants
-            $product->variants()->whereNotIn('id', $existingVariantIds)->delete();
+            $removedVariants = $product->variants()->whereNotIn('id', $existingVariantIds)->get();
+            foreach ($removedVariants as $removedVariant) {
+                $this->ensureVariantCanBeRemoved($removedVariant);
+            }
+            foreach ($removedVariants as $removedVariant) {
+                $removedVariant->delete();
+            }
 
             return redirect()->route('products.index')->with('success', 'Product updated successfully.');
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Product update failed: ' . $e->getMessage(), [
+            \Illuminate\Support\Facades\Log::error('Product update failed: '.$e->getMessage(), [
                 'product_id' => $product->id,
                 'trace' => $e->getTraceAsString(),
             ]);
-            return back()->withInput()->with('error', 'Failed to update product: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'Failed to update product: '.$e->getMessage());
         }
     }
 
     public function destroy(Product $product)
     {
         try {
+            $this->ensureProductCanBeDeleted($product);
             $product->delete(); // Cascades deletes variants
+
             return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Error deleting product: ' . $e->getMessage());
+            return back()->with('error', 'Error deleting product: '.$e->getMessage());
         }
     }
+
     public function success(Product $product)
     {
         $product->load(['category', 'variants.unit']);
+
         return view('product_management.products.success', compact('product'));
     }
 
@@ -340,15 +355,16 @@ class ProductController extends Controller
         if ($labels->count() === 1) {
             $label = $labels->first();
             $pdf->loadView('product_management.products.barcode-single-pdf', compact('label'));
-            return $pdf->stream('barcode_' . $variant->sku . '.pdf');
+
+            return $pdf->stream('barcode_'.$variant->sku.'.pdf');
         }
 
         $pdf->loadView('product_management.products.barcode-pdf', compact('labels'));
 
-        return $pdf->stream('barcode_' . $variant->sku . '_labels.pdf');
+        return $pdf->stream('barcode_'.$variant->sku.'_labels.pdf');
     }
 
-    public function bulkPrintBarcode(Request $request) 
+    public function bulkPrintBarcode(Request $request)
     {
         $request->validate([
             'products' => 'required|string', // Comma separated IDs
@@ -357,9 +373,9 @@ class ProductController extends Controller
 
         $productIds = explode(',', $request->products);
         $variants = ProductVariant::whereIn('product_id', $productIds)
-                        ->with(['product', 'unit'])
-                        ->orderBy('product_id')
-                        ->get();
+            ->with(['product', 'unit'])
+            ->orderBy('product_id')
+            ->get();
 
         if ($variants->isEmpty()) {
             return back()->with('error', 'No variants found for selected products.');
@@ -376,7 +392,7 @@ class ProductController extends Controller
 
         $pdf = app('dompdf.wrapper');
         $pdf->loadView('product_management.products.barcode-pdf', compact('labels'));
-        
+
         return $pdf->stream('barcodes.pdf');
     }
 
@@ -385,19 +401,34 @@ class ProductController extends Controller
         $request->validate([
             'products' => 'required|string',
         ]);
-        
-        $ids = explode(',', $request->products);
-        
-        // Use logic that ensures observers are fired (if needed) or just bulk delete
-        // For deleting images etc, we might need loop. But for now, simple delete.
-        Product::whereIn('id', $ids)->delete();
-        
-        return back()->with('success', count($ids) . ' products deleted successfully.');
+
+        $ids = collect(explode(',', $request->products))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $products = Product::whereIn('id', $ids)->with('variants')->get();
+
+        try {
+            foreach ($products as $product) {
+                $this->ensureProductCanBeDeleted($product);
+            }
+
+            foreach ($products as $product) {
+                $product->delete();
+            }
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error deleting products: '.$e->getMessage());
+        }
+
+        return back()->with('success', $products->count().' products deleted successfully.');
     }
 
     public function show(Product $product)
     {
         $product->load(['category', 'subCategory', 'variants.unit']);
+
         return response()->json($product);
     }
 
@@ -411,14 +442,15 @@ class ProductController extends Controller
                 'verify' => false,
                 'timeout' => 60,
             ]);
+
             return $result['secure_url'];
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Cloudinary upload failed: ' . $e->getMessage(), [
+            \Illuminate\Support\Facades\Log::error('Cloudinary upload failed: '.$e->getMessage(), [
                 'file_name' => $file->getClientOriginalName(),
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMimeType(),
             ]);
-            throw new \RuntimeException('Image upload failed: ' . $e->getMessage());
+            throw new \RuntimeException('Image upload failed: '.$e->getMessage());
         }
     }
 
@@ -435,6 +467,65 @@ class ProductController extends Controller
             throw ValidationException::withMessages([
                 'name' => 'A product with this name already exists.',
             ]);
+        }
+    }
+
+    private function ensureSubmittedVariantSkusAreUnique(array $variants, Product $product): void
+    {
+        foreach ($variants as $index => $variantData) {
+            $sku = trim((string) ($variantData['sku'] ?? ''));
+            if ($sku === '') {
+                continue;
+            }
+
+            $variantId = isset($variantData['id']) && $variantData['id'] !== ''
+                ? (int) $variantData['id']
+                : null;
+
+            $exists = ProductVariant::query()
+                ->where('sku', $sku)
+                ->when($variantId, fn ($query) => $query->whereKeyNot($variantId))
+                ->exists();
+
+            if ($exists) {
+                throw ValidationException::withMessages([
+                    "variants.{$index}.sku" => "The SKU {$sku} is already used by another product variant.",
+                ]);
+            }
+
+            if ($variantId && ! $product->variants()->whereKey($variantId)->exists()) {
+                throw ValidationException::withMessages([
+                    "variants.{$index}.id" => 'A submitted variant does not belong to this product.',
+                ]);
+            }
+        }
+    }
+
+    private function ensureProductCanBeDeleted(Product $product): void
+    {
+        $product->loadMissing('variants');
+
+        foreach ($product->variants as $variant) {
+            $this->ensureVariantCanBeRemoved($variant);
+        }
+    }
+
+    private function ensureVariantCanBeRemoved(ProductVariant $variant): void
+    {
+        if ((int) ($variant->quantity ?? 0) > 0) {
+            throw new \RuntimeException('Products with live stock cannot be deleted or have variants removed.');
+        }
+
+        if ($variant->inventoryUnits()->where('status', '!=', InventoryUnit::STATUS_ARCHIVED)->exists()) {
+            throw new \RuntimeException('Products with tracked inventory units cannot be deleted or have variants removed.');
+        }
+
+        if (OrderItem::where('product_variant_id', $variant->id)->exists()) {
+            throw new \RuntimeException('Products with order history cannot be deleted or have variants removed.');
+        }
+
+        if (PurchaseItem::where('stock_variant_id', $variant->id)->exists()) {
+            throw new \RuntimeException('Products with purchase history cannot be deleted or have variants removed.');
         }
     }
 
@@ -471,10 +562,10 @@ class ProductController extends Controller
 
         $productName = (string) ($variant->product?->name ?? '');
         $variantText = trim(
-            (string) ($variant->unit_value ? $variant->unit_value . ' ' : '') .
+            (string) ($variant->unit_value ? $variant->unit_value.' ' : '').
             (string) ($variant->unit?->name ?? '')
         );
-        $variantText .= $variant->unit?->short_name ? ' (' . $variant->unit->short_name . ')' : '';
+        $variantText .= $variant->unit?->short_name ? ' ('.$variant->unit->short_name.')' : '';
 
         $stockCount = max((int) ($variant->quantity ?? 0), 0);
         $availableUnits ??= InventoryUnit::query()
@@ -513,10 +604,10 @@ class ProductController extends Controller
         $variant->loadMissing(['product', 'unit']);
 
         $variantText = trim(
-            (string) ($variant->unit_value ? $variant->unit_value . ' ' : '') .
+            (string) ($variant->unit_value ? $variant->unit_value.' ' : '').
             (string) ($variant->unit?->name ?? '')
         );
-        $variantText .= $variant->unit?->short_name ? ' (' . $variant->unit->short_name . ')' : '';
+        $variantText .= $variant->unit?->short_name ? ' ('.$variant->unit->short_name.')' : '';
 
         return [
             'product_name' => (string) ($variant->product?->name ?? ''),

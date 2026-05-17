@@ -3,23 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Exports\OrdersExport;
+use App\Models\City;
+use App\Models\Courier;
+use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderLog;
 use App\Models\ProductVariant;
 use App\Models\Reseller;
-use App\Models\Customer;
-use App\Models\OrderLog;
-use App\Models\Courier;
-use App\Models\City;
 use App\Services\InventoryUnitService;
-use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Database\QueryException;
 use Maatwebsite\Excel\Facades\Excel;
 
 class OrderController extends Controller
@@ -75,7 +75,7 @@ class OrderController extends Controller
 
         return Excel::download(
             new OrdersExport($orders),
-            'orders_' . now()->format('Y-m-d_H-i') . '.xlsx'
+            'orders_'.now()->format('Y-m-d_H-i').'.xlsx'
         );
     }
 
@@ -89,8 +89,8 @@ class OrderController extends Controller
         // Predict next order number for UI
         $dateStr = $today->format('Ymd');
         $sequence = $this->getNextOrderSequenceForDate($today);
-        $nextOrderNumber = 'ORD-' . $dateStr . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
-        
+        $nextOrderNumber = 'ORD-'.$dateStr.'-'.str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
         $couriers = Courier::all();
         $courierRatesMap = $this->buildCourierRatesMap($couriers);
         $cities = City::orderBy('city_name')->get(['id', 'city_name', 'district', 'province', 'postal_code']);
@@ -141,10 +141,10 @@ class OrderController extends Controller
                 if ($parsedUnitSearch) {
                     $query->orWhere(function ($unitValueQuery) use ($parsedUnitSearch) {
                         $unitValueQuery
-                            ->where('unit_value', 'like', $parsedUnitSearch['value'] . '%')
+                            ->where('unit_value', 'like', $parsedUnitSearch['value'].'%')
                             ->whereHas('unit', function ($unitQuery) use ($parsedUnitSearch) {
-                                $unitQuery->where('short_name', 'like', $parsedUnitSearch['unit'] . '%')
-                                    ->orWhere('name', 'like', $parsedUnitSearch['unit'] . '%');
+                                $unitQuery->where('short_name', 'like', $parsedUnitSearch['unit'].'%')
+                                    ->orWhere('name', 'like', $parsedUnitSearch['unit'].'%');
                             });
                     });
                 }
@@ -154,7 +154,7 @@ class OrderController extends Controller
 
         $results = $variants->map(function (ProductVariant $variant) use ($normalizedTerm, $termTokens) {
             $product = $variant->product;
-            if (!$product) {
+            if (! $product) {
                 return null;
             }
 
@@ -199,6 +199,7 @@ class OrderController extends Controller
             ->values()
             ->map(function (array $item) {
                 unset($item['_score']);
+
                 return $item;
             })
             ->values();
@@ -296,7 +297,7 @@ class OrderController extends Controller
                     'province' => $customer->province,
                     'country' => $customer->country,
                     'location_label' => implode(' | ', $locationParts),
-                    'display_label' => trim(($customer->name ?: 'Unknown') . ($customer->mobile ? " | {$customer->mobile}" : '')),
+                    'display_label' => trim(($customer->name ?: 'Unknown').($customer->mobile ? " | {$customer->mobile}" : '')),
                 ];
             });
 
@@ -320,14 +321,14 @@ class OrderController extends Controller
                     ]);
                 }),
             ],
-            
+
             // Customer Details
             'customer.name' => 'required|string|max:255',
             'customer.mobile' => ['required', 'regex:/^\d{10}$/'],
             'customer.landline' => ['nullable', 'regex:/^\d{10}$/'],
             'customer.address' => 'required|string',
             'customer.city_id' => 'required|exists:cities,id',
-            
+
             // Products
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|exists:product_variants,id',
@@ -349,7 +350,7 @@ class OrderController extends Controller
             'payment_status' => 'nullable|in:pending,paid',
             'call_status' => 'nullable|in:pending,confirm,hold,cancel',
             'sales_note' => 'nullable|string',
-            'delivery_status' => 'nullable|in:' . implode(',', self::DELIVERY_STATUSES),
+            'delivery_status' => 'nullable|in:'.implode(',', self::DELIVERY_STATUSES),
             'customer.district' => 'nullable|string',
             'customer.province' => 'nullable|string',
         ]);
@@ -382,15 +383,15 @@ class OrderController extends Controller
 
             // 2. Create Order
             $orderNumber = $this->generateOrderNumber();
-            
-            $order = new Order();
+
+            $order = new Order;
             $order->order_number = $orderNumber;
             $order->order_date = now()->toDateString();
             $order->order_type = $validated['order_type'];
             $order->user_id = Auth::id(); // Admin creating the order
             $order->reseller_id = $validated['order_type'] === 'reseller' ? $validated['reseller_id'] : null;
             $order->customer_id = $customer->id;
-            
+
             // Fallback legacy fields (optional, but good for redundancy if migrated)
             $order->customer_name = $customer->name;
             $order->customer_phone = $customer->mobile;
@@ -411,12 +412,12 @@ class OrderController extends Controller
             $order->status = $this->deriveInternalOrderStatus($order->call_status, $order->delivery_status);
             $this->applyDeliveryTimelineTimestamps($order);
             $order->sales_note = $validated['sales_note'] ?? null;
-            
+
             // Capture Address Snapshot
             $order->customer_city = $selectedCity->city_name;
             $order->customer_district = $selectedCity->district;
             $order->customer_province = $selectedCity->province;
-            
+
             $order->save();
 
             $totalAmount = 0;
@@ -427,22 +428,22 @@ class OrderController extends Controller
             foreach ($validated['items'] as $itemData) {
                 $variant = ProductVariant::with(['product', 'unit'])->find($itemData['id']);
                 $variantDisplayName = $this->buildVariantDisplayName($variant);
-                
+
                 // Stock Validation (Optional: Validation rule could handle this, but explicit check is safer)
                 if ($variant->quantity < $itemData['quantity']) {
                     throw new \Exception("Insufficient stock for {$variantDisplayName} (SKU: {$variant->sku})");
                 }
-                
+
                 // Limit Price Validation
                 if ($itemData['selling_price'] < $variant->limit_price) {
-                     throw new \Exception("Selling price for {$variantDisplayName} (SKU: {$variant->sku}) cannot be lower than limit price ({$variant->limit_price})");
+                    throw new \Exception("Selling price for {$variantDisplayName} (SKU: {$variant->sku}) cannot be lower than limit price ({$variant->limit_price})");
                 }
 
                 $qty = $itemData['quantity'];
                 $unitPrice = $itemData['selling_price'];
                 $basePrice = $variant->limit_price; // Assuming limit_price IS the base/cost price for commission calc
                 $subtotal = $unitPrice * $qty;
-                
+
                 $itemCost = $basePrice * $qty;
                 $itemCommission = ($unitPrice - $basePrice) * $qty;
 
@@ -462,7 +463,7 @@ class OrderController extends Controller
                 // Accumulate Totals
                 $totalAmount += $subtotal;
                 $totalCost += $itemCost;
-                
+
                 // Commission only applies for Reseller orders
                 if ($order->order_type === 'reseller') {
                     $totalCommission += $itemCommission;
@@ -502,13 +503,14 @@ class OrderController extends Controller
             $this->logAction($order->id, 'created', 'Order created successfully.');
 
             DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Order created successfully!',
                 'redirect' => route('orders.index'),
-                'order_number' => $orderNumber
+                'order_number' => $orderNumber,
             ]);
-            
+
         } catch (QueryException $e) {
             DB::rollBack();
 
@@ -521,17 +523,18 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 422);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 422);
         }
     }
-    
+
     /**
      * Generate unique order number.
      */
@@ -542,27 +545,27 @@ class OrderController extends Controller
         $sequence = $this->getNextOrderSequenceForDate($today);
 
         do {
-            $number = 'ORD-' . $dateStr . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+            $number = 'ORD-'.$dateStr.'-'.str_pad($sequence, 4, '0', STR_PAD_LEFT);
             $exists = Order::withTrashed()->where('order_number', $number)->exists();
             if ($exists) {
                 $sequence++;
             }
         } while ($exists);
-        
+
         return $number;
     }
 
     private function getNextOrderSequenceForDate($date): int
     {
         $dateStr = $date->format('Ymd');
-        $prefix = 'ORD-' . $dateStr . '-';
+        $prefix = 'ORD-'.$dateStr.'-';
 
         $latestNumber = Order::withTrashed()
-            ->where('order_number', 'like', $prefix . '%')
+            ->where('order_number', 'like', $prefix.'%')
             ->orderByDesc('order_number')
             ->value('order_number');
 
-        if (!$latestNumber) {
+        if (! $latestNumber) {
             return 1;
         }
 
@@ -578,7 +581,7 @@ class OrderController extends Controller
     {
         $message = strtolower($exception->getMessage());
 
-        if (!str_contains($message, 'order_number')) {
+        if (! str_contains($message, 'order_number')) {
             return false;
         }
 
@@ -586,7 +589,7 @@ class OrderController extends Controller
             || str_contains($message, 'duplicate')
             || str_contains($message, 'constraint failed');
     }
-    
+
     /**
      * Log action helper.
      */
@@ -599,6 +602,7 @@ class OrderController extends Controller
             'description' => $description,
         ]);
     }
+
     /**
      * Display the specified order (Invoice View).
      */
@@ -621,6 +625,7 @@ class OrderController extends Controller
             'returnHandler',
         ]);
         $this->decorateOrderUiFlags($order);
+
         return view('orders.show', compact('order'));
     }
 
@@ -641,7 +646,8 @@ class OrderController extends Controller
     {
         $order->load(['items.variant.unit', 'items.variant.product', 'items.inventoryUnits.purchase', 'customer', 'reseller', 'user', 'courier']);
         $pdf = Pdf::loadView('orders.pdf', compact('order'))->setPaper('a4');
-        return $pdf->download('invoice-' . $order->order_number . '.pdf');
+
+        return $pdf->download('invoice-'.$order->order_number.'.pdf');
     }
 
     /**
@@ -669,15 +675,15 @@ class OrderController extends Controller
             return back()->with('error', 'No orders selected to download.');
         }
 
-        $fileName = 'order_invoices_' . now()->format('Y-m-d_His') . '.zip';
+        $fileName = 'order_invoices_'.now()->format('Y-m-d_His').'.zip';
         $tempDirectory = storage_path('app/temp');
-        $zipPath = $tempDirectory . DIRECTORY_SEPARATOR . $fileName;
+        $zipPath = $tempDirectory.DIRECTORY_SEPARATOR.$fileName;
 
-        if (!is_dir($tempDirectory) && !mkdir($tempDirectory, 0755, true) && !is_dir($tempDirectory)) {
+        if (! is_dir($tempDirectory) && ! mkdir($tempDirectory, 0755, true) && ! is_dir($tempDirectory)) {
             return back()->with('error', 'Could not prepare temporary download directory.');
         }
 
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             return back()->with('error', 'Could not create ZIP file.');
         }
@@ -685,7 +691,7 @@ class OrderController extends Controller
         foreach ($orders as $order) {
             $pdf = Pdf::loadView('orders.pdf', ['order' => $order])->setPaper('a4');
             $safeOrderNumber = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $order->order_number);
-            $zip->addFromString('invoice-' . $safeOrderNumber . '.pdf', $pdf->output());
+            $zip->addFromString('invoice-'.$safeOrderNumber.'.pdf', $pdf->output());
         }
 
         $zip->close();
@@ -701,7 +707,7 @@ class OrderController extends Controller
         $this->decorateOrderUiFlags($order);
         $canAdjustLockedPayments = (bool) ($order->getAttribute('can_payment_edit') ?? false);
 
-        if (($order->getAttribute('manual_edit_locked') ?? false) && !$canAdjustLockedPayments) {
+        if (($order->getAttribute('manual_edit_locked') ?? false) && ! $canAdjustLockedPayments) {
             return redirect()
                 ->route('orders.show', $order)
                 ->with('error', 'This order cannot be manually edited after the waybill has been printed.');
@@ -713,7 +719,7 @@ class OrderController extends Controller
         $cities = City::orderBy('city_name')->get(['id', 'city_name', 'district', 'province', 'postal_code']);
         $matchedCity = City::where('city_name', $order->customer_city ?: ($order->customer->city ?? ''))->first();
         $order->selected_city_id = $matchedCity?->id;
-        
+
         return view('orders.edit', [
             'order' => $order,
             'orderFull' => $order,
@@ -732,7 +738,7 @@ class OrderController extends Controller
         $manualEditLocked = $this->isManualOrderLockedAfterWaybill($order);
         $canAdjustLockedPayments = $this->canAdjustLockedOrderPayments($order);
 
-        if ($manualEditLocked && !$canAdjustLockedPayments) {
+        if ($manualEditLocked && ! $canAdjustLockedPayments) {
             return response()->json([
                 'success' => false,
                 'message' => 'This order cannot be manually updated after the waybill has been printed.',
@@ -792,6 +798,7 @@ class OrderController extends Controller
                 $this->syncResellerReturnFeePenalty($order);
 
                 DB::commit();
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Order updated successfully!',
@@ -799,9 +806,10 @@ class OrderController extends Controller
                 ]);
             } catch (\Exception $e) {
                 DB::rollBack();
+
                 return response()->json([
                     'success' => false,
-                    'message' => $e->getMessage()
+                    'message' => $e->getMessage(),
                 ], 422);
             }
         }
@@ -818,14 +826,14 @@ class OrderController extends Controller
                     ]);
                 }),
             ],
-            
+
             // Customer Details
             'customer.name' => 'required|string|max:255',
             'customer.mobile' => ['required', 'regex:/^\d{10}$/'],
             'customer.landline' => ['nullable', 'regex:/^\d{10}$/'],
             'customer.address' => 'required|string',
             'customer.city_id' => 'required|exists:cities,id',
-            
+
             // Products
             'items' => 'required|array|min:1',
             'items.*.id' => 'required|exists:product_variants,id',
@@ -871,7 +879,7 @@ class OrderController extends Controller
             $selectedCity = City::findOrFail($validated['customer']['city_id']);
 
             $this->inventoryUnits()->releaseOrderUnits($order, 'released_for_order_update', Auth::id());
-            
+
             // 2. Clear OLD items
             $order->items()->delete();
 
@@ -889,8 +897,8 @@ class OrderController extends Controller
             $order->customer_name = $customer->name;
             $order->customer_phone = $customer->mobile;
             $order->customer_address = $customer->address;
-            
-             // Create/Update Logic for New Fields
+
+            // Create/Update Logic for New Fields
             $previousOrderStatus = (string) $order->status;
             $previousDeliveryStatus = (string) ($order->delivery_status ?? 'pending');
 
@@ -910,7 +918,7 @@ class OrderController extends Controller
             $order->status = $this->deriveInternalOrderStatus($order->call_status, $order->delivery_status);
             $this->applyDeliveryTimelineTimestamps($order, $previousOrderStatus, $previousDeliveryStatus);
             $order->sales_note = $validated['sales_note'] ?? null;
-             // Capture Address Snapshot
+            // Capture Address Snapshot
             $order->customer_city = $selectedCity->city_name;
             $order->customer_district = $selectedCity->district;
             $order->customer_province = $selectedCity->province;
@@ -925,22 +933,22 @@ class OrderController extends Controller
             foreach ($validated['items'] as $itemData) {
                 $variant = ProductVariant::with(['product', 'unit'])->find($itemData['id']);
                 $variantDisplayName = $this->buildVariantDisplayName($variant);
-                
+
                 // Stock Check
                 if ($variant->quantity < $itemData['quantity']) {
                     throw new \Exception("Insufficient stock for {$variantDisplayName} (SKU: {$variant->sku})");
                 }
-                
+
                 // Limit Price Check
                 if ($itemData['selling_price'] < $variant->limit_price) {
-                     throw new \Exception("Selling price for {$variantDisplayName} (SKU: {$variant->sku}) cannot be lower than limit price ({$variant->limit_price})");
+                    throw new \Exception("Selling price for {$variantDisplayName} (SKU: {$variant->sku}) cannot be lower than limit price ({$variant->limit_price})");
                 }
 
                 $qty = $itemData['quantity'];
                 $unitPrice = $itemData['selling_price'];
                 $basePrice = $variant->limit_price;
                 $subtotal = $unitPrice * $qty;
-                
+
                 $itemCost = $basePrice * $qty;
                 $itemCommission = ($unitPrice - $basePrice) * $qty;
 
@@ -952,7 +960,7 @@ class OrderController extends Controller
                     'sku' => $variant->sku,
                     'quantity' => $qty,
                     'unit_price' => $unitPrice,
-                    'base_price' => $basePrice, 
+                    'base_price' => $basePrice,
                     'total_price' => $subtotal,
                     'subtotal' => $subtotal,
                 ]);
@@ -960,7 +968,7 @@ class OrderController extends Controller
                 // Accumulate totals
                 $totalAmount += $subtotal;
                 $totalCost += $itemCost;
-                
+
                 if ($order->order_type === 'reseller') {
                     $totalCommission += $itemCommission;
                 }
@@ -996,6 +1004,7 @@ class OrderController extends Controller
             $this->syncResellerReturnFeePenalty($order);
 
             DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Order updated successfully!',
@@ -1004,9 +1013,10 @@ class OrderController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 422);
         }
     }
@@ -1032,12 +1042,15 @@ class OrderController extends Controller
             $order->delete();
 
             DB::commit();
+
             return redirect()->route('orders.index')->with('success', 'Order deleted successfully and allocated stock was released.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Failed to delete order: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'Failed to delete order: '.$e->getMessage());
         }
     }
+
     /**
      * Display the Call List for orders.
      */
@@ -1050,10 +1063,10 @@ class OrderController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
-                  ->orWhereHas('customer', function ($subQ) use ($search) {
-                      $subQ->where('name', 'like', "%{$search}%")
-                           ->orWhere('mobile', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('customer', function ($subQ) use ($search) {
+                        $subQ->where('name', 'like', "%{$search}%")
+                            ->orWhere('mobile', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -1063,7 +1076,7 @@ class OrderController extends Controller
         } else {
             $query->whereIn('call_status', ['pending', 'hold']);
         }
-        
+
         if ($request->filled('date_from')) {
             $query->whereDate('order_date', '>=', $request->date_from);
         }
@@ -1100,6 +1113,20 @@ class OrderController extends Controller
             'sales_note' => 'nullable|string',
         ]);
 
+        if (
+            ($validated['status'] ?? null) !== 'cancel'
+            && in_array('cancel', [
+                (string) ($order->status ?? ''),
+                (string) ($order->call_status ?? ''),
+                (string) ($order->delivery_status ?? ''),
+            ], true)
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cancelled orders cannot be reopened from the status updater.',
+            ], 422);
+        }
+
         DB::beginTransaction();
 
         try {
@@ -1113,15 +1140,11 @@ class OrderController extends Controller
                 if (array_key_exists('call_status', $validated)) {
                     $this->assertCallStatusTransitionAllowed($validated['call_status'], $order->call_status);
                     $order->call_status = $validated['call_status'];
-                } elseif ($order->call_status === 'cancel') {
-                    $order->call_status = 'pending';
                 }
 
                 if (array_key_exists('delivery_status', $validated)) {
                     $this->assertDeliveryStatusTransitionAllowed($validated['delivery_status'], $previousDeliveryStatus);
                     $order->delivery_status = $this->normalizeDeliveryStatus($validated['delivery_status'], 'pending');
-                } elseif ($order->delivery_status === 'cancel') {
-                    $order->delivery_status = 'pending';
                 }
             }
 
@@ -1385,7 +1408,7 @@ class OrderController extends Controller
             return true;
         }
 
-        if (!empty($order->waybill_printed_at)) {
+        if (! empty($order->waybill_printed_at)) {
             return true;
         }
 
@@ -1436,7 +1459,7 @@ class OrderController extends Controller
             return;
         }
 
-        if (!$this->canAdjustLockedOrderPayments($order)) {
+        if (! $this->canAdjustLockedOrderPayments($order)) {
             throw ValidationException::withMessages([
                 'payment_method' => 'Payment method cannot be changed for this order anymore.',
             ]);
@@ -1459,7 +1482,7 @@ class OrderController extends Controller
             return 'cancel';
         }
 
-        if (!in_array($requestedStatus, self::DELIVERY_STATUSES, true)) {
+        if (! in_array($requestedStatus, self::DELIVERY_STATUSES, true)) {
             return 'pending';
         }
 
@@ -1496,7 +1519,7 @@ class OrderController extends Controller
 
         $allowedNextStatuses = $allowedTransitions[$previousStatus] ?? [];
 
-        if (!in_array($requestedStatus, $allowedNextStatuses, true)) {
+        if (! in_array($requestedStatus, $allowedNextStatuses, true)) {
             $labels = [
                 'pending' => 'Pending',
                 'waybill_printed' => 'Waybill Printed',
@@ -1513,7 +1536,7 @@ class OrderController extends Controller
 
             throw ValidationException::withMessages([
                 'delivery_status' => $nextLabel
-                    ? "{$previousLabel} orders can only move to " . ($labels[$nextLabel] ?? ucfirst(str_replace('_', ' ', $nextLabel))) . '.'
+                    ? "{$previousLabel} orders can only move to ".($labels[$nextLabel] ?? ucfirst(str_replace('_', ' ', $nextLabel))).'.'
                     : "{$previousLabel} is a final delivery status and cannot be advanced.",
             ]);
         }
@@ -1531,43 +1554,43 @@ class OrderController extends Controller
 
         if (
             $orderStatus === 'cancel'
-            && ($previousOrderStatus !== 'cancel' || !$order->cancelled_at)
+            && ($previousOrderStatus !== 'cancel' || ! $order->cancelled_at)
         ) {
             $this->setOrderTimelineAudit($order, 'cancelled_at', 'cancelled_by');
         }
 
-        if ($deliveryStatus === 'waybill_printed' && ($previousDeliveryStatus !== 'waybill_printed' || !$order->waybill_printed_at)) {
+        if ($deliveryStatus === 'waybill_printed' && ($previousDeliveryStatus !== 'waybill_printed' || ! $order->waybill_printed_at)) {
             $this->setOrderTimelineAudit($order, 'waybill_printed_at', 'waybill_printed_by');
         }
 
-        if ($deliveryStatus === 'picked_from_rack' && ($previousDeliveryStatus !== 'picked_from_rack' || !$order->picked_at)) {
+        if ($deliveryStatus === 'picked_from_rack' && ($previousDeliveryStatus !== 'picked_from_rack' || ! $order->picked_at)) {
             $this->setOrderTimelineAudit($order, 'picked_at', 'picked_by');
         }
 
-        if ($deliveryStatus === 'packed' && ($previousDeliveryStatus !== 'packed' || !$order->packed_at)) {
+        if ($deliveryStatus === 'packed' && ($previousDeliveryStatus !== 'packed' || ! $order->packed_at)) {
             $this->setOrderTimelineAudit($order, 'packed_at', 'packed_by');
         }
 
-        if ($deliveryStatus === 'dispatched' && ($previousDeliveryStatus !== 'dispatched' || !$order->dispatched_at)) {
+        if ($deliveryStatus === 'dispatched' && ($previousDeliveryStatus !== 'dispatched' || ! $order->dispatched_at)) {
             $this->setOrderTimelineAudit($order, 'dispatched_at', 'dispatched_by');
         }
 
-        if ($deliveryStatus === 'delivered' && ($previousDeliveryStatus !== 'delivered' || !$order->delivered_at)) {
+        if ($deliveryStatus === 'delivered' && ($previousDeliveryStatus !== 'delivered' || ! $order->delivered_at)) {
             $this->setOrderTimelineAudit($order, 'delivered_at', 'delivered_by');
         }
 
-        if ($deliveryStatus === 'returned' && ($previousDeliveryStatus !== 'returned' || !$order->returned_at)) {
+        if ($deliveryStatus === 'returned' && ($previousDeliveryStatus !== 'returned' || ! $order->returned_at)) {
             $this->setOrderTimelineAudit($order, 'returned_at', 'returned_by');
         }
 
-        if ($deliveryStatus === 'cancel' && ($previousDeliveryStatus !== 'cancel' || !$order->cancelled_at)) {
+        if ($deliveryStatus === 'cancel' && ($previousDeliveryStatus !== 'cancel' || ! $order->cancelled_at)) {
             $this->setOrderTimelineAudit($order, 'cancelled_at', 'cancelled_by');
         }
     }
 
     private function setOrderTimelineAudit(Order $order, string $timestampField, ?string $userField = null): void
     {
-        if (!isset($order->{$timestampField}) || !$order->{$timestampField}) {
+        if (! isset($order->{$timestampField}) || ! $order->{$timestampField}) {
             $order->{$timestampField} = now();
         }
 
@@ -1579,6 +1602,7 @@ class OrderController extends Controller
     private function normalizeSearchText(string $value): string
     {
         $normalized = mb_strtolower(trim($value));
+
         return preg_replace('/\s+/', ' ', $normalized) ?? '';
     }
 
@@ -1663,7 +1687,7 @@ class OrderController extends Controller
             $score = max($score, 360);
         }
 
-        if (!empty($termTokens)) {
+        if (! empty($termTokens)) {
             $productHits = 0;
             $displayHits = 0;
 
@@ -1719,12 +1743,12 @@ class OrderController extends Controller
 
     private function validateCourierChargeSelection(?int $courierId, $courierCharge): void
     {
-        if (!$courierId) {
+        if (! $courierId) {
             return;
         }
 
         $courier = Courier::find($courierId);
-        if (!$courier) {
+        if (! $courier) {
             throw ValidationException::withMessages([
                 'courier_id' => 'Selected courier is invalid.',
             ]);
@@ -1743,7 +1767,7 @@ class OrderController extends Controller
         }
 
         $normalizedCharge = $this->normalizeRateForComparison($courierCharge);
-        if ($normalizedCharge === null || !$rates->contains($normalizedCharge)) {
+        if ($normalizedCharge === null || ! $rates->contains($normalizedCharge)) {
             throw ValidationException::withMessages([
                 'courier_charge' => 'Select a valid delivery charge from the selected courier list.',
             ]);
@@ -1756,7 +1780,7 @@ class OrderController extends Controller
             return null;
         }
 
-        if (!is_numeric($rate)) {
+        if (! is_numeric($rate)) {
             return null;
         }
 
@@ -1776,7 +1800,7 @@ class OrderController extends Controller
     {
         $order->loadMissing(['items.variant.product', 'items.variant.unit']);
 
-        if (!$this->orderShouldHoldInventory($order)) {
+        if (! $this->orderShouldHoldInventory($order)) {
             $eventType = (string) ($order->status ?? '') === 'cancel'
                 ? 'released_on_cancel'
                 : 'released_on_return';
@@ -1822,7 +1846,7 @@ class OrderController extends Controller
             return false;
         }
 
-        if (!$order->reseller_id) {
+        if (! $order->reseller_id) {
             return false;
         }
 
@@ -1907,7 +1931,7 @@ class OrderController extends Controller
             $this->logAction(
                 $order->id,
                 'return_fee_penalty',
-                'Reseller return fee applied: LKR ' . number_format($targetAppliedAmount, 2, '.', '')
+                'Reseller return fee applied: LKR '.number_format($targetAppliedAmount, 2, '.', '')
             );
         } elseif ($previousAppliedAmount > 0) {
             $this->logAction($order->id, 'return_fee_penalty_reversed', 'Reseller return fee penalty reversed.');
@@ -1919,7 +1943,7 @@ class OrderController extends Controller
         $appliedAmount = round((float) ($order->reseller_return_fee_applied ?? 0), 2);
         $appliedResellerId = $order->return_fee_reseller_id ? (int) $order->return_fee_reseller_id : null;
 
-        if (!$appliedResellerId || $appliedAmount <= 0) {
+        if (! $appliedResellerId || $appliedAmount <= 0) {
             return;
         }
 
@@ -1942,7 +1966,7 @@ class OrderController extends Controller
         $usesRecordedPayments = $this->usesRecordedPayments($paymentMethod);
         $requiresRecordedEntries = in_array(trim($paymentMethod), self::RECORDED_PAYMENT_METHODS, true);
 
-        if (!$usesRecordedPayments) {
+        if (! $usesRecordedPayments) {
             return [
                 'paid_amount' => 0.0,
                 'payments_data' => null,
@@ -1971,7 +1995,7 @@ class OrderController extends Controller
         $paidAmount = round((float) collect($paymentsData)->sum('amount'), 2);
 
         if ($paidAmount <= 0 && $paidAmountInput !== null && $paidAmountInput !== '') {
-            if (!is_numeric($paidAmountInput)) {
+            if (! is_numeric($paidAmountInput)) {
                 throw ValidationException::withMessages([
                     'paid_amount' => 'Paid amount must be a valid number.',
                 ]);
@@ -1996,7 +2020,7 @@ class OrderController extends Controller
 
         if ($requiresRecordedEntries && $normalizedTotal > 0 && empty($paymentsData)) {
             throw ValidationException::withMessages([
-                'payments' => 'Add at least one payment entry for ' . trim($paymentMethod) . ' orders.',
+                'payments' => 'Add at least one payment entry for '.trim($paymentMethod).' orders.',
             ]);
         }
 
@@ -2010,7 +2034,7 @@ class OrderController extends Controller
 
         return [
             'paid_amount' => $paidAmount,
-            'payments_data' => !empty($paymentsData) ? $paymentsData : null,
+            'payments_data' => ! empty($paymentsData) ? $paymentsData : null,
             'payment_status' => $remaining <= 0 ? 'paid' : 'pending',
         ];
     }
