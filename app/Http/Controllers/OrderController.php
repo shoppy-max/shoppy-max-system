@@ -12,6 +12,7 @@ use App\Models\OrderLog;
 use App\Models\ProductVariant;
 use App\Models\Reseller;
 use App\Services\InventoryUnitService;
+use App\Services\ProductImageService;
 use App\Services\ResellerDueService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
@@ -48,6 +49,8 @@ class OrderController extends Controller
         'returned',
         'cancel',
     ];
+
+    public function __construct(private ProductImageService $productImages) {}
 
     /**
      * Display a listing of orders.
@@ -176,7 +179,7 @@ class OrderController extends Controller
                 'display_name' => $displayName,
                 'product_name' => $product->name,
                 'unit_label' => $unitLabel,
-                'image' => $variant->image ?: $product->image,
+                'image' => $this->productImages->url($variant->image ?: $product->image),
                 'sku' => $variant->sku,
                 'selling_price' => (float) ($variant->selling_price ?? 0),
                 'limit_price' => (float) ($variant->limit_price ?? 0),

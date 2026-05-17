@@ -11,19 +11,21 @@ class GuestProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::with(['category', 'subCategory', 'variants.unit'])
-                        ->whereHas('variants', function ($q) {
-                            $q->where('quantity', '>', 0);
-                        });
+            ->whereHas('variants', function ($q) {
+                $q->where('quantity', '>', 0);
+            });
 
         // Search by name or SKU
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%")
-                  ->orWhereHas('category', function ($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('variants', function ($variantQuery) use ($search) {
+                        $variantQuery->where('sku', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('category', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 

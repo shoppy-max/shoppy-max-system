@@ -266,11 +266,7 @@
                                     $variant = $item->variant;
                                     $variantLabel = trim((string) ($variant?->unit_value ?? '') . ' ' . (string) ($variant?->unit?->short_name ?? ''));
                                     $imagePath = $variant?->image ?? $variant?->product?->image ?? null;
-                                    $imageUrl = $imagePath
-                                        ? (str_starts_with((string) $imagePath, 'http://') || str_starts_with((string) $imagePath, 'https://') || str_starts_with((string) $imagePath, '/')
-                                            ? $imagePath
-                                            : asset('storage/' . ltrim((string) $imagePath, '/')))
-                                        : null;
+                                    $imageUrl = app(\App\Services\ProductImageService::class)->url($imagePath);
                                     $lineTotal = (float) ($item->subtotal ?? ((float) $item->unit_price * (int) $item->quantity));
                                 @endphp
                                 <tr class="bg-white dark:bg-gray-800">

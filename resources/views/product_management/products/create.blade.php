@@ -32,7 +32,7 @@
             <h2 class="mt-4 text-2xl font-bold text-gray-900 dark:text-white">Add New Product</h2>
         </div>
 
-        <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" 
+        <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" @submit="handleSubmit"
               x-data="productForm({{ json_encode($units) }}, {{ json_encode(old('variants', [['unit_id' => '', 'unit_value' => '', 'sku' => '', 'selling_price' => '', 'limit_price' => '', 'quantity' => 0, 'alert_quantity' => 5]])) }})">
             @csrf
             
@@ -131,7 +131,7 @@
                                         <!-- Unit -->
                                         <div>
                                             <label :for="'variant_unit_'+index" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Unit <span class="text-red-500">*</span></label>
-                                            <select :id="'variant_unit_'+index" :name="'variants['+index+'][unit_id]'" x-model="variant.unit_id" @change="generateSmartSku(index)" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" required>
+                                            <select :id="'variant_unit_'+index" :name="'variants['+index+'][unit_id]'" x-model="variant.unit_id" @change="generateSmartSku(index)" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" :class="{'border-red-500 focus:border-red-500 focus:ring-red-500': isDuplicateVariantUnit(index)}" required>
                                                 <option value="">Select Unit</option>
                                                 @foreach($units as $unit)
                                                     <option value="{{ $unit->id }}">{{ $unit->name }} ({{ $unit->short_name }})</option>
@@ -145,7 +145,7 @@
                                         <!-- Unit Value -->
                                         <div>
                                             <label :for="'variant_unit_value_'+index" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Value (Optional)</label>
-                                            <input type="text" :id="'variant_unit_value_'+index" :name="'variants['+index+'][unit_value]'" x-model="variant.unit_value" @input="generateSmartSku(index)" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" placeholder="e.g. 500">
+                                            <input type="text" :id="'variant_unit_value_'+index" :name="'variants['+index+'][unit_value]'" x-model="variant.unit_value" @input="generateSmartSku(index)" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" :class="{'border-red-500 focus:border-red-500 focus:ring-red-500': isDuplicateVariantUnit(index)}" placeholder="e.g. 500">
                                         </div>
 
                                         <!-- SKU -->
@@ -188,9 +188,11 @@
                                          <!-- Variant Image -->
                                         <div>
                                             <label :for="'variant_image_'+index" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Image (Optional)</label>
-                                            <input type="file" :id="'variant_image_'+index" :name="'variants['+index+'][image]'" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400">
+                                            <input type="file" :id="'variant_image_'+index" :name="'variants['+index+'][image]'" accept="image/*" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400">
                                         </div>
                                     </div>
+
+                                    <p x-show="isDuplicateVariantUnit(index)" x-text="duplicateVariantUnitMessage()" class="mt-3 text-sm text-red-600 dark:text-red-400"></p>
                                 </div>
                             </template>
 
@@ -200,6 +202,13 @@
                             </button>
 
                              <x-input-error :messages="$errors->get('variants')" class="mt-2" />
+                             @foreach ($errors->getMessages() as $field => $messages)
+                                 @if (\Illuminate\Support\Str::startsWith($field, 'variants.'))
+                                     @foreach ($messages as $message)
+                                         <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                     @endforeach
+                                 @endif
+                             @endforeach
                         </div>
                     </x-form-section>
                 </div>
@@ -229,7 +238,7 @@
 
                     <!-- Actions -->
                     <div class="flex flex-col gap-3">
-                        <button type="submit" class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 shadow-lg transition-transform active:scale-95">
+                        <button type="submit" :disabled="hasDuplicateVariantUnits()" :class="{'opacity-50 cursor-not-allowed': hasDuplicateVariantUnits()}" class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 shadow-lg transition-transform active:scale-95">
                             Save Product
                         </button>
                         <a href="{{ route('products.index') }}" class="w-full py-2.5 px-5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 text-center">
@@ -295,6 +304,65 @@
 
                 removeVariant(index) {
                     this.variants.splice(index, 1);
+                },
+
+                variantUnitKey(variant) {
+                    if (!variant || !variant.unit_id) return '';
+
+                    let value = (variant.unit_value || '').toString().trim().replace(/\s+/g, ' ').toLowerCase();
+                    return `${variant.unit_id}|${value}`;
+                },
+
+                duplicateVariantUnitIndexes() {
+                    const seen = {};
+                    const duplicates = new Set();
+
+                    this.variants.forEach((variant, index) => {
+                        const key = this.variantUnitKey(variant);
+                        if (!key) return;
+
+                        if (seen[key] !== undefined) {
+                            duplicates.add(seen[key]);
+                            duplicates.add(index);
+                            return;
+                        }
+
+                        seen[key] = index;
+                    });
+
+                    return duplicates;
+                },
+
+                isDuplicateVariantUnit(index) {
+                    return this.duplicateVariantUnitIndexes().has(index);
+                },
+
+                hasDuplicateVariantUnits() {
+                    return this.duplicateVariantUnitIndexes().size > 0;
+                },
+
+                duplicateVariantUnitMessage() {
+                    return 'This exact unit is already added. Add stock to the existing unit instead.';
+                },
+
+                handleSubmit(event) {
+                    if (!this.hasDuplicateVariantUnits()) return;
+
+                    event.preventDefault();
+                    const message = 'Each product can only have one variant for the exact same unit and value. Add stock to the existing unit instead.';
+
+                    if (typeof window.Swal !== 'undefined') {
+                        window.Swal.fire({
+                            icon: 'error',
+                            title: 'Duplicate Unit',
+                            text: message,
+                            background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
+                            color: document.documentElement.classList.contains('dark') ? '#fff' : '#1f2937'
+                        });
+                        return;
+                    }
+
+                    alert(message);
                 },
 
                 generateSmartSku(index) {

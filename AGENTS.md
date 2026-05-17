@@ -270,6 +270,21 @@ Preferred approach:
 - if raw date formatting is unavoidable, branch by driver
 - after query changes, think about both SQLite and MySQL, not just local behavior
 
+## Product Image Storage
+
+Product and product-variant images are stored in Backblaze B2 through Laravel's
+S3-compatible `b2` filesystem disk.
+
+Rules:
+
+- keep the B2 bucket private
+- store B2 object keys in product records, not public or temporary URLs
+- generate temporary signed URLs only when rendering/admin APIs need an image URL
+- use `app/Services/ProductImageService.php` for uploads, remote import image copying,
+  and URL generation
+- keep product-image storage on the configured private B2 disk only
+- do not commit B2 application keys or other storage secrets
+
 ## Setup and Development Commands
 
 Install:

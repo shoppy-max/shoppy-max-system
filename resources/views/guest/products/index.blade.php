@@ -200,8 +200,8 @@
                                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300 group flex flex-col">
                                     <!-- Image -->
                                     <div class="relative h-52 bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                                        @if($product->image)
-                                            <img src="{{ Str::startsWith($product->image, ['http://', 'https://']) ? $product->image : asset($product->image) }}" 
+                                        @if($product->image_url)
+                                            <img src="{{ $product->image_url }}"
                                                 alt="{{ $product->name }}" 
                                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                                         @else

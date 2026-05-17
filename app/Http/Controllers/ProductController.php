@@ -11,7 +11,7 @@ use App\Models\ProductVariant;
 use App\Models\PurchaseItem;
 use App\Models\SubCategory;
 use App\Models\Unit;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use App\Services\ProductImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -19,6 +19,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
+    public function __construct(private ProductImageService $productImages) {}
+
     public function index(Request $request)
     {
         [$selectedUnitId, $selectedUnitValue, $isValueSpecificUnitFilter] = $this->resolveVariantUnitFilter($request);
@@ -163,11 +165,12 @@ class ProductController extends Controller
         ]);
 
         $this->ensureUniqueProductNameIgnoreCase($validated['name']);
+        $this->ensureSubmittedVariantUnitsAreUnique($validated['variants']);
 
         try {
             // 1. Handle Product Image
             if ($request->hasFile('image')) {
-                $validated['image'] = $this->safeCloudinaryUpload($request->file('image'));
+                $validated['image'] = $this->productImages->upload($request->file('image'), 'products');
             }
 
             // 2. Create Product
@@ -186,12 +189,12 @@ class ProductController extends Controller
             foreach ($request->variants as $index => $variantData) {
                 $variantImage = null;
                 if ($request->hasFile("variants.{$index}.image")) {
-                    $variantImage = $this->safeCloudinaryUpload($request->file("variants.{$index}.image"));
+                    $variantImage = $this->productImages->upload($request->file("variants.{$index}.image"), 'product-variants');
                 }
 
                 $product->variants()->create([
                     'unit_id' => $variantData['unit_id'],
-                    'unit_value' => $variantData['unit_value'] ?? null,
+                    'unit_value' => $this->cleanVariantUnitValue($variantData['unit_value'] ?? null),
                     'sku' => $variantData['sku'],
                     'selling_price' => $variantData['selling_price'],
                     'limit_price' => $variantData['limit_price'] ?? null,
@@ -251,11 +254,12 @@ class ProductController extends Controller
 
         $this->ensureUniqueProductNameIgnoreCase($validated['name'], $product->id);
         $this->ensureSubmittedVariantSkusAreUnique($validated['variants'], $product);
+        $this->ensureSubmittedVariantUnitsAreUnique($validated['variants']);
 
         try {
             // Update Product Image
             if ($request->hasFile('image')) {
-                $validated['image'] = $this->safeCloudinaryUpload($request->file('image'));
+                $validated['image'] = $this->productImages->upload($request->file('image'), 'products');
             }
 
             $product->update([
@@ -274,7 +278,7 @@ class ProductController extends Controller
             foreach ($request->variants as $index => $variantData) {
                 $variantImage = null;
                 if ($request->hasFile("variants.{$index}.image")) {
-                    $variantImage = $this->safeCloudinaryUpload($request->file("variants.{$index}.image"));
+                    $variantImage = $this->productImages->upload($request->file("variants.{$index}.image"), 'product-variants');
                 }
 
                 if (isset($variantData['id']) && $variantData['id']) {
@@ -282,7 +286,7 @@ class ProductController extends Controller
                     if ($variant) {
                         $variant->update([
                             'unit_id' => $variantData['unit_id'],
-                            'unit_value' => $variantData['unit_value'] ?? null,
+                            'unit_value' => $this->cleanVariantUnitValue($variantData['unit_value'] ?? null),
                             'sku' => $variantData['sku'],
                             'selling_price' => $variantData['selling_price'],
                             'limit_price' => $variantData['limit_price'] ?? null,
@@ -294,7 +298,7 @@ class ProductController extends Controller
                 } else {
                     $newVariant = $product->variants()->create([
                         'unit_id' => $variantData['unit_id'],
-                        'unit_value' => $variantData['unit_value'] ?? null,
+                        'unit_value' => $this->cleanVariantUnitValue($variantData['unit_value'] ?? null),
                         'sku' => $variantData['sku'],
                         'selling_price' => $variantData['selling_price'],
                         'limit_price' => $variantData['limit_price'] ?? null,
@@ -432,28 +436,6 @@ class ProductController extends Controller
         return response()->json($product);
     }
 
-    /**
-     * Safely upload a file to Cloudinary with error handling.
-     */
-    private function safeCloudinaryUpload($file): string
-    {
-        try {
-            $result = Cloudinary::uploadApi()->upload($file->getRealPath(), [
-                'verify' => false,
-                'timeout' => 60,
-            ]);
-
-            return $result['secure_url'];
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Cloudinary upload failed: '.$e->getMessage(), [
-                'file_name' => $file->getClientOriginalName(),
-                'file_size' => $file->getSize(),
-                'mime_type' => $file->getMimeType(),
-            ]);
-            throw new \RuntimeException('Image upload failed: '.$e->getMessage());
-        }
-    }
-
     private function ensureUniqueProductNameIgnoreCase(string $name, ?int $ignoreProductId = null): void
     {
         $normalized = mb_strtolower(trim($name));
@@ -499,6 +481,39 @@ class ProductController extends Controller
                 ]);
             }
         }
+    }
+
+    private function ensureSubmittedVariantUnitsAreUnique(array $variants): void
+    {
+        $seen = [];
+
+        foreach ($variants as $index => $variantData) {
+            if (empty($variantData['unit_id'])) {
+                continue;
+            }
+
+            $key = ((int) $variantData['unit_id']).'|'.$this->normalizeVariantUnitValue($variantData['unit_value'] ?? null);
+
+            if (isset($seen[$key])) {
+                throw ValidationException::withMessages([
+                    "variants.{$index}.unit_id" => 'This exact unit is already added to this product. Add stock to the existing unit instead.',
+                ]);
+            }
+
+            $seen[$key] = $index;
+        }
+    }
+
+    private function cleanVariantUnitValue(mixed $value): ?string
+    {
+        $value = preg_replace('/\s+/', ' ', trim((string) $value));
+
+        return $value === '' ? null : $value;
+    }
+
+    private function normalizeVariantUnitValue(mixed $value): string
+    {
+        return mb_strtolower($this->cleanVariantUnitValue($value) ?? '');
     }
 
     private function ensureProductCanBeDeleted(Product $product): void

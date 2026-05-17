@@ -89,7 +89,7 @@ Authentication is provided by Laravel Breeze, and permissions are handled by Spa
 - Spatie Permission
 - DomPDF (`barryvdh/laravel-dompdf`)
 - Laravel Excel (`maatwebsite/excel`)
-- Cloudinary Laravel SDK (image upload integration)
+- Backblaze B2 private bucket image storage via Laravel's S3 filesystem adapter
 - Vite for asset bundling
 
 ## System Requirements
@@ -224,8 +224,18 @@ If using database-backed drivers, ensure migrations are run.
 ### File/image handling
 
 - Local filesystem default: `FILESYSTEM_DISK=local`
-- Product image uploads use Cloudinary integration in controllers.
-  - Configure `CLOUDINARY_URL` or related Cloudinary env vars for image upload support.
+- Product and product-variant image uploads use Backblaze B2 through the `b2` filesystem disk.
+- Uploaded product image values stored in the database are B2 object keys, not public URLs.
+- Product image display uses temporary signed URLs generated at render/API time, so the bucket can stay private.
+- Required B2 env values:
+  - `PRODUCT_IMAGE_DISK=b2`
+  - `B2_KEY_ID`
+  - `B2_APPLICATION_KEY`
+  - `B2_BUCKET=shoppymax-img`
+  - `B2_REGION`
+  - `B2_ENDPOINT` such as the bucket region's S3 endpoint
+  - `B2_USE_PATH_STYLE_ENDPOINT=false` unless the B2 endpoint setup requires path-style requests
+  - `B2_SERVER_SIDE_ENCRYPTION=AES256` for Backblaze-managed SSE-B2
 
 ## Operational Business Rules
 
@@ -495,8 +505,9 @@ Current behavior:
 
 ### Missing images on product upload
 
-- Ensure Cloudinary env config is valid when uploading images.
-- If Cloudinary is not configured, avoid image upload until configured.
+- Ensure Backblaze B2 env config is valid and the bucket/key allow S3-compatible put/get signed URL operations.
+- Keep the B2 bucket private; the app generates temporary signed URLs for display.
+- If image upload fails, verify `B2_ENDPOINT`, `B2_REGION`, `B2_BUCKET`, `B2_KEY_ID`, and `B2_APPLICATION_KEY`.
 
 ### No data in app
 
@@ -528,7 +539,7 @@ Before production:
 4. Set `APP_URL` correctly
 5. Configure queue worker as a managed process
 6. Configure backup/monitoring/log rotation
-7. Configure Cloudinary credentials (if image uploads are required)
+7. Configure Backblaze B2 image storage credentials and verify private-bucket signed URLs
 8. Build frontend assets with `npm run build`
 9. Cache config/routes/views
 

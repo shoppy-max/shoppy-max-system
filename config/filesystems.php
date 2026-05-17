@@ -60,12 +60,20 @@ return [
             'report' => false,
         ],
 
-        'cloudinary' => [
-            'driver' => 'cloudinary',
-            'url' => env('CLOUDINARY_URL'),
-            'cloud' => env('CLOUDINARY_CLOUD_NAME'),
-            'key' => env('CLOUDINARY_API_KEY'),
-            'secret' => env('CLOUDINARY_API_SECRET'),
+        'b2' => [
+            'driver' => 's3',
+            'key' => env('B2_KEY_ID'),
+            'secret' => env('B2_APPLICATION_KEY'),
+            'region' => env('B2_REGION'),
+            'bucket' => env('B2_BUCKET', 'shoppymax-img'),
+            'endpoint' => env('B2_ENDPOINT'),
+            'use_path_style_endpoint' => env('B2_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'private',
+            'options' => array_filter([
+                'ServerSideEncryption' => env('B2_SERVER_SIDE_ENCRYPTION', 'AES256'),
+            ]),
+            'throw' => true,
+            'report' => true,
         ],
 
     ],

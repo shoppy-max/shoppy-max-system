@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ProductImageService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -21,6 +22,8 @@ class ProductVariant extends Model
 
     protected $with = ['unit'];
 
+    protected $appends = ['image_url'];
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
@@ -34,5 +37,10 @@ class ProductVariant extends Model
     public function inventoryUnits()
     {
         return $this->hasMany(InventoryUnit::class);
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        return app(ProductImageService::class)->url($this->image);
     }
 }

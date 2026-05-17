@@ -303,7 +303,7 @@
                                         <template x-for="product in productResults" :key="product.id">
                                             <li @click="if (!isEditLocked) addItem(product)" class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer flex items-center border-b border-gray-100 dark:border-gray-600 last:border-0 transition duration-150">
                                                 <div class="flex-shrink-0 h-10 w-10 mr-4">
-                                                    <img :src="product.image ? (product.image.startsWith('http') ? product.image : '/storage/' + product.image) : 'https://ui-avatars.com/api/?name=' + product.name" class="h-10 w-10 rounded-lg object-cover bg-gray-100 dark:bg-gray-600">
+                                                    <img :src="product.image || 'https://ui-avatars.com/api/?name=' + product.name" class="h-10 w-10 rounded-lg object-cover bg-gray-100 dark:bg-gray-600">
                                                 </div>
                                                 <div class="flex-1">
                                                     <div class="font-semibold text-gray-900 dark:text-white text-sm" x-text="product.name"></div>
@@ -339,7 +339,7 @@
                                         <template x-for="(item, index) in form.items" :key="item.id">
                                             <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
                                                 <td class="px-4 py-3">
-                                                    <img :src="item.image ? (item.image.startsWith('http') ? item.image : '/storage/' + item.image) : 'https://ui-avatars.com/api/?name=' + item.name" class="h-10 w-10 rounded-md object-cover bg-gray-100 dark:bg-gray-600">
+                                                    <img :src="item.image || 'https://ui-avatars.com/api/?name=' + item.name" class="h-10 w-10 rounded-md object-cover bg-gray-100 dark:bg-gray-600">
                                                 </td>
                                                 <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
                                                     <div x-text="item.name"></div>
