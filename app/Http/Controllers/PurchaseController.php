@@ -340,7 +340,6 @@ class PurchaseController extends Controller
     {
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
-            'purchase_date' => 'required|date',
             'purchase_number' => 'required|string|max:100|unique:purchases,purchase_number',
             'items' => 'required|array|min:1',
             'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
@@ -371,11 +370,12 @@ class PurchaseController extends Controller
             $paidAmount = (float) collect($paymentsData)->sum('amount');
             $this->ensurePaidAmountWithinTotal($paidAmount, $totals['net_total']);
             $creatorId = $request->user()?->id;
+            $purchaseDate = now()->toDateString();
 
             $purchase = Purchase::create([
                 'purchase_number' => $purchaseNumber,
                 'supplier_id' => $validated['supplier_id'],
-                'purchase_date' => $validated['purchase_date'],
+                'purchase_date' => $purchaseDate,
                 'status' => 'pending',
                 'created_by' => $creatorId,
                 'currency' => 'LKR',

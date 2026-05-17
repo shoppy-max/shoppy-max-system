@@ -521,6 +521,12 @@ Treat these as high-risk:
 
 ## Recommended Change Discipline
 
+For every change, think through the full workflow before editing. Treat edge cases,
+data integrity, authorization, validation, UI consistency, database compatibility,
+and rollback/recovery behavior as part of the task. Prefer the best established
+repo pattern over the fastest local patch, and verify the real affected path before
+claiming the work is complete.
+
 For medium or high-risk changes:
 
 1. identify the workflow and the system invariant it touches

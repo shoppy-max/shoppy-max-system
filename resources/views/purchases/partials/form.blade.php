@@ -241,7 +241,8 @@
                         <input type="date" value="{{ $initialDate }}" class="block w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 p-2.5 text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400" disabled>
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Purchase date is locked after creation.</p>
                     @else
-                        <input type="date" name="purchase_date" value="{{ $initialDate }}" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" required>
+                        <input type="date" value="{{ $initialDate }}" class="block w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 p-2.5 text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400" disabled>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">New purchases use today's date automatically.</p>
                     @endif
                     @error('purchase_date')
                         <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
