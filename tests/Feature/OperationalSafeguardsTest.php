@@ -117,6 +117,44 @@ class OperationalSafeguardsTest extends TestCase
         $response->assertSee('Edit', false);
     }
 
+    public function test_orders_index_shows_reseller_name_or_direct_source(): void
+    {
+        $user = User::factory()->create();
+        $reseller = $this->makeReseller('Index Source Reseller', '0718000001');
+
+        Order::forceCreate([
+            'order_number' => 'ORD-20260518-0007',
+            'order_date' => now()->toDateString(),
+            'order_type' => 'reseller',
+            'reseller_id' => $reseller->id,
+            'status' => 'pending',
+            'call_status' => 'pending',
+            'delivery_status' => 'pending',
+            'payment_method' => 'COD',
+            'payment_status' => 'pending',
+            'total_amount' => 1000,
+        ]);
+        Order::forceCreate([
+            'order_number' => 'ORD-20260518-0008',
+            'order_date' => now()->toDateString(),
+            'order_type' => 'direct',
+            'status' => 'pending',
+            'call_status' => 'pending',
+            'delivery_status' => 'pending',
+            'payment_method' => 'COD',
+            'payment_status' => 'pending',
+            'total_amount' => 1000,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('orders.index', ['view' => 'active']));
+
+        $response->assertOk();
+        $response->assertSee('Reseller');
+        $response->assertSee('Index Source Reseller');
+        $response->assertSee('0718000001');
+        $response->assertSee('Direct');
+    }
+
     public function test_hold_order_can_use_full_update_before_waybill_printing(): void
     {
         $user = User::factory()->create();

@@ -166,6 +166,7 @@
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Delivery Status</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Payment Status</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Payment Method</th>
+                        <th scope="col" class="px-6 py-3 whitespace-nowrap">Reseller</th>
                         <th scope="col" class="px-6 py-3">Customer</th>
                         <th scope="col" class="px-6 py-3">Mobile</th>
                         <th scope="col" class="px-6 py-3 whitespace-nowrap">Total</th>
@@ -265,6 +266,20 @@
                                 <span class="inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium {{ $paymentMethodColors[$paymentMethod] ?? 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600' }}">
                                     {{ $paymentMethod ?: 'N/A' }}
                                 </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($order->reseller)
+                                    <div class="font-medium text-gray-900 dark:text-white">
+                                        {{ $order->reseller->business_name ?: $order->reseller->name }}
+                                    </div>
+                                    @if($order->reseller->mobile)
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $order->reseller->mobile }}</div>
+                                    @endif
+                                @else
+                                    <span class="inline-flex items-center rounded-full border border-gray-300 bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                                        Direct
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-6 py-4">
                                 <div class="font-medium text-gray-900 dark:text-white">{{ $order->customer->name ?? $order->customer_name ?? '-' }}</div>
@@ -388,7 +403,7 @@
                         </tr>
                     @empty
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                            <td colspan="17" class="px-6 py-8 text-center">
+                            <td colspan="18" class="px-6 py-8 text-center">
                                 <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                                     <svg class="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                                     <p class="text-lg font-medium">No orders found</p>
