@@ -363,7 +363,7 @@
                                                         <span x-text="item.sku"></span>
                                                         <span x-show="item.unit_label" class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded" x-text="item.unit_label"></span>
                                                     </div>
-                                                    <div x-show="item.selling_price < item.limit_price" class="text-xs text-red-500 min-w-max font-bold mt-1">
+                                                    <div x-show="form.order_type === 'reseller' && item.selling_price < item.limit_price" class="text-xs text-red-500 min-w-max font-bold mt-1">
                                                         Below Limit (<span x-text="item.limit_price"></span>)
                                                     </div>
                                                 </td>
@@ -387,12 +387,25 @@
                                                 </td>
                                                 <td class="px-4 py-3 text-right">
                                                     <div class="flex flex-col items-end gap-1">
-                                                        <div class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-400 rounded w-24 text-center font-mono" title="Minimum Price">
+                                                        <div x-show="form.order_type === 'reseller'" class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-400 rounded w-24 text-center font-mono" title="Minimum Price">
                                                             <span x-text="parseFloat(item.limit_price).toFixed(2)"></span>
                                                         </div>
-                                                        <input type="number" x-model="item.selling_price" class="w-24 text-right bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-1.5 dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white font-bold" step="0.01">
-                                                        <div class="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-xs text-blue-600 dark:text-blue-400 rounded w-24 text-center font-mono" title="Commission">
+                                                        <input
+                                                            type="number"
+                                                            x-model="item.selling_price"
+                                                            :readonly="form.order_type !== 'reseller'"
+                                                            :min="form.order_type === 'reseller' ? item.limit_price : item.original_selling_price"
+                                                            :class="form.order_type === 'reseller'
+                                                                ? 'bg-white border-gray-300 text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-white'
+                                                                : 'cursor-not-allowed bg-gray-100 border-gray-200 text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400'"
+                                                            class="w-24 text-right border text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-1.5 dark:placeholder-gray-400 font-bold"
+                                                            step="0.01"
+                                                        >
+                                                        <div x-show="form.order_type === 'reseller'" class="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-xs text-blue-600 dark:text-blue-400 rounded w-24 text-center font-mono" title="Commission">
                                                             <span x-text="(parseFloat(item.selling_price || 0) - parseFloat(item.limit_price || 0)).toFixed(2)"></span>
+                                                        </div>
+                                                        <div x-show="form.order_type !== 'reseller'" class="px-2 py-1 bg-gray-50 dark:bg-gray-700 text-xs text-gray-500 dark:text-gray-400 rounded w-24 text-center">
+                                                            Fixed price
                                                         </div>
                                                     </div>
                                                 </td>
@@ -865,6 +878,8 @@
                             this.resellerSearch = '';
                             this.resellers = [];
                         }
+                        this.form.items.forEach((item) => this.normalizeItemPriceForOrder(item));
+                        this.syncPaymentStatusRules();
                     });
                     this.$watch('form.courier_id', () => this.onCourierChange());
                     this.$watch('form.payment_method', (value) => {
@@ -1111,13 +1126,38 @@
                              unit_label: product.unit_label || '',
                              quantity: 1,
                              selling_price: parseFloat(product.selling_price),
+                             original_selling_price: parseFloat(product.selling_price),
                              limit_price: parseFloat(product.limit_price),
                              max_stock: product.stock,
                              image: product.image
                          });
+                         this.normalizeItemPriceForOrder(this.form.items[this.form.items.length - 1]);
                      }
                      this.productSearch = '';
                      this.productResults = [];
+                },
+
+                normalizeItemPriceForOrder(item) {
+                    if (!item) return;
+
+                    const originalSellingPrice = Number.isFinite(parseFloat(item.original_selling_price))
+                        ? parseFloat(item.original_selling_price)
+                        : parseFloat(item.selling_price || 0);
+                    const limitPrice = Number.isFinite(parseFloat(item.limit_price))
+                        ? parseFloat(item.limit_price)
+                        : 0;
+
+                    item.original_selling_price = originalSellingPrice;
+
+                    if (this.form.order_type !== 'reseller') {
+                        item.selling_price = originalSellingPrice;
+                        return;
+                    }
+
+                    const currentPrice = parseFloat(item.selling_price);
+                    if (!Number.isFinite(currentPrice)) {
+                        item.selling_price = Math.max(originalSellingPrice, limitPrice);
+                    }
                 },
 
                 itemMaxQuantity(item) {
@@ -1335,7 +1375,10 @@
                         this.form.courier_charge = 0;
                     }
 
-                    this.form.items.forEach((item) => this.normalizeItemQuantity(item, true));
+                    this.form.items.forEach((item) => {
+                        this.normalizeItemQuantity(item, true);
+                        this.normalizeItemPriceForOrder(item);
+                    });
                     const invalidQtyItem = this.form.items.find((item) => {
                         const qty = parseInt(item.quantity, 10) || 0;
                         const max = this.itemMaxQuantity(item);
@@ -1350,7 +1393,9 @@
                         return;
                     }
 
-                    const invalidPrice = this.form.items.find(item => item.selling_price < item.limit_price);
+                    const invalidPrice = this.form.order_type === 'reseller'
+                        ? this.form.items.find(item => parseFloat(item.selling_price || 0) < parseFloat(item.limit_price || 0))
+                        : null;
                     if (invalidPrice) {
                         this.notify('error', `Selling price for ${invalidPrice.name} cannot be lower than limit price (${invalidPrice.limit_price}).`);
                         return;

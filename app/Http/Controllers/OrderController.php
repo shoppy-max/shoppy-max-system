@@ -438,14 +438,13 @@ class OrderController extends Controller
                     throw new \Exception("Insufficient stock for {$variantDisplayName} (SKU: {$variant->sku})");
                 }
 
-                // Limit Price Validation
-                if ($itemData['selling_price'] < $variant->limit_price) {
-                    throw new \Exception("Selling price for {$variantDisplayName} (SKU: {$variant->sku}) cannot be lower than limit price ({$variant->limit_price})");
-                }
-
                 $qty = $itemData['quantity'];
-                $unitPrice = $itemData['selling_price'];
-                $basePrice = $variant->limit_price; // Assuming limit_price IS the base/cost price for commission calc
+                [$unitPrice, $basePrice] = $this->resolveOrderItemPricing(
+                    $variant,
+                    $itemData,
+                    (string) $order->order_type,
+                    $variantDisplayName
+                );
                 $subtotal = $unitPrice * $qty;
 
                 $itemCost = $basePrice * $qty;
@@ -947,14 +946,13 @@ class OrderController extends Controller
                     throw new \Exception("Insufficient stock for {$variantDisplayName} (SKU: {$variant->sku})");
                 }
 
-                // Limit Price Check
-                if ($itemData['selling_price'] < $variant->limit_price) {
-                    throw new \Exception("Selling price for {$variantDisplayName} (SKU: {$variant->sku}) cannot be lower than limit price ({$variant->limit_price})");
-                }
-
                 $qty = $itemData['quantity'];
-                $unitPrice = $itemData['selling_price'];
-                $basePrice = $variant->limit_price;
+                [$unitPrice, $basePrice] = $this->resolveOrderItemPricing(
+                    $variant,
+                    $itemData,
+                    (string) $order->order_type,
+                    $variantDisplayName
+                );
                 $subtotal = $unitPrice * $qty;
 
                 $itemCost = $basePrice * $qty;
@@ -1833,6 +1831,26 @@ class OrderController extends Controller
         } else {
             $this->inventoryUnits()->markOrderUnitsAllocated($order, $userId);
         }
+    }
+
+    private function resolveOrderItemPricing(ProductVariant $variant, array $itemData, string $orderType, string $variantDisplayName): array
+    {
+        $basePrice = round((float) ($variant->limit_price ?? 0), 2);
+
+        if ($orderType !== 'reseller') {
+            return [
+                round((float) ($variant->selling_price ?? 0), 2),
+                $basePrice,
+            ];
+        }
+
+        $unitPrice = round((float) ($itemData['selling_price'] ?? 0), 2);
+
+        if ($unitPrice < $basePrice) {
+            throw new \Exception("Selling price for {$variantDisplayName} (SKU: {$variant->sku}) cannot be lower than limit price ({$basePrice})");
+        }
+
+        return [$unitPrice, $basePrice];
     }
 
     private function shouldApplyResellerReturnFee(Order $order): bool
