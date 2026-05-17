@@ -79,7 +79,10 @@ Barcode behavior:
 - product bulk print supports:
   - one generic label per variant
   - quantity-aware labels per available stock
-- purchase barcode printing is inventory-unit oriented and quantity-aware
+- purchase barcode printing is SKU-oriented and quantity-aware:
+  - print one repeated SKU barcode label per purchased unit quantity
+  - do not print unique inventory-unit codes as the purchase label barcode
+  - GRN scanning must accept repeated SKU scans and resolve each scan to the next pending unit
 
 ### Purchases
 
@@ -115,7 +118,8 @@ Rules:
 - verified purchases enter GRN checking
 - scanning updates progress but stock must not become available until the entire GRN is completed
 - the last successful scan completes the purchase and releases stock into inventory
-- GRN labels are unique per physical unit
+- inventory units remain unique internally, but purchase-printed barcode labels repeat the SKU
+  per physical unit quantity
 
 ### Inventory Units and Traceability
 

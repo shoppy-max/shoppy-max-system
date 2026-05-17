@@ -80,6 +80,16 @@ class InventoryUnitService
             ->first();
 
         if (! $unit) {
+            $unit = $this->nextPendingPurchaseUnitForSku($purchase, $unitCode);
+        }
+
+        if (! $unit) {
+            if ($this->purchaseHasSku($purchase, $unitCode)) {
+                throw ValidationException::withMessages([
+                    'unit_code' => 'All labels for this SKU are already scanned for this GRN.',
+                ]);
+            }
+
             throw ValidationException::withMessages([
                 'unit_code' => 'Scanned barcode was not found. Use a valid GRN label.',
             ]);
@@ -246,6 +256,16 @@ class InventoryUnitService
             ->first();
 
         if (! $unit) {
+            $unit = $this->nextUnscannedOrderUnitForSku($order, $unitCode);
+        }
+
+        if (! $unit) {
+            if ($this->orderHasSku($order, $unitCode)) {
+                throw ValidationException::withMessages([
+                    'unit_code' => 'All labels for this SKU are already scanned for packing.',
+                ]);
+            }
+
             throw ValidationException::withMessages([
                 'unit_code' => 'Scanned barcode was not found.',
             ]);
@@ -318,6 +338,62 @@ class InventoryUnitService
             ->orderBy('purchase_item_id')
             ->orderBy('id')
             ->get();
+    }
+
+    private function nextPendingPurchaseUnitForSku(Purchase $purchase, string $sku): ?InventoryUnit
+    {
+        return InventoryUnit::query()
+            ->with(['purchase', 'purchaseItem.variant.unit'])
+            ->where('purchase_id', $purchase->id)
+            ->where('status', InventoryUnit::STATUS_PENDING_RECEIPT)
+            ->where($this->skuMatchCallback($sku))
+            ->orderBy('purchase_item_id')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->first();
+    }
+
+    private function purchaseHasSku(Purchase $purchase, string $sku): bool
+    {
+        return InventoryUnit::query()
+            ->where('purchase_id', $purchase->id)
+            ->where('status', '!=', InventoryUnit::STATUS_ARCHIVED)
+            ->where($this->skuMatchCallback($sku))
+            ->exists();
+    }
+
+    private function nextUnscannedOrderUnitForSku(Order $order, string $sku): ?InventoryUnit
+    {
+        return InventoryUnit::query()
+            ->with(['order', 'orderItem'])
+            ->where('order_id', $order->id)
+            ->where('status', InventoryUnit::STATUS_ALLOCATED)
+            ->whereNull('packed_scan_at')
+            ->where($this->skuMatchCallback($sku))
+            ->orderBy('order_item_id')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->first();
+    }
+
+    private function orderHasSku(Order $order, string $sku): bool
+    {
+        return InventoryUnit::query()
+            ->where('order_id', $order->id)
+            ->where('status', '!=', InventoryUnit::STATUS_ARCHIVED)
+            ->where($this->skuMatchCallback($sku))
+            ->exists();
+    }
+
+    private function skuMatchCallback(string $sku): callable
+    {
+        return function ($query) use ($sku) {
+            $query
+                ->whereRaw('UPPER(sku_snapshot) = ?', [$sku])
+                ->orWhereHas('productVariant', function ($variantQuery) use ($sku) {
+                    $variantQuery->whereRaw('UPPER(sku) = ?', [$sku]);
+                });
+        };
     }
 
     public function purchaseItemUnits(PurchaseItem $item): Collection

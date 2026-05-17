@@ -117,6 +117,9 @@
         @foreach(collect($units)->chunk(5) as $row)
             <div class="label-row">
                 @foreach($row as $unit)
+                    @php
+                        $barcodeValue = $unit->sku_snapshot ?: ($unit->productVariant?->sku ?? $unit->unit_code);
+                    @endphp
                     <div class="label-item {{ $loop->last ? 'last-in-row' : '' }}">
                         <div class="product-name">{{ $unit->product_name_snapshot ?: ($unit->productVariant?->product?->name ?? 'Product') }}</div>
                         <div class="variant-info">{{ $unit->variant_label_snapshot ?: '-' }}</div>
@@ -125,12 +128,12 @@
                         <div class="barcode-wrap">
                             <img
                                 class="barcode-img"
-                                src="data:image/png;base64,{{ base64_encode($generator->getBarcode($unit->unit_code, $generator::TYPE_CODE_128)) }}"
-                                alt="Barcode for {{ $unit->unit_code }}"
+                                src="data:image/png;base64,{{ base64_encode($generator->getBarcode($barcodeValue, $generator::TYPE_CODE_128)) }}"
+                                alt="Barcode for {{ $barcodeValue }}"
                             >
                         </div>
 
-                        <div class="unit-code">{{ $unit->unit_code }}</div>
+                        <div class="unit-code">{{ $barcodeValue }}</div>
                         <div class="status">{{ str_replace('_', ' ', $unit->status) }}</div>
                     </div>
                 @endforeach
