@@ -806,6 +806,9 @@ class InventoryUnitService
         $now = now();
 
         foreach ($units as $unit) {
+            $releasedOrderId = $unit->order_id;
+            $releasedOrderItemId = $unit->order_item_id;
+
             $unit->status = InventoryUnit::STATUS_AVAILABLE;
             $unit->order_id = null;
             $unit->order_item_id = null;
@@ -815,7 +818,12 @@ class InventoryUnitService
             $unit->last_event_at = $now;
             $unit->save();
 
-            $this->recordEvent($unit, $eventType, $userId);
+            $metadata = array_filter([
+                'released_order_id' => $releasedOrderId,
+                'released_order_item_id' => $releasedOrderItemId,
+            ]);
+
+            $this->recordEvent($unit, $eventType, $userId, $metadata);
         }
 
         if ($adjustVariantStock) {

@@ -247,6 +247,26 @@ The shared order settlement logic for this area lives in
 `app/Services/CourierPaymentOrderService.php`. Reuse it. Do not re-implement attach/detach
 side effects in controllers.
 
+### Reports
+
+Reports must be generated from real operational data, not placeholder totals.
+
+Rules:
+
+- stock report rows are product-variant/SKU based
+- stock report quantity comes from available inventory units
+- stock value uses available units and their linked purchase item cost as FIFO/source value
+- stock movement detail includes purchasing, sale, cancel, and return movements with reference numbers
+- stock movement detail filters include movement type, reference search, and date range
+- source references in stock movement detail should link to the source purchase or order whenever the event stores enough source data
+- product wise sale and user wise sale exclude cancelled orders from total order/PCS counts
+- product wise sale return percentage is `returned PCS / total non-cancelled PCS`
+- user wise sale return percentages are based on non-cancelled order and PCS totals
+- packed and pick-from-rack report uses `packed_by/packed_at` and `picked_by/picked_at`
+- report table views are paginated
+- PDF and Excel exports must use the complete filtered dataset, not the current page only
+- PDF report layouts must avoid horizontal overflow by using compact landscape tables
+
 ## Current High-Risk Code Entry Points
 
 Use these instead of scattering new logic:
@@ -493,6 +513,20 @@ Check:
 - `/courier-payments/{id}/edit`
 
 Verify both apply and revert behavior.
+
+### Report changes
+
+Check:
+
+- `/reports`
+- `/reports/stock`
+- `/reports/stock/{variant}`
+- `/reports/packet-count`
+- `/reports/product-sales`
+- `/reports/user-sales`
+- filter behavior on each report
+- PDF and Excel downloads for the filtered results
+- paginated views still show only page rows while downloads include the full filtered output
 
 ### Reseller/direct reseller changes
 

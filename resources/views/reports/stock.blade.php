@@ -1,115 +1,81 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                {{ __('Stock Valuation Report') }}
-            </h2>
-             <nav class="flex" aria-label="Breadcrumb">
-                <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                    <li class="inline-flex items-center">
-                        <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-                            <svg class="w-3 h-3 me-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"/>
-                            </svg>
-                            Dashboard
-                        </a>
-                    </li>
-                    <li class="inline-flex items-center">
-                        <a href="{{ route('reports.index') }}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-                            <svg class="w-3 h-3 me-2.5 mx-1 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                            </svg>
-                            Reports
-                        </a>
-                    </li>
-                    <li aria-current="page">
-                        <div class="flex items-center">
-                            <svg class="w-3 h-3 text-gray-400 mx-1 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                            </svg>
-                            <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">Stock</span>
-                        </div>
-                    </li>
-                </ol>
-            </nav>
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">Stock Report</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Available SKU stock and FIFO value from tracked inventory units.</p>
+            </div>
+            <a href="{{ route('reports.index') }}" class="inline-flex items-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">Reports</a>
         </div>
     </x-slot>
 
-    <div class="p-6 overflow-hidden bg-white rounded-md shadow-md dark:bg-gray-800">
+    <div class="py-6">
+        <div class="mx-auto max-w-7xl space-y-5 sm:px-6 lg:px-8">
+            <form method="GET" class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
+                    <div>
+                        <label for="search" class="mb-1 block text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Product / SKU</label>
+                        <input id="search" name="search" value="{{ request('search') }}" type="search" placeholder="Search product name or SKU" class="w-full rounded-lg border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-white">
+                    </div>
+                    <button class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Filter</button>
+                    <a href="{{ route('reports.stock') }}" class="rounded-lg border border-gray-300 px-5 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200">Reset</a>
+                    <div class="flex gap-2">
+                        <a href="{{ route('reports.stock', array_merge(request()->except(['page', 'export']), ['export' => 'pdf'])) }}" class="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100">PDF</a>
+                        <a href="{{ route('reports.stock', array_merge(request()->except(['page', 'export']), ['export' => 'excel'])) }}" class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Excel</a>
+                    </div>
+                </div>
+            </form>
 
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div class="p-4 bg-blue-50 dark:bg-gray-700 rounded-lg border border-blue-100 dark:border-gray-600">
-                <span class="text-xs font-bold text-blue-600 dark:text-blue-300 uppercase">Total Inventory Value</span>
-                <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($products->sum('stock_value'), 2) }}</div>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="rounded-lg border border-blue-100 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30">
+                    <p class="text-xs font-semibold uppercase text-blue-700 dark:text-blue-300">Total PCS Count</p>
+                    <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($summary['total_pcs']) }} PCS</p>
+                </div>
+                <div class="rounded-lg border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
+                    <p class="text-xs font-semibold uppercase text-emerald-700 dark:text-emerald-300">Total Stock Value</p>
+                    <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($summary['total_value'], 2) }}</p>
+                </div>
             </div>
-             <div class="p-4 bg-green-50 dark:bg-gray-700 rounded-lg border border-green-100 dark:border-gray-600">
-                <span class="text-xs font-bold text-green-600 dark:text-green-300 uppercase">Total Items In Stock</span>
-                <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ $products->sum('total_quantity') }}</div>
-            </div>
-        </div>
 
-        <div class="relative overflow-x-auto sm:rounded-lg">
-            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                    <tr>
-                        <th scope="col" class="px-6 py-3">Product</th>
-                        <th scope="col" class="px-6 py-3 text-right">Total Stock (Qty)</th>
-                        <th scope="col" class="px-6 py-3 text-right">Stock Value (FIFO)</th>
-                        <th scope="col" class="px-6 py-3">Batch Breakdown</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($products as $product)
-                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                        <td class="px-6 py-4">
-                            <div class="font-bold text-gray-900 dark:text-white">{{ $product->name }}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $product->category?->name }}</div>
-                        </td>
-                        <td class="px-6 py-4 font-bold text-right text-gray-900 dark:text-white">
-                            {{ $product->total_quantity }}
-                        </td>
-                        <td class="px-6 py-4 font-bold text-right text-green-600 dark:text-green-400">
-                            {{ number_format($product->stock_value, 2) }}
-                        </td>
-                        <td class="px-6 py-4 text-xs">
-                             @if($product->purchaseItems->count() > 0)
-                                <div class="space-y-1">
-                                    @foreach($product->purchaseItems as $batch)
-                                        @php
-                                            $availableUnits = $batch->inventoryUnits->where('status', 'available')->count();
-                                        @endphp
-                                        @if($availableUnits > 0)
-                                        <div class="flex items-center gap-2">
-                                            <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300 font-mono">
-                                                PO #{{ $batch->purchase->purchase_number ?? $batch->purchase_id }}
-                                            </span>
-                                            <span class="text-gray-900 dark:text-white font-semibold">
-                                                {{ $availableUnits }} available
-                                            </span>
-                                            <span class="text-gray-500 dark:text-gray-400">
-                                                @ {{ number_format($batch->purchase_price ?? 0, 2) }}
-                                            </span>
+            <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[850px] text-left text-sm">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                            <tr>
+                                <th class="px-4 py-3">Product name, SKU, Variant</th>
+                                <th class="px-4 py-3 text-right">Total Stock (Qty)</th>
+                                <th class="px-4 py-3 text-right">Stock Value (FIFO)</th>
+                                <th class="px-4 py-3 text-right">View</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @forelse($paginatedRows as $row)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/60">
+                                    <td class="px-4 py-3">
+                                        <div class="font-semibold text-gray-900 dark:text-white">{{ $row['product_name'] }}</div>
+                                        <div class="mt-1 flex flex-wrap gap-2 text-xs">
+                                            <span class="rounded bg-gray-100 px-2 py-1 font-mono text-gray-700 dark:bg-gray-700 dark:text-gray-200">{{ $row['sku'] }}</span>
+                                            <span class="rounded bg-blue-50 px-2 py-1 text-blue-700 dark:bg-blue-950 dark:text-blue-300">{{ $row['variant_label'] }}</span>
                                         </div>
-                                        @endif
-                                    @endforeach
-                                </div>
-                            @else
-                                <span class="text-gray-400 italic">No batch info</span>
-                            @endif
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-                 <tfoot class="bg-gray-100 dark:bg-gray-700 font-bold text-gray-900 dark:text-white">
-                    <tr>
-                        <td colspan="2" class="px-6 py-3 text-right">Total:</td>
-                        <td class="px-6 py-3 text-right text-green-600 dark:text-green-400">{{ number_format($products->sum('stock_value'), 2) }}</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">{{ number_format($row['stock_qty']) }} PCS</td>
+                                    <td class="px-4 py-3 text-right font-semibold text-emerald-700 dark:text-emerald-300">{{ number_format($row['stock_value'], 2) }}</td>
+                                    <td class="px-4 py-3 text-right">
+                                        <a href="{{ route('reports.stock.show', $row['variant_id']) }}" class="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100">View</a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">No stock rows found for the selected filters.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="border-t border-gray-100 px-4 py-3 dark:border-gray-700">
+                    {{ $paginatedRows->links() }}
+                </div>
+            </div>
         </div>
-
     </div>
 </x-app-layout>

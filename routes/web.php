@@ -200,6 +200,7 @@ Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function
     Route::get('/province', [\App\Http\Controllers\ReportController::class, 'provinceSale'])->name('province');
     Route::get('/profit-loss', [\App\Http\Controllers\ReportController::class, 'profitLoss'])->name('profit-loss');
     Route::get('/stock', [\App\Http\Controllers\ReportController::class, 'stockReport'])->name('stock');
+    Route::get('/stock/{variant}', [\App\Http\Controllers\ReportController::class, 'stockDetail'])->name('stock.show');
     Route::get('/packet-count', [\App\Http\Controllers\ReportController::class, 'packetCount'])->name('packet-count');
     Route::get('/product-sales', [\App\Http\Controllers\ReportController::class, 'productSales'])->name('product-sales');
     Route::get('/user-sales', [\App\Http\Controllers\ReportController::class, 'userSales'])->name('user-sales');

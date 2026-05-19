@@ -34,7 +34,7 @@ This system manages:
 - Inventory movement: purchase intake, manual retail/warehouse store placement, unit-level stock tracking, and orders
 - Orders: create/edit/view/print/PDF, call list, waybill queue, waybill Excel export queue, plus packing and return flows that exist in part but should still be treated as work-in-progress operational areas
 - Finance flows: reseller targets/payments/dues, courier payments, bank accounts
-- Reports: province sales, profit/loss, stock, packet count, product sales, user sales
+- Reports: stock, stock movement, packed/pick-from-rack counts, product wise sales, and user wise sales with filtered PDF/Excel downloads
 
 Authentication is provided by Laravel Breeze, and permissions are handled by Spatie Permission.
 
@@ -338,6 +338,16 @@ Orders are eligible for courier receive only when:
 - `payment_method = COD`
 - `delivery_status = dispatched`
 - waybill number exists
+
+### Reports
+
+- `/reports/stock` shows one row per product variant/SKU with available PCS and FIFO stock value from available inventory units.
+- Stock movement detail shows purchasing, sale, cancel, and return stock changes with running available quantity, reference number, timestamp, and value change.
+- Stock movement detail can be filtered by movement type, reference number, and date range, and reference numbers link back to the source purchase or order when the source is available.
+- `/reports/packet-count` shows packed and pick-from-rack counts by user with date filtering.
+- `/reports/product-sales` excludes cancelled orders from total PCS and shows delivered PCS, returned PCS, and return percentage by product/SKU/variant.
+- `/reports/user-sales` excludes cancelled orders from total orders and PCS, then shows delivered/returned counts and return percentages by creator.
+- Report screen views are paginated. PDF and Excel downloads use the full filtered dataset, not only the current page.
 - courier matches the receive screen
 - order is not already linked to a courier payment
 
