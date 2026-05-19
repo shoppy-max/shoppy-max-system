@@ -12,7 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->append(\App\Http\Middleware\AuditRequestMiddleware::class);
+        $middleware->prependToPriorityList(
+            \Illuminate\Auth\Middleware\Authenticate::class,
+            \App\Http\Middleware\AuditRequestMiddleware::class
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

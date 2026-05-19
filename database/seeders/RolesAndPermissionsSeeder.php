@@ -31,6 +31,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'delete roles',
             'view permissions',
             'assign permissions',
+            'view user logs',
         ];
 
         foreach ($permissions as $permission) {
@@ -64,6 +65,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'edit users',
             'view roles',
             'view permissions',
+            'view user logs',
         ]);
 
         // User role intentionally receives no elevated permissions.

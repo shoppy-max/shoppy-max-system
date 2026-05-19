@@ -60,7 +60,7 @@ class PermissionManagementController extends Controller
         $criticalPermissions = [
             'view users', 'create users', 'edit users', 'delete users',
             'view roles', 'create roles', 'edit roles', 'delete roles',
-            'view permissions', 'assign permissions'
+            'view permissions', 'assign permissions', 'view user logs',
         ];
 
         if (in_array($permission->name, $criticalPermissions)) {

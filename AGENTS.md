@@ -48,12 +48,15 @@ When working on a feature area, start here:
 - `app/Http/Controllers/CourierPaymentController.php`
 - `app/Services/InventoryUnitService.php`
 - `app/Services/CourierPaymentOrderService.php`
+- `app/Services/AuditLogService.php`
 
 ## Repository Map
 
 - `app/Http/Controllers`: primary workflow logic
 - `app/Models`: Eloquent models and computed business helpers
 - `app/Services`: high-risk state transition logic
+- `app/Http/Middleware/AuditRequestMiddleware.php`: broad request audit logging for writes/downloads
+- `app/Observers/AuditModelObserver.php`: model-level audit logging for CRUD deltas
 - `database/migrations`: schema evolution
 - `database/seeders`: roles, permissions, and demo data
 - `resources/views`: Blade UI
@@ -536,6 +539,43 @@ Check:
 - payments
 - dues
 - order side effects on due and penalties
+
+### User log / audit changes
+
+General audit logging is centralized in:
+
+- `app/Services/AuditLogService.php`
+- `app/Http/Middleware/AuditRequestMiddleware.php`
+- `app/Observers/AuditModelObserver.php`
+- `app/Http/Controllers/UserLogController.php`
+- `resources/views/user-logs/index.blade.php`
+
+Rules:
+
+- login success, login failure, and logout must create clear audit rows
+- `/user-logs` and audit exports require the `view user logs` permission
+- authenticated page/search views must be logged, except `/user-logs` itself to avoid self-noise
+- create/update/delete model changes must retain old/new values where available
+- non-read request actions must capture route, method, URL, status, user, IP, and sanitized payload
+- exports/downloads/prints/barcodes/templates must be logged even when they use `GET`
+- POST routes that return files must be logged as `downloaded`, not merely `submitted`
+- file uploads must store metadata only; never store file contents
+- passwords, tokens, cookies, application keys, CSRF values, and secrets must be redacted
+- audit list/export output must lead with clear business operation labels such as
+  "Opened Units Edit Page", "Updated Unit", or "Downloaded User Logs Export Excel";
+  raw route names like `units.edit` belong in technical detail fields, not as the primary admin label
+- do not use `OrderLog` or `InventoryUnitEvent` as the only audit record for a global action; those are domain histories, while `user_logs` is the operator-facing global audit trail
+
+Check:
+
+- `/user-logs`
+- filters for search, module, action, user, method, status, date range
+- operation search using readable text such as "Opened Units Edit Page"
+- details expansion shows request data, old/new values, and metadata
+- details expansion shows IP address and user agent
+- login failure/success/logout
+- one simple CRUD flow, one upload validation flow, and one export/download route
+- filtered Excel/PDF exports include the full result set, not just the current page
 
 ## UI and UX Standards
 

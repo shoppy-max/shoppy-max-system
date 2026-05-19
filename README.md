@@ -35,6 +35,7 @@ This system manages:
 - Orders: create/edit/view/print/PDF, call list, waybill queue, waybill Excel export queue, plus packing and return flows that exist in part but should still be treated as work-in-progress operational areas
 - Finance flows: reseller targets/payments/dues, courier payments, bank accounts
 - Reports: stock, stock movement, packed/pick-from-rack counts, product wise sales, and user wise sales with filtered PDF/Excel downloads
+- User logs: centralized audit trail for authentication, CRUD writes, uploads, exports/downloads, and model-level changes
 
 Authentication is provided by Laravel Breeze, and permissions are handled by Spatie Permission.
 
@@ -78,6 +79,16 @@ Authentication is provided by Laravel Breeze, and permissions are handled by Spa
   - printed orders enter a courier-specific Excel export queue
   - Excel export defaults to not-yet-downloaded rows and can optionally include already-downloaded rows
 - Courier receive and courier payment reconciliation
+- User activity auditing with:
+  - permission-gated `/user-logs` review surface
+  - login success/failure and logout records
+  - authenticated page/search view logging
+  - non-read request logging for create/update/delete/import/scan/status actions
+  - download/export/print/barcode access logging
+  - filtered Excel/PDF exports of the full audit result set
+  - model-level old/new value deltas for operational records
+  - admin-readable operation labels such as "Opened Units Edit Page" and "Downloaded User Logs Export Excel" before technical route names
+  - sanitized request/file metadata so secrets and file contents are not stored
 - Reseller commission/penalty logic (reseller-only, not direct reseller)
 - PDF/print/export support across modules
 
@@ -446,7 +457,7 @@ Important entry points:
   - `/reseller-payments`
   - `/reseller-dues`
 - Reports: `/reports`
-- User Logs (coming soon): `/user-logs`
+- User Logs: `/user-logs`
 
 ## Useful Commands
 
