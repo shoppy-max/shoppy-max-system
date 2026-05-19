@@ -131,6 +131,81 @@ class ResellerAccountTest extends TestCase
         $this->assertSame($passwordHash, $reseller->userAccount->password);
     }
 
+    public function test_reseller_password_reset_generates_new_copyable_credentials_and_invalidates_old_password(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = User::factory()->create();
+
+        $this->actingAs($admin)->post(route('resellers.store'), $this->resellerPayload([
+            'email' => 'reset.reseller@example.com',
+            'return_fee' => 25,
+        ]));
+
+        $reseller = Reseller::where('email', 'reset.reseller@example.com')->firstOrFail();
+        $oldPassword = session('created_login.password');
+        $userId = $reseller->user_id;
+
+        $response = $this->actingAs($admin)->post(route('resellers.reset-password', $reseller));
+
+        $response->assertRedirect(route('resellers.index'));
+        $response->assertSessionHas('created_login.email', 'reset.reseller@example.com');
+        $response->assertSessionHas('created_login.role', 'reseller');
+        $newPassword = session('created_login.password');
+
+        $this->assertNotSame($oldPassword, $newPassword);
+        $this->assertSame($userId, $reseller->fresh()->user_id);
+
+        $this->post(route('logout'));
+
+        $this->post(route('login'), [
+            'email' => 'reset.reseller@example.com',
+            'password' => $oldPassword,
+        ])->assertSessionHasErrors('email');
+
+        $this->post(route('login'), [
+            'email' => 'reset.reseller@example.com',
+            'password' => $newPassword,
+        ])->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_reset_password_from_list_has_explicit_confirmation_copy(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = User::factory()->create();
+
+        $this->actingAs($admin)->post(route('direct-resellers.store'), $this->resellerPayload([
+            'name' => 'Reset List Contact',
+            'email' => 'reset.list@example.com',
+        ]));
+
+        $response = $this->actingAs($admin)->get(route('direct-resellers.index'));
+
+        $response->assertOk();
+        $response->assertSee('Reset password');
+        $response->assertSee('Are you sure you want to reset password for Reset List Contact (reset.list@example.com)?', false);
+        $response->assertSee(route('direct-resellers.reset-password', Reseller::where('email', 'reset.list@example.com')->first()), false);
+    }
+
+    public function test_generated_login_details_render_as_copyable_popup_after_redirect(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = User::factory()->create();
+
+        $response = $this->followingRedirects()
+            ->actingAs($admin)
+            ->post(route('resellers.store'), $this->resellerPayload([
+                'email' => 'popup.reseller@example.com',
+                'return_fee' => 25,
+            ]));
+
+        $response->assertOk();
+        $response->assertSee('window.Swal.fire', false);
+        $response->assertSee('Copy login details');
+        $response->assertSee('Login account created');
+        $response->assertSee('popup.reseller@example.com');
+        $response->assertDontSee('rounded-lg border border-emerald-200', false);
+    }
+
     public function test_reseller_account_dashboard_shows_linked_reseller_details(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

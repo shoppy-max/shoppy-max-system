@@ -181,6 +181,17 @@ class DirectResellerController extends Controller
         return redirect()->route('direct-resellers.index')->with('success', 'Reseller deleted successfully.');
     }
 
+    public function resetPassword(Reseller $directReseller)
+    {
+        $this->ensureDirectReseller($directReseller);
+
+        $loginDetails = DB::transaction(fn () => $this->resellerAccounts->resetPassword($directReseller));
+
+        return redirect()->route('direct-resellers.index')
+            ->with('success', 'Reseller password reset successfully.')
+            ->with('created_login', $loginDetails);
+    }
+
     private function ensureDirectReseller(Reseller $reseller): void
     {
         abort_unless($reseller->reseller_type === Reseller::TYPE_DIRECT_RESELLER, 404);

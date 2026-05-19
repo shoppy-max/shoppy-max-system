@@ -33,9 +33,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 Route::middleware('auth')->group(function () {
     Route::resource('customers', \App\Http\Controllers\CustomerController::class);
     Route::resource('suppliers', \App\Http\Controllers\SupplierController::class);
+    Route::post('direct-resellers/{reseller}/reset-password', [\App\Http\Controllers\ResellerController::class, 'resetPassword'])
+        ->name('resellers.reset-password');
     Route::resource('direct-resellers', \App\Http\Controllers\ResellerController::class)
         ->names('resellers')
         ->parameters(['direct-resellers' => 'reseller']);
+    Route::post('resellers/{directReseller}/reset-password', [\App\Http\Controllers\DirectResellerController::class, 'resetPassword'])
+        ->name('direct-resellers.reset-password');
     Route::resource('resellers', \App\Http\Controllers\DirectResellerController::class)
         ->names('direct-resellers')
         ->parameters(['resellers' => 'directReseller']);

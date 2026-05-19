@@ -69,6 +69,10 @@
                         e.preventDefault(); // Stop submission immediately
                         
                         const message = form.getAttribute('data-confirm-message');
+                        const title = form.getAttribute('data-confirm-title') || 'Are you sure?';
+                        const icon = form.getAttribute('data-confirm-icon') || 'warning';
+                        const confirmButtonText = form.getAttribute('data-confirm-button-text') || 'Yes, delete it!';
+                        const confirmButtonColor = form.getAttribute('data-confirm-button-color') || '#d33';
 
                         // Ensure Swal is available
                         if (typeof window.Swal === 'undefined') {
@@ -80,13 +84,13 @@
                         }
 
                         window.Swal.fire({
-                            title: 'Are you sure?',
+                            title: title,
                             text: message,
-                            icon: 'warning',
+                            icon: icon,
                             showCancelButton: true,
-                            confirmButtonColor: '#d33',
+                            confirmButtonColor: confirmButtonColor,
                             cancelButtonColor: '#3085d6',
-                            confirmButtonText: 'Yes, delete it!',
+                            confirmButtonText: confirmButtonText,
                             background: isDarkMode() ? '#1f2937' : '#fff',
                             color: isDarkMode() ? '#fff' : '#1f2937'
                         }).then((result) => {

@@ -218,7 +218,8 @@ Rules:
 - email is required for both reseller types because every reseller record creates or syncs a linked login account
 - reseller account creation and sync must go through `app/Services/ResellerAccountService.php`
 - regular reseller accounts receive the `reseller` role; direct reseller accounts receive the `direct reseller` role
-- creation flashes generated credentials once for the operator to copy; edits sync the existing user without resetting its password
+- creation opens generated credentials once in a copyable popup; edits sync the existing user without resetting its password
+- list pages expose a reset-password action that asks for explicit confirmation, invalidates the old password, and opens new copyable credentials once
 - deleting a reseller/direct-reseller retires the dedicated linked login account; if that user has other roles, remove only the reseller role and keep the user
 - seeded demo resellers must have linked users so reseller dashboards and login smoke tests work on fresh data
 

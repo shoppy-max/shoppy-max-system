@@ -93,8 +93,9 @@ Authentication is provided by Laravel Breeze, and permissions are handled by Spa
 - Reseller/direct-reseller login account creation:
   - email is required for both reseller types
   - creating a reseller creates a linked user account with a generated password
-  - generated login details are shown once with a copy button
+  - generated login details are shown once in a popup with a copy button
   - linked user name, email, mobile, and role stay synced when the reseller record is edited
+  - list reset-password actions confirm the exact reseller, invalidate the old password, and show the new copyable login popup once
   - deleting a reseller retires the dedicated linked login account
   - reseller dashboards show the linked business, due balance, order counts, and return fee where applicable
 - PDF/print/export support across modules

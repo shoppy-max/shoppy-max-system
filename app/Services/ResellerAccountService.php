@@ -13,7 +13,7 @@ class ResellerAccountService
     public const ROLE_DIRECT_RESELLER = 'direct reseller';
 
     /**
-     * @return array{email: string, password: string, login_url: string, role: string}
+     * @return array{email: string, password: string, login_url: string, role: string, headline: string, message: string}
      */
     public function createAccount(Reseller $reseller): array
     {
@@ -97,6 +97,37 @@ class ResellerAccountService
         }
     }
 
+    /**
+     * @return array{email: string, password: string, login_url: string, role: string, headline: string, message: string}
+     */
+    public function resetPassword(Reseller $reseller): array
+    {
+        $reseller->loadMissing('userAccount');
+
+        if (! $reseller->userAccount) {
+            return $this->createAccount($reseller);
+        }
+
+        $plainPassword = Str::password(14, letters: true, numbers: true, symbols: false, spaces: false);
+
+        $reseller->userAccount->forceFill([
+            'name' => $reseller->name,
+            'email' => $this->normalizeEmail($reseller->email),
+            'phone' => $reseller->mobile,
+            'password' => $plainPassword,
+            'email_verified_at' => $reseller->userAccount->email_verified_at ?? now(),
+        ])->save();
+
+        $this->syncRole($reseller->userAccount, $reseller);
+
+        return $this->loginDetails(
+            $reseller,
+            $plainPassword,
+            'Login password reset',
+            'Copy and share this new password now. The old password no longer works.'
+        );
+    }
+
     public function roleFor(Reseller $reseller): string
     {
         return $reseller->reseller_type === Reseller::TYPE_DIRECT_RESELLER
@@ -124,15 +155,22 @@ class ResellerAccountService
     }
 
     /**
-     * @return array{email: string, password: string, login_url: string, role: string}
+     * @return array{email: string, password: string, login_url: string, role: string, headline: string, message: string}
      */
-    private function loginDetails(Reseller $reseller, string $plainPassword): array
+    private function loginDetails(
+        Reseller $reseller,
+        string $plainPassword,
+        string $headline = 'Login account created',
+        string $message = 'Share these details with the reseller. The password is shown only once.'
+    ): array
     {
         return [
             'email' => $this->normalizeEmail($reseller->email),
             'password' => $plainPassword,
             'login_url' => route('login'),
             'role' => $this->roleFor($reseller),
+            'headline' => $headline,
+            'message' => $message,
         ];
     }
 
