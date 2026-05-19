@@ -71,7 +71,11 @@
                     $canOpenExportQueue = (int) ($courier->printed_waybills_count ?? 0) > 0;
                 @endphp
                 @if($canOpenExportQueue)
+                    @can('view waybill excel exports')
                     <a href="{{ route('orders.waybill-excel.show', $courier) }}" class="courier-card block rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition-all hover:border-primary-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-700">
+                    @else
+                    <div class="courier-card block rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    @endcan
                 @else
                     <div class="courier-card block rounded-lg border border-gray-200 bg-gray-50 p-5 shadow-sm opacity-80 dark:border-gray-700 dark:bg-gray-800/70">
                 @endif
@@ -106,7 +110,11 @@
                         <p class="mt-3 text-xs font-medium text-gray-600 dark:text-gray-400">No printed waybill orders yet for this courier.</p>
                     @endif
                 @if($canOpenExportQueue)
+                    @can('view waybill excel exports')
                     </a>
+                    @else
+                    </div>
+                    @endcan
                 @else
                     </div>
                 @endif

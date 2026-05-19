@@ -39,7 +39,7 @@
         <div class="max-w-4xl mx-auto">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg sm:rounded-xl border border-gray-200 dark:border-gray-700">
                 <div class="p-8 text-gray-900 dark:text-gray-100">
-                    
+
                     <form method="POST" action="{{ route('admin.roles.update', $role) }}">
                         @csrf
                         @method('PUT')
@@ -57,42 +57,26 @@
                             </div>
                         </div>
 
-                        <!-- Permissions -->
-                        <div class="mb-8 border-t border-gray-200 dark:border-gray-700 pt-6">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                                <span class="bg-purple-100 text-purple-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-purple-200 dark:text-purple-800">2</span>
-                                Assign Permissions
-                            </h3>
-                            
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Select what users with this role can do.</p>
+                        @can('assign permissions')
+                            <!-- Permissions -->
+                            <div class="mb-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                                    <span class="bg-purple-100 text-purple-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-purple-200 dark:text-purple-800">2</span>
+                                    Assign Permissions
+                                </h3>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                @foreach($permissions as $permission)
-                                    <div class="relative flex items-start py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer" onclick="document.getElementById('perm_{{ $permission->id }}').click()">
-                                        <div class="flex items-center h-5">
-                                            <input id="perm_{{ $permission->id }}" name="permissions[]" value="{{ $permission->name }}" type="checkbox" class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                                            {{ (is_array(old('permissions')) && in_array($permission->name, old('permissions'))) || $role->hasPermissionTo($permission->name) ? 'checked' : '' }}>
-                                        </div>
-                                        <div class="ml-3 text-sm">
-                                            <label for="perm_{{ $permission->id }}" class="font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer">
-                                                {{ $permission->name }}
-                                            </label>
-                                        </div>
-                                    </div>
-                                @endforeach
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Select what users with this role can do.</p>
+
+                                @include('admin.partials.permission-groups', ['permissionGroups' => $permissionGroups, 'selected' => $selectedPermissions])
+                                 <x-input-error :messages="$errors->get('permissions')" class="mt-2" />
                             </div>
-                             <x-input-error :messages="$errors->get('permissions')" class="mt-2" />
-                        </div>
+                        @endcan
 
                         <div class="flex items-center justify-between gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
                             @if (!in_array($role->name, ['super admin', 'admin', 'user']))
-                                <form action="{{ route('admin.roles.destroy', $role) }}" method="POST" data-confirm-message="Are you sure you want to delete this role?">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800">
-                                        Delete Role
-                                    </button>
-                                </form>
+                                <button type="submit" form="delete-role-form-{{ $role->id }}" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800">
+                                    Delete Role
+                                </button>
                             @else
                                 <div></div>
                             @endif
@@ -104,6 +88,12 @@
                             </div>
                         </div>
                     </form>
+                    @if (!in_array($role->name, ['super admin', 'admin', 'user']))
+                        <form id="delete-role-form-{{ $role->id }}" action="{{ route('admin.roles.destroy', $role) }}" method="POST" class="hidden" data-confirm-message="Are you sure you want to delete this role?">
+                            @csrf
+                            @method('DELETE')
+                        </form>
+                    @endif
                 </div>
             </div>
         </div>

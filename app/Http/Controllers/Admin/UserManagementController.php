@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Support\RbacPermissions;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules;
+use Spatie\Permission\PermissionRegistrar;
 
 class UserManagementController extends Controller
 {
@@ -31,17 +33,26 @@ class UserManagementController extends Controller
 
     public function create()
     {
-        $roles = Role::all();
-        $permissions = Permission::all();
-        return view('admin.users.create', compact('roles', 'permissions'));
+        $roles = Role::orderBy('name')->get();
+        $permissionGroups = RbacPermissions::groupedForDisplay(Permission::orderBy('name')->get());
+
+        return view('admin.users.create', compact('roles', 'permissionGroups'));
     }
 
     public function store(Request $request)
     {
+        if (($request->has('roles') || $request->has('permissions')) && ! $request->user()?->can('assign permissions')) {
+            abort(403);
+        }
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'roles' => ['nullable', 'array'],
+            'roles.*' => ['string', 'exists:roles,name'],
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', 'exists:permissions,name'],
         ]);
 
         $user = User::create([
@@ -58,25 +69,35 @@ class UserManagementController extends Controller
             $user->givePermissionTo($request->permissions);
         }
 
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         return redirect()->route('admin.users.index')
             ->with('success', 'User created successfully.');
     }
 
     public function edit(User $user)
     {
-        $roles = Role::all();
-        $permissions = Permission::all();
+        $roles = Role::orderBy('name')->get();
+        $permissionGroups = RbacPermissions::groupedForDisplay(Permission::orderBy('name')->get());
         $userRoles = $user->roles->pluck('id')->toArray();
-        $userPermissions = $user->permissions->pluck('id')->toArray();
+        $userPermissions = $user->permissions->pluck('name')->toArray();
         
-        return view('admin.users.edit', compact('user', 'roles', 'permissions', 'userRoles', 'userPermissions'));
+        return view('admin.users.edit', compact('user', 'roles', 'permissionGroups', 'userRoles', 'userPermissions'));
     }
 
     public function update(Request $request, User $user)
     {
+        if (($request->has('roles') || $request->has('permissions')) && ! $request->user()?->can('assign permissions')) {
+            abort(403);
+        }
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'roles' => ['nullable', 'array'],
+            'roles.*' => ['string', 'exists:roles,name'],
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', 'exists:permissions,name'],
         ]);
 
         $user->update([
@@ -93,19 +114,12 @@ class UserManagementController extends Controller
             ]);
         }
 
-        // Sync roles
-        if ($request->has('roles')) {
-            $user->syncRoles($request->roles);
-        } else {
-            $user->syncRoles([]);
+        if ($request->user()?->can('assign permissions')) {
+            $user->syncRoles($request->input('roles', []));
+            $user->syncPermissions($request->input('permissions', []));
         }
 
-        // Sync permissions
-        if ($request->has('permissions')) {
-            $user->syncPermissions($request->permissions);
-        } else {
-            $user->syncPermissions([]);
-        }
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return redirect()->route('admin.users.index')
             ->with('success', 'User updated successfully.');
@@ -119,6 +133,8 @@ class UserManagementController extends Controller
         }
 
         $user->delete();
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return redirect()->route('admin.users.index')
             ->with('success', 'User deleted successfully.');

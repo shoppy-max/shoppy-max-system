@@ -41,6 +41,7 @@
                 <a href="{{ route('orders.waybill-excel.index') }}" class="inline-flex items-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
                     Back
                 </a>
+                @can('export waybill excel')
                 <button
                     type="button"
                     id="downloadExcelBtn"
@@ -49,6 +50,7 @@
                 >
                     Download Excel
                 </button>
+                @endcan
             </div>
         </div>
 
@@ -130,15 +132,17 @@
             </form>
         </div>
 
-        <form action="{{ route('orders.waybill-excel.export', $courier) }}" method="POST" target="waybillExcelDownloadFrame" id="waybillExcelForm">
-            @csrf
-            <input type="hidden" name="search" value="{{ request('search', '') }}">
-            <input type="hidden" name="date" value="{{ request('date', '') }}">
-            <input type="hidden" name="per_page" value="{{ request('per_page', 25) }}">
-            @if(request()->boolean('show_downloaded'))
-                <input type="hidden" name="show_downloaded" value="1">
-            @endif
-        </form>
+        @can('export waybill excel')
+            <form action="{{ route('orders.waybill-excel.export', $courier) }}" method="POST" target="waybillExcelDownloadFrame" id="waybillExcelForm">
+                @csrf
+                <input type="hidden" name="search" value="{{ request('search', '') }}">
+                <input type="hidden" name="date" value="{{ request('date', '') }}">
+                <input type="hidden" name="per_page" value="{{ request('per_page', 25) }}">
+                @if(request()->boolean('show_downloaded'))
+                    <input type="hidden" name="show_downloaded" value="1">
+                @endif
+            </form>
+        @endcan
 
         <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
             <div class="flex flex-col gap-2 border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/30 sm:flex-row sm:items-center sm:justify-between">
@@ -232,6 +236,7 @@
         </div>
     </div>
 
+    @can('export waybill excel')
     <iframe name="waybillExcelDownloadFrame" class="hidden"></iframe>
 
     <script>
@@ -251,4 +256,5 @@
             });
         })();
     </script>
+    @endcan
 </x-app-layout>

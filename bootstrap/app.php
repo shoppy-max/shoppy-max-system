@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\AuditRequestMiddleware::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\EnsureRoutePermission::class);
         $middleware->prependToPriorityList(
             \Illuminate\Auth\Middleware\Authenticate::class,
             \App\Http\Middleware\AuditRequestMiddleware::class

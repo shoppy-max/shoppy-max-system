@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Support\RbacPermissions;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class PermissionManagementController extends Controller
 {
@@ -17,7 +19,9 @@ class PermissionManagementController extends Controller
         }
         
         $permissions = $query->paginate(10);
-        return view('admin.permissions.index', compact('permissions'));
+        $systemPermissionNames = RbacPermissions::allPermissionNames();
+
+        return view('admin.permissions.index', compact('permissions', 'systemPermissionNames'));
     }
 
     public function create()
@@ -33,6 +37,8 @@ class PermissionManagementController extends Controller
 
         Permission::create(['name' => $request->name]);
 
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         return redirect()->route('admin.permissions.index')
             ->with('success', 'Permission created successfully.');
     }
@@ -44,11 +50,19 @@ class PermissionManagementController extends Controller
 
     public function update(Request $request, Permission $permission)
     {
+        if (in_array($permission->name, RbacPermissions::allPermissionNames(), true)) {
+            return back()
+                ->withInput()
+                ->with('error', 'System permissions are managed by the RBAC catalog and cannot be renamed.');
+        }
+
         $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:permissions,name,' . $permission->id],
         ]);
 
         $permission->update(['name' => $request->name]);
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return redirect()->route('admin.permissions.index')
             ->with('success', 'Permission updated successfully.');
@@ -56,19 +70,14 @@ class PermissionManagementController extends Controller
 
     public function destroy(Permission $permission)
     {
-        // Protect critical system permissions from deletion
-        $criticalPermissions = [
-            'view users', 'create users', 'edit users', 'delete users',
-            'view roles', 'create roles', 'edit roles', 'delete roles',
-            'view permissions', 'assign permissions', 'view user logs',
-        ];
-
-        if (in_array($permission->name, $criticalPermissions)) {
+        if (in_array($permission->name, RbacPermissions::allPermissionNames(), true)) {
             return redirect()->route('admin.permissions.index')
-                ->with('error', 'Cannot delete critical system permissions.');
+                ->with('error', 'System permissions are managed by the RBAC catalog and cannot be deleted.');
         }
 
         $permission->delete();
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return redirect()->route('admin.permissions.index')
             ->with('success', 'Permission deleted successfully.');

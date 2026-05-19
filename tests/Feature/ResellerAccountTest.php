@@ -14,8 +14,7 @@ class ResellerAccountTest extends TestCase
 
     public function test_regular_reseller_creation_creates_linked_login_account_with_copy_details(): void
     {
-        $this->seed(RolesAndPermissionsSeeder::class);
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
 
         $response = $this->actingAs($admin)->post(route('resellers.store'), $this->resellerPayload([
             'email' => 'regular.reseller@example.com',
@@ -34,14 +33,14 @@ class ResellerAccountTest extends TestCase
         $this->assertSame($reseller->user_id, $reseller->userAccount->id);
         $this->assertTrue($reseller->userAccount->hasRole('reseller'));
         $this->assertFalse($reseller->userAccount->hasRole('direct reseller'));
+        $this->assertTrue($reseller->userAccount->can('view dashboard'));
         $this->assertSame('Regular Contact', $reseller->userAccount->name);
         $this->assertSame('0771234567', $reseller->userAccount->phone);
     }
 
     public function test_direct_reseller_creation_creates_linked_login_account_with_direct_role(): void
     {
-        $this->seed(RolesAndPermissionsSeeder::class);
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
 
         $response = $this->actingAs($admin)->post(route('direct-resellers.store'), $this->resellerPayload([
             'email' => 'direct.reseller@example.com',
@@ -56,12 +55,12 @@ class ResellerAccountTest extends TestCase
         $this->assertNotNull($reseller->user_id);
         $this->assertTrue($reseller->userAccount->hasRole('direct reseller'));
         $this->assertFalse($reseller->userAccount->hasRole('reseller'));
+        $this->assertTrue($reseller->userAccount->can('view dashboard'));
     }
 
     public function test_generated_reseller_credentials_can_log_in(): void
     {
-        $this->seed(RolesAndPermissionsSeeder::class);
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
 
         $this->actingAs($admin)->post(route('direct-resellers.store'), $this->resellerPayload([
             'email' => 'login.ready@example.com',
@@ -80,7 +79,7 @@ class ResellerAccountTest extends TestCase
 
     public function test_reseller_email_is_required_for_both_create_forms(): void
     {
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
 
         $this->actingAs($admin)
             ->post(route('resellers.store'), $this->resellerPayload(['email' => null]))
@@ -93,8 +92,8 @@ class ResellerAccountTest extends TestCase
 
     public function test_reseller_email_must_not_reuse_another_user_email(): void
     {
+        $admin = $this->adminUser();
         User::factory()->create(['email' => 'taken@example.com']);
-        $admin = User::factory()->create();
 
         $this->actingAs($admin)
             ->post(route('resellers.store'), $this->resellerPayload(['email' => 'taken@example.com']))
@@ -103,8 +102,7 @@ class ResellerAccountTest extends TestCase
 
     public function test_reseller_update_syncs_existing_login_account_without_resetting_password(): void
     {
-        $this->seed(RolesAndPermissionsSeeder::class);
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
 
         $this->actingAs($admin)->post(route('direct-resellers.store'), $this->resellerPayload([
             'email' => 'sync.before@example.com',
@@ -133,8 +131,7 @@ class ResellerAccountTest extends TestCase
 
     public function test_reseller_password_reset_generates_new_copyable_credentials_and_invalidates_old_password(): void
     {
-        $this->seed(RolesAndPermissionsSeeder::class);
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
 
         $this->actingAs($admin)->post(route('resellers.store'), $this->resellerPayload([
             'email' => 'reset.reseller@example.com',
@@ -170,8 +167,7 @@ class ResellerAccountTest extends TestCase
 
     public function test_reset_password_from_list_has_explicit_confirmation_copy(): void
     {
-        $this->seed(RolesAndPermissionsSeeder::class);
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
 
         $this->actingAs($admin)->post(route('direct-resellers.store'), $this->resellerPayload([
             'name' => 'Reset List Contact',
@@ -188,8 +184,7 @@ class ResellerAccountTest extends TestCase
 
     public function test_generated_login_details_render_as_copyable_popup_after_redirect(): void
     {
-        $this->seed(RolesAndPermissionsSeeder::class);
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
 
         $response = $this->followingRedirects()
             ->actingAs($admin)
@@ -208,8 +203,7 @@ class ResellerAccountTest extends TestCase
 
     public function test_reseller_account_dashboard_shows_linked_reseller_details(): void
     {
-        $this->seed(RolesAndPermissionsSeeder::class);
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
 
         $this->actingAs($admin)->post(route('resellers.store'), $this->resellerPayload([
             'business_name' => 'Dashboard Reseller Business',
@@ -232,8 +226,7 @@ class ResellerAccountTest extends TestCase
 
     public function test_deleting_reseller_removes_dedicated_login_account(): void
     {
-        $this->seed(RolesAndPermissionsSeeder::class);
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
 
         $this->actingAs($admin)->post(route('direct-resellers.store'), $this->resellerPayload([
             'email' => 'delete.login@example.com',
@@ -267,5 +260,12 @@ class ResellerAccountTest extends TestCase
             'return_fee' => 0,
             'couriers' => [],
         ], $overrides);
+    }
+
+    private function adminUser(): User
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        return User::where('email', 'admin@shoppy-max.com')->firstOrFail();
     }
 }

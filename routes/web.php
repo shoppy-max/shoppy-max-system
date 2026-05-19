@@ -44,10 +44,8 @@ Route::middleware('auth')->group(function () {
         ->names('direct-resellers')
         ->parameters(['resellers' => 'directReseller']);
     Route::resource('cities', \App\Http\Controllers\CityController::class);
-    Route::middleware('can:view user logs')->group(function () {
-        Route::get('user-logs/export', [\App\Http\Controllers\UserLogController::class, 'export'])->name('user-logs.export');
-        Route::get('user-logs', [\App\Http\Controllers\UserLogController::class, 'index'])->name('user-logs.index');
-    });
+    Route::get('user-logs/export', [\App\Http\Controllers\UserLogController::class, 'export'])->name('user-logs.export');
+    Route::get('user-logs', [\App\Http\Controllers\UserLogController::class, 'index'])->name('user-logs.index');
 });
 
 // Product Management Routes

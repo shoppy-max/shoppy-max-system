@@ -19,14 +19,17 @@
             
             <ul class="space-y-2 font-medium">
                 <!-- Dashboard -->
+                @can('view dashboard')
                 <li>
                     <a href="{{ route('dashboard') }}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group {{ request()->routeIs('dashboard') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : '' }}">
                         <svg class="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white {{ request()->routeIs('dashboard') ? 'text-primary-600 dark:text-primary-400' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                         <span class="ms-3">Dashboard</span>
                     </a>
                 </li>
+                @endcan
 
                 <!-- Contacts -->
+                @canany(['view customers', 'view suppliers', 'view cities'])
                 <li>
                     <button type="button" class="flex items-center w-full p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('customers.*') || request()->routeIs('suppliers.*') || request()->routeIs('cities.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}" aria-controls="dropdown-contacts" data-collapse-toggle="dropdown-contacts">
                          <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('customers.*') || request()->routeIs('suppliers.*') || request()->routeIs('cities.*') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
@@ -36,20 +39,28 @@
                         </svg>
                     </button>
                     <ul id="dropdown-contacts" class="{{ request()->routeIs('customers.*') || request()->routeIs('suppliers.*') || request()->routeIs('cities.*') ? '' : 'hidden' }} py-2 space-y-2">
+                        @can('view customers')
                         <li>
                             <a href="{{ route('customers.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('customers.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Customers</a>
                         </li>
+                        @endcan
+                        @can('view suppliers')
                         <li>
                             <a href="{{ route('suppliers.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('suppliers.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Suppliers</a>
                         </li>
+                        @endcan
 
+                        @can('view cities')
                         <li>
                             <a href="{{ route('cities.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('cities.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Cities</a>
                         </li>
+                        @endcan
                     </ul>
                 </li>
+                @endcanany
 
                 <!-- Resellers -->
+                @canany(['view direct resellers', 'create direct resellers', 'view reseller targets', 'view direct reseller payments', 'view direct reseller dues'])
                 <li>
                     <button type="button" class="flex items-center w-full p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('resellers.*') || request()->routeIs('reseller-targets.*') || request()->routeIs('reseller-payments.*') || request()->routeIs('reseller-dues.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}" aria-controls="dropdown-resellers" data-collapse-toggle="dropdown-resellers">
                         <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('resellers.*') || request()->routeIs('reseller-targets.*') || request()->routeIs('reseller-payments.*') || request()->routeIs('reseller-dues.*') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
@@ -59,25 +70,37 @@
                         </svg>
                     </button>
                     <ul id="dropdown-resellers" class="{{ request()->routeIs('resellers.*') || request()->routeIs('reseller-targets.*') || request()->routeIs('reseller-payments.*') || request()->routeIs('reseller-dues.*') ? '' : 'hidden' }} py-2 space-y-2">
+                        @can('view direct resellers')
                         <li>
                             <a href="{{ route('resellers.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('resellers.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Direct Resellers List</a>
                         </li>
+                        @endcan
+                        @can('create direct resellers')
                         <li>
                             <a href="{{ route('resellers.create') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('resellers.create') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Add Direct Reseller</a>
                         </li>
+                        @endcan
+                        @can('view reseller targets')
                         <li>
                             <a href="{{ route('reseller-targets.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('reseller-targets.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Targets List</a>
                         </li>
+                        @endcan
+                        @can('view direct reseller payments')
                         <li>
                             <a href="{{ route('reseller-payments.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('reseller-payments.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Direct User Payments</a>
                         </li>
+                        @endcan
+                        @can('view direct reseller dues')
                         <li>
                             <a href="{{ route('reseller-dues.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('reseller-dues.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Direct User Due Payments</a>
                         </li>
+                        @endcan
                     </ul>
                 </li>
+                @endcanany
 
                 <!-- Direct Resellers -->
+                @canany(['view resellers', 'create resellers', 'view reseller payments', 'view reseller dues'])
                 <li>
                     <button type="button" class="flex items-center w-full p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('direct-resellers.*') || request()->routeIs('direct-reseller-payments.*') || request()->routeIs('direct-reseller-dues.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}" aria-controls="dropdown-direct-resellers" data-collapse-toggle="dropdown-direct-resellers">
                         <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('direct-resellers.*') || request()->routeIs('direct-reseller-payments.*') || request()->routeIs('direct-reseller-dues.*') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
@@ -87,22 +110,32 @@
                         </svg>
                     </button>
                     <ul id="dropdown-direct-resellers" class="{{ request()->routeIs('direct-resellers.*') || request()->routeIs('direct-reseller-payments.*') || request()->routeIs('direct-reseller-dues.*') ? '' : 'hidden' }} py-2 space-y-2">
+                        @can('view resellers')
                         <li>
                             <a href="{{ route('direct-resellers.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('direct-resellers.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Resellers List</a>
                         </li>
+                        @endcan
+                        @can('create resellers')
                         <li>
                             <a href="{{ route('direct-resellers.create') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('direct-resellers.create') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Add Reseller</a>
                         </li>
+                        @endcan
+                        @can('view reseller payments')
                         <li>
                             <a href="{{ route('direct-reseller-payments.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('direct-reseller-payments.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">User Payments</a>
                         </li>
+                        @endcan
+                        @can('view reseller dues')
                         <li>
                             <a href="{{ route('direct-reseller-dues.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('direct-reseller-dues.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">User Due Payments</a>
                         </li>
+                        @endcan
                     </ul>
                 </li>
+                @endcanany
 
                 <!-- Products -->
+                @canany(['view products', 'create products', 'view categories', 'view sub categories', 'view units'])
                 <li>
                     <button type="button" class="flex items-center w-full p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('products.*') || request()->routeIs('categories.*') || request()->routeIs('sub-categories.*') || request()->routeIs('units.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}" aria-controls="dropdown-products" data-collapse-toggle="dropdown-products">
                         <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('products.*') || request()->routeIs('categories.*') || request()->routeIs('sub-categories.*') || request()->routeIs('units.*') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
@@ -112,25 +145,37 @@
                         </svg>
                     </button>
                     <ul id="dropdown-products" class="{{ request()->routeIs('products.*') || request()->routeIs('categories.*') || request()->routeIs('sub-categories.*') || request()->routeIs('units.*') ? '' : 'hidden' }} py-2 space-y-2">
+                        @can('view products')
                         <li>
                              <a href="{{ route('products.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('products.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Products List</a>
                         </li>
+                        @endcan
+                        @can('create products')
                         <li>
                              <a href="{{ route('products.create') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('products.create') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Add Product</a>
                         </li>
+                        @endcan
+                        @can('view categories')
                         <li>
                              <a href="{{ route('categories.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('categories.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Categories List</a>
                         </li>
+                        @endcan
+                        @can('view sub categories')
                         <li>
                              <a href="{{ route('sub-categories.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('sub-categories.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Sub Categories List</a>
                         </li>
+                        @endcan
+                        @can('view units')
                         <li>
                              <a href="{{ route('units.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('units.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Units List</a>
                         </li>
+                        @endcan
                     </ul>
                 </li>
+                @endcanany
 
                 <!-- Couriers -->
+                @canany(['view couriers', 'create couriers', 'view courier receive', 'view courier payments', 'view bank accounts', 'create bank accounts'])
                 <li>
                     <button type="button" class="flex items-center w-full p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('couriers.*') || request()->routeIs('courier-receive.*') || request()->routeIs('courier-payments.*') || request()->routeIs('bank-accounts.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}" aria-controls="dropdown-couriers" data-collapse-toggle="dropdown-couriers">
                         <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('couriers.*') || request()->routeIs('courier-receive.*') || request()->routeIs('courier-payments.*') || request()->routeIs('bank-accounts.*') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
@@ -140,28 +185,42 @@
                         </svg>
                     </button>
                     <ul id="dropdown-couriers" class="{{ request()->routeIs('couriers.*') || request()->routeIs('courier-receive.*') || request()->routeIs('courier-payments.*') || request()->routeIs('bank-accounts.*') ? '' : 'hidden' }} py-2 space-y-2">
+                        @can('view couriers')
                         <li>
                              <a href="{{ route('couriers.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('couriers.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Couriers List</a>
                         </li>
+                        @endcan
+                        @can('create couriers')
                         <li>
                              <a href="{{ route('couriers.create') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('couriers.create') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Add Courier</a>
                         </li>
+                        @endcan
+                        @can('view courier receive')
                         <li>
                              <a href="{{ route('courier-receive.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('courier-receive.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Receive Courier Payments</a>
                         </li>
+                        @endcan
+                        @can('view courier payments')
                         <li>
                              <a href="{{ route('courier-payments.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('courier-payments.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Courier Payments</a>
                         </li>
+                        @endcan
+                        @can('view bank accounts')
                         <li>
                              <a href="{{ route('bank-accounts.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('bank-accounts.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Bank Accounts</a>
                         </li>
+                        @endcan
+                        @can('create bank accounts')
                         <li>
                              <a href="{{ route('bank-accounts.create') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('bank-accounts.create') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Add Bank Account</a>
                         </li>
+                        @endcan
                     </ul>
                 </li>
+                @endcanany
 
                 <!-- Orders -->
+                @canany(['view orders', 'create orders', 'view order call list', 'view waybills', 'view waybill excel exports', 'view packing'])
                 <li>
                     <button type="button" class="flex items-center w-full p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('orders.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}" aria-controls="dropdown-orders" data-collapse-toggle="dropdown-orders">
                         <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('orders.*') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
@@ -171,28 +230,42 @@
                         </svg>
                     </button>
                     <ul id="dropdown-orders" class="{{ request()->routeIs('orders.*') ? '' : 'hidden' }} py-2 space-y-2">
+                        @can('view orders')
                         <li>
                              <a href="{{ route('orders.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Order List</a>
                         </li>
+                        @endcan
+                        @can('create orders')
                         <li>
                              <a href="{{ route('orders.create') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.create') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Add Order</a>
                         </li>
+                        @endcan
+                        @can('view order call list')
                         <li>
                              <a href="{{ route('orders.call-list') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.call-list') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Call List</a>
                         </li>
+                        @endcan
+                        @can('view waybills')
                         <li>
                              <a href="{{ route('orders.waybill.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.waybill.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Waybill Print</a>
                         </li>
+                        @endcan
+                        @can('view waybill excel exports')
                         <li>
                              <a href="{{ route('orders.waybill-excel.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.waybill-excel.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Excel Export</a>
                         </li>
+                        @endcan
+                        @can('view packing')
                         <li>
                              <a href="{{ route('orders.packing.ready') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.packing.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Packing</a>
                         </li>
+                        @endcan
                     </ul>
                 </li>
+                @endcanany
 
                 <!-- Purchases -->
+                @canany(['view purchases', 'view purchase moderation', 'create purchases', 'view store placement', 'view store racks'])
                 <li>
                     <button type="button" class="flex items-center w-full p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('purchases.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}" aria-controls="dropdown-purchases" data-collapse-toggle="dropdown-purchases">
                         <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('purchases.*') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
@@ -202,34 +275,52 @@
                         </svg>
                     </button>
                     <ul id="dropdown-purchases" class="{{ request()->routeIs('purchases.*') ? '' : 'hidden' }} py-2 space-y-2">
+                        @can('view purchases')
                         <li>
                             <a href="{{ route('purchases.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('purchases.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Purchase List</a>
                         </li>
+                        @endcan
+                        @can('view purchase moderation')
                         <li>
                             <a href="{{ route('purchases.moderation.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('purchases.moderation.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Purchase Moderation</a>
                         </li>
+                        @endcan
+                        @can('create purchases')
                         <li>
                             <a href="{{ route('purchases.create') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('purchases.create') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Add Purchase</a>
                         </li>
+                        @endcan
+                        @can('view store placement')
                         <li>
                             <a href="{{ route('purchases.store-placement.index', 'retail') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('purchases.store-placement.*') && request()->route('store') === 'retail' ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Add to Retail Store</a>
                         </li>
+                        @endcan
+                        @can('view store racks')
                         <li>
                             <a href="{{ route('purchases.store-racks.index', 'retail') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('purchases.store-racks.*') && request()->route('store') === 'retail' ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Retail Racks</a>
                         </li>
+                        @endcan
+                        @can('view store placement')
                         <li>
                             <a href="{{ route('purchases.store-placement.index', 'warehouse') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('purchases.store-placement.*') && request()->route('store') === 'warehouse' ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Add to Warehouse Store</a>
                         </li>
+                        @endcan
+                        @can('view store racks')
                         <li>
                             <a href="{{ route('purchases.store-racks.index', 'warehouse') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('purchases.store-racks.*') && request()->route('store') === 'warehouse' ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Warehouse Racks</a>
                         </li>
+                        @endcan
                     </ul>
                 </li>
+                @endcanany
 
                 <!-- Separator for Admin Section -->
+                @canany(['view users', 'view roles', 'view permissions', 'view user logs', 'view reports'])
                 <li class="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700"></li>
+                @endcanany
 
                 <!-- Users Dropdown -->
+                @canany(['view users', 'view roles', 'view permissions'])
                 <li>
                     <button type="button" class="flex items-center w-full p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}" aria-controls="dropdown-users" data-collapse-toggle="dropdown-users">
                         <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
@@ -256,6 +347,7 @@
                         @endcan
                     </ul>
                 </li>
+                @endcanany
 
                 <!-- User Logs -->
                 @can('view user logs')
@@ -270,15 +362,19 @@
                 @endcan
 
                 <!-- Reports (part of same admin section) -->
+                @can('view reports')
                 <li>
                     <a href="{{ route('reports.index') }}" class="flex items-center p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('reports.index') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700' }}">
                         <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('reports.index') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                         <span class="ms-3">Reports</span>
                     </a>
                 </li>
+                @endcan
 
                 <!-- Separator (end of Admin Section) -->
+                @canany(['view users', 'view roles', 'view permissions', 'view user logs', 'view reports'])
                 <li class="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700"></li>
+                @endcanany
             </ul>
         </div>
         

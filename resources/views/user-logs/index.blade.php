@@ -149,14 +149,16 @@
             </div>
         </form>
 
-        <div class="mb-4 flex flex-wrap items-center justify-end gap-2">
-            <a href="{{ route('user-logs.export', array_merge(request()->query(), ['format' => 'excel'])) }}" class="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                Export Excel
-            </a>
-            <a href="{{ route('user-logs.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-800 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
-                Export PDF
-            </a>
-        </div>
+        @can('export user logs')
+            <div class="mb-4 flex flex-wrap items-center justify-end gap-2">
+                <a href="{{ route('user-logs.export', array_merge(request()->query(), ['format' => 'excel'])) }}" class="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                    Export Excel
+                </a>
+                <a href="{{ route('user-logs.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-800 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+                    Export PDF
+                </a>
+            </div>
+        @endcan
 
         <div class="relative overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             <table class="w-full text-left text-sm text-gray-500 dark:text-gray-400">

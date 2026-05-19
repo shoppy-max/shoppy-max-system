@@ -44,7 +44,9 @@
                     <div class="xl:col-span-4">
                         <div class="mb-2 flex items-center justify-between gap-2">
                             <label for="payment_account_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Account <span class="text-red-500">*</span></label>
+                            @can('create bank accounts')
                             <a href="{{ route('bank-accounts.create') }}" class="text-xs font-medium text-primary-700 hover:underline dark:text-primary-400">Add Account</a>
+                            @endcan
                         </div>
                         <select name="payment_account_id" id="payment_account_id" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
                             <option value="">Select payment account</option>
@@ -131,15 +133,18 @@
                         <button type="button" onclick="clearManualEntry()" class="inline-flex flex-1 items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
                             Clear
                         </button>
+                        @can('process courier receive')
                         <button type="button" onclick="addToTable()" class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
                             Add
                         </button>
+                        @endcan
                     </div>
                 </div>
 
                 <input type="hidden" id="manual_order_id">
             </div>
 
+            @can('process courier receive')
             <div class="mb-6 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
                 <div class="grid grid-cols-1 gap-4 xl:grid-cols-12">
                     <div class="xl:col-span-9">
@@ -210,17 +215,21 @@
                     </div>
                 </div>
             </div>
+            @endcan
 
+            @can('process courier receive')
             <div class="flex justify-end">
                 <button type="submit" class="inline-flex items-center rounded-lg bg-green-700 px-8 py-3 text-sm font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700">
                     Save Payment
                 </button>
             </div>
+            @endcan
         </form>
     </div>
 
     <script>
         const initialReceiveOrders = @json($initialRows);
+        const canProcessCourierReceive = @json(auth()->user()?->can('process courier receive') ?? false);
 
         function getToast() {
             if (typeof Swal !== 'undefined') {
@@ -416,7 +425,7 @@
                 <td class="whitespace-nowrap px-4 py-3 text-right font-medium text-gray-700 dark:text-gray-200"><span class="courier-commission-value">${breakdown.commission.toFixed(2)}</span></td>
                 <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-emerald-700 dark:text-emerald-300"><span class="received-amount-value">${breakdown.received.toFixed(2)}</span></td>
                 <td class="px-4 py-3 text-center">
-                    <button type="button" onclick="removeRow(this)" class="inline-flex items-center rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50">Delete</button>
+                    ${canProcessCourierReceive ? '<button type="button" onclick="removeRow(this)" class="inline-flex items-center rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50">Delete</button>' : ''}
                     <input type="hidden" name="order_ids[]" value="${order.id}">
                 </td>
             `;

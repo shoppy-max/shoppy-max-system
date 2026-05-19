@@ -1,0 +1,92 @@
+- generic [active] [ref=e1]:
+  - complementary [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - link [ref=e6] [cursor=pointer]:
+            - /url: http://127.0.0.1:8000/dashboard
+            - img [ref=e8]
+            - generic [ref=e10]: ShoppyMax
+          - button [ref=e11] [cursor=pointer]:
+            - img [ref=e12]
+        - list [ref=e14]:
+          - listitem [ref=e15]:
+            - link [ref=e16] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/dashboard
+              - img [ref=e17]
+              - generic [ref=e19]: Dashboard
+          - listitem [ref=e20]:
+            - button [ref=e21] [cursor=pointer]:
+              - img [ref=e22]
+              - generic [ref=e24]: Contact Management
+              - img [ref=e25]
+          - listitem [ref=e27]:
+            - button [ref=e28] [cursor=pointer]:
+              - img [ref=e29]
+              - generic [ref=e31]: Direct Resellers
+              - img [ref=e32]
+          - listitem [ref=e34]:
+            - button [ref=e35] [cursor=pointer]:
+              - img [ref=e36]
+              - generic [ref=e38]: Resellers
+              - img [ref=e39]
+          - listitem [ref=e41]:
+            - button [ref=e42] [cursor=pointer]:
+              - img [ref=e43]
+              - generic [ref=e45]: Products
+              - img [ref=e46]
+          - listitem [ref=e48]:
+            - button [ref=e49] [cursor=pointer]:
+              - img [ref=e50]
+              - generic [ref=e52]: Couriers
+              - img [ref=e53]
+          - listitem [ref=e55]:
+            - button [ref=e56] [cursor=pointer]:
+              - img [ref=e57]
+              - generic [ref=e59]: Orders
+              - img [ref=e60]
+          - listitem [ref=e62]:
+            - button [ref=e63] [cursor=pointer]:
+              - img [ref=e64]
+              - generic [ref=e66]: Purchases
+              - img [ref=e67]
+          - listitem [ref=e69]
+          - listitem [ref=e70]:
+            - button [ref=e71] [cursor=pointer]:
+              - img [ref=e72]
+              - generic [ref=e74]: Users
+              - img [ref=e75]
+          - listitem [ref=e77]:
+            - link [ref=e78] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/user-logs
+              - img [ref=e79]
+              - generic [ref=e81]: User Logs
+          - listitem [ref=e82]:
+            - link [ref=e83] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/reports
+              - img [ref=e84]
+              - generic [ref=e86]: Reports
+          - listitem [ref=e87]
+      - generic [ref=e88]:
+        - generic [ref=e89]:
+          - paragraph [ref=e90]: System Date & Time
+          - paragraph [ref=e91]: Wed, 20 May 2026
+          - paragraph [ref=e92]: 04:53:18
+          - paragraph [ref=e93]: Asia/Colombo
+        - generic [ref=e95]:
+          - generic [ref=e96]: Super Admin
+          - button [ref=e98] [cursor=pointer]: Log Out
+  - generic [ref=e99]:
+    - heading "Dashboard" [level=2] [ref=e101]
+    - main [ref=e102]:
+      - generic [ref=e104]:
+        - generic [ref=e107]:
+          - generic [ref=e108]:
+            - heading "Welcome back, Super Admin! 👋" [level=3] [ref=e109]
+            - paragraph [ref=e110]: Here is an overview of your account today.
+          - generic [ref=e112]: super admin
+        - generic [ref=e113]:
+          - img [ref=e115]
+          - generic [ref=e117]:
+            - heading "Admin Access Granted" [level=3] [ref=e118]
+            - paragraph [ref=e120]: You have elevated privileges.

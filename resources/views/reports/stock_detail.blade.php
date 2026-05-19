@@ -7,8 +7,10 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('reports.stock') }}" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">Back</a>
-                <a href="{{ route('reports.stock.show', array_merge(['variant' => $variant->id], request()->except(['page', 'export']), ['export' => 'pdf'])) }}" class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">PDF</a>
-                <a href="{{ route('reports.stock.show', array_merge(['variant' => $variant->id], request()->except(['page', 'export']), ['export' => 'excel'])) }}" class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Excel</a>
+                @can('export reports')
+                    <a href="{{ route('reports.stock.show', array_merge(['variant' => $variant->id], request()->except(['page', 'export']), ['export' => 'pdf'])) }}" class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">PDF</a>
+                    <a href="{{ route('reports.stock.show', array_merge(['variant' => $variant->id], request()->except(['page', 'export']), ['export' => 'excel'])) }}" class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Excel</a>
+                @endcan
             </div>
         </div>
     </x-slot>

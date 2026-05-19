@@ -109,7 +109,9 @@
                     <div class="xl:col-span-3">
                         <div class="mb-2 flex items-center justify-between gap-2">
                             <label for="bank_account_id" class="block text-sm font-medium text-gray-900 dark:text-white">Payment Account <span class="text-red-500">*</span></label>
+                            @can('create bank accounts')
                             <a href="{{ route('bank-accounts.create') }}" class="text-xs font-medium text-primary-700 hover:underline dark:text-primary-400">Add Account</a>
+                            @endcan
                         </div>
                         <select name="bank_account_id" id="bank_account_id" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
                             <option value="">Select payment account</option>
@@ -191,9 +193,11 @@
                         <button type="button" onclick="clearManualEntry()" class="inline-flex flex-1 items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
                             Clear
                         </button>
+                        @can('edit courier payments')
                         <button type="button" onclick="addToTable()" class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
                             Add
                         </button>
+                        @endcan
                     </div>
                 </div>
 
@@ -260,15 +264,18 @@
                 <a href="{{ route('courier-payments.index') }}" class="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-800">
                     Cancel
                 </a>
+                @can('edit courier payments')
                 <button type="submit" class="rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
                     Update Payment
                 </button>
+                @endcan
             </div>
         </div>
     </form>
 
     <script>
         const initialLinkedOrders = @json($linkedOrders);
+        const canEditCourierPayments = @json(auth()->user()?->can('edit courier payments') ?? false);
 
         function getToast() {
             if (typeof Swal !== 'undefined') {
@@ -471,7 +478,7 @@
                 <td class="whitespace-nowrap px-4 py-3 text-right font-medium text-gray-700 dark:text-gray-200"><span class="courier-commission-value">${breakdown.commission.toFixed(2)}</span></td>
                 <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-emerald-700 dark:text-emerald-300"><span class="received-amount-value">${breakdown.received.toFixed(2)}</span></td>
                 <td class="px-4 py-3 text-center">
-                    <button type="button" onclick="removeRow(this)" class="inline-flex items-center rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50">Delete</button>
+                    ${canEditCourierPayments ? '<button type="button" onclick="removeRow(this)" class="inline-flex items-center rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50">Delete</button>' : ''}
                     <input type="hidden" name="order_ids[]" value="${order.id}">
                 </td>
             `;

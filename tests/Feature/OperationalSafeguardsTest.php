@@ -22,6 +22,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Facades\Excel;
 use RuntimeException;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class OperationalSafeguardsTest extends TestCase
@@ -88,6 +89,7 @@ class OperationalSafeguardsTest extends TestCase
     public function test_call_list_shows_edit_action_for_pending_and_hold_orders(): void
     {
         $user = User::factory()->create();
+        $this->grantPermissions($user, ['edit orders']);
         $pendingOrder = Order::forceCreate([
             'order_number' => 'ORD-20260518-0004',
             'order_date' => now()->toDateString(),
@@ -571,6 +573,7 @@ class OperationalSafeguardsTest extends TestCase
     public function test_orders_index_exposes_cancel_action_only_before_waybill_printing(): void
     {
         $user = User::factory()->create();
+        $this->grantPermissions($user, ['update order statuses']);
 
         Order::forceCreate([
             'order_number' => 'ORD-20260518-0400',
@@ -635,6 +638,7 @@ class OperationalSafeguardsTest extends TestCase
     public function test_delivered_orders_only_show_download_and_view_actions_on_index(): void
     {
         $user = User::factory()->create();
+        $this->grantPermissions($user, ['export orders']);
 
         Order::forceCreate([
             'order_number' => 'ORD-20260518-0403',
@@ -774,5 +778,17 @@ class OperationalSafeguardsTest extends TestCase
                 'last_event_at' => now(),
             ]);
         }
+    }
+
+    private function grantPermissions(User $user, array $permissions): void
+    {
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        $user->givePermissionTo($permissions);
     }
 }

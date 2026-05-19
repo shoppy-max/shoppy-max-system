@@ -7,7 +7,7 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use App\Support\RbacPermissions;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -19,22 +19,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create permissions
-        $permissions = [
-            'view users',
-            'create users',
-            'edit users',
-            'delete users',
-            'view roles',
-            'create roles',
-            'edit roles',
-            'delete roles',
-            'view permissions',
-            'assign permissions',
-            'view user logs',
-        ];
-
-        foreach ($permissions as $permission) {
+        foreach (RbacPermissions::allPermissionNames() as $permission) {
             Permission::firstOrCreate([
                 'name' => $permission,
                 'guard_name' => 'web',
@@ -63,11 +48,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
-        // Assign all permissions to super admin
-        $superAdminRole->syncPermissions(Permission::all());
+        $superAdminRole->syncPermissions(RbacPermissions::allPermissionNames());
 
         // Assign some permissions to admin
         $adminRole->syncPermissions([
+            'view dashboard',
             'view users',
             'create users',
             'edit users',
@@ -76,10 +61,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'view user logs',
         ]);
 
-        // User role intentionally receives no elevated permissions.
-        $userRole->syncPermissions([]);
-        $resellerRole->syncPermissions([]);
-        $directResellerRole->syncPermissions([]);
+        // Keep login redirects valid while operational modules remain RBAC-gated.
+        $userRole->syncPermissions(['view dashboard']);
+        $resellerRole->syncPermissions(['view dashboard']);
+        $directResellerRole->syncPermissions(['view dashboard']);
 
         // Create super admin user
         // NOTE: For security, change this password immediately after first login in production
@@ -104,6 +89,8 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         $superAdmin->syncRoles(['super admin']);
+
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
         
         // Display warning in console
         $this->command->warn('⚠️  WARNING: Default super admin created with password "password"');

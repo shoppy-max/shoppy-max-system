@@ -1,0 +1,196 @@
+- generic [active] [ref=e1]:
+  - complementary [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - link [ref=e6] [cursor=pointer]:
+            - /url: http://127.0.0.1:8000/dashboard
+            - img [ref=e8]
+            - generic [ref=e10]: ShoppyMax
+          - button [ref=e11] [cursor=pointer]:
+            - img [ref=e12]
+        - list [ref=e14]:
+          - listitem [ref=e15]:
+            - link [ref=e16] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/dashboard
+              - img [ref=e17]
+              - generic [ref=e19]: Dashboard
+          - listitem [ref=e20]:
+            - button [ref=e21] [cursor=pointer]:
+              - img [ref=e22]
+              - generic [ref=e24]: Contact Management
+              - img [ref=e25]
+          - listitem [ref=e27]:
+            - button [ref=e28] [cursor=pointer]:
+              - img [ref=e29]
+              - generic [ref=e31]: Direct Resellers
+              - img [ref=e32]
+          - listitem [ref=e34]:
+            - button [ref=e35] [cursor=pointer]:
+              - img [ref=e36]
+              - generic [ref=e38]: Resellers
+              - img [ref=e39]
+          - listitem [ref=e41]:
+            - button [ref=e42] [cursor=pointer]:
+              - img [ref=e43]
+              - generic [ref=e45]: Products
+              - img [ref=e46]
+          - listitem [ref=e48]:
+            - button [ref=e49] [cursor=pointer]:
+              - img [ref=e50]
+              - generic [ref=e52]: Couriers
+              - img [ref=e53]
+          - listitem [ref=e55]:
+            - button [ref=e56] [cursor=pointer]:
+              - img [ref=e57]
+              - generic [ref=e59]: Orders
+              - img [ref=e60]
+          - listitem [ref=e62]:
+            - button [ref=e63] [cursor=pointer]:
+              - img [ref=e64]
+              - generic [ref=e66]: Purchases
+              - img [ref=e67]
+          - listitem [ref=e69]
+          - listitem [ref=e70]:
+            - button [ref=e71] [cursor=pointer]:
+              - img [ref=e72]
+              - generic [ref=e74]: Users
+              - img [ref=e75]
+            - list [ref=e77]:
+              - listitem [ref=e78]:
+                - link [ref=e79] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/admin/users
+                  - text: Users
+              - listitem [ref=e80]:
+                - link [ref=e81] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/admin/roles
+                  - text: Roles
+              - listitem [ref=e82]:
+                - link [ref=e83] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/admin/permissions
+                  - text: Permissions
+          - listitem [ref=e84]:
+            - link [ref=e85] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/user-logs
+              - img [ref=e86]
+              - generic [ref=e88]: User Logs
+          - listitem [ref=e89]:
+            - link [ref=e90] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/reports
+              - img [ref=e91]
+              - generic [ref=e93]: Reports
+          - listitem [ref=e94]
+      - generic [ref=e95]:
+        - generic [ref=e96]:
+          - paragraph [ref=e97]: System Date & Time
+          - paragraph [ref=e98]: Wed, 20 May 2026
+          - paragraph [ref=e99]: 04:54:21
+          - paragraph [ref=e100]: Asia/Colombo
+        - generic [ref=e102]:
+          - generic [ref=e103]: Super Admin
+          - button [ref=e105] [cursor=pointer]: Log Out
+  - generic [ref=e106]:
+    - generic [ref=e108]:
+      - heading "Role Management" [level=2] [ref=e109]
+      - navigation "Breadcrumb" [ref=e110]:
+        - list [ref=e111]:
+          - listitem [ref=e112]:
+            - link "Dashboard" [ref=e113] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/dashboard
+              - img [ref=e114]
+              - text: Dashboard
+          - listitem [ref=e116]:
+            - generic [ref=e117]:
+              - img [ref=e118]
+              - generic [ref=e120]: Roles
+    - main [ref=e121]:
+      - generic [ref=e122]:
+        - generic [ref=e123]:
+          - generic [ref=e125]:
+            - generic:
+              - img
+            - textbox "Search roles..." [ref=e126]
+          - link "Create Role" [ref=e128] [cursor=pointer]:
+            - /url: http://127.0.0.1:8000/admin/roles/create
+            - img [ref=e129]
+            - text: Create Role
+        - table [ref=e132]:
+          - rowgroup [ref=e133]:
+            - row "Role Name Permissions Actions" [ref=e134]:
+              - columnheader "Role Name" [ref=e135]
+              - columnheader "Permissions" [ref=e136]
+              - columnheader "Actions" [ref=e137]
+          - rowgroup [ref=e138]:
+            - row "su super admin view dashboard view users create users edit users delete users +119 more" [ref=e139]:
+              - cell "su super admin" [ref=e140]:
+                - generic [ref=e141]:
+                  - generic [ref=e142]: su
+                  - text: super admin
+              - cell "view dashboard view users create users edit users delete users +119 more" [ref=e143]:
+                - generic [ref=e144]:
+                  - generic [ref=e145]: view dashboard
+                  - generic [ref=e146]: view users
+                  - generic [ref=e147]: create users
+                  - generic [ref=e148]: edit users
+                  - generic [ref=e149]: delete users
+                  - generic [ref=e150]: +119 more
+              - cell [ref=e151]:
+                - link "Edit" [ref=e153] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/admin/roles/1/edit
+                  - img [ref=e154]
+            - row "ad admin view dashboard view users create users edit users view roles +2 more" [ref=e156]:
+              - cell "ad admin" [ref=e157]:
+                - generic [ref=e158]:
+                  - generic [ref=e159]: ad
+                  - text: admin
+              - cell "view dashboard view users create users edit users view roles +2 more" [ref=e160]:
+                - generic [ref=e161]:
+                  - generic [ref=e162]: view dashboard
+                  - generic [ref=e163]: view users
+                  - generic [ref=e164]: create users
+                  - generic [ref=e165]: edit users
+                  - generic [ref=e166]: view roles
+                  - generic [ref=e167]: +2 more
+              - cell [ref=e168]:
+                - link "Edit" [ref=e170] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/admin/roles/2/edit
+                  - img [ref=e171]
+            - row "us user view dashboard" [ref=e173]:
+              - cell "us user" [ref=e174]:
+                - generic [ref=e175]:
+                  - generic [ref=e176]: us
+                  - text: user
+              - cell "view dashboard" [ref=e177]:
+                - generic [ref=e179]: view dashboard
+              - cell [ref=e180]:
+                - link "Edit" [ref=e182] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/admin/roles/3/edit
+                  - img [ref=e183]
+            - row "re reseller view dashboard" [ref=e185]:
+              - cell "re reseller" [ref=e186]:
+                - generic [ref=e187]:
+                  - generic [ref=e188]: re
+                  - text: reseller
+              - cell "view dashboard" [ref=e189]:
+                - generic [ref=e191]: view dashboard
+              - cell [ref=e192]:
+                - generic [ref=e193]:
+                  - link "Edit" [ref=e194] [cursor=pointer]:
+                    - /url: http://127.0.0.1:8000/admin/roles/4/edit
+                    - img [ref=e195]
+                  - button "Delete" [ref=e198] [cursor=pointer]:
+                    - img [ref=e199]
+            - row "di direct reseller view dashboard" [ref=e201]:
+              - cell "di direct reseller" [ref=e202]:
+                - generic [ref=e203]:
+                  - generic [ref=e204]: di
+                  - text: direct reseller
+              - cell "view dashboard" [ref=e205]:
+                - generic [ref=e207]: view dashboard
+              - cell [ref=e208]:
+                - generic [ref=e209]:
+                  - link "Edit" [ref=e210] [cursor=pointer]:
+                    - /url: http://127.0.0.1:8000/admin/roles/5/edit
+                    - img [ref=e211]
+                  - button "Delete" [ref=e214] [cursor=pointer]:
+                    - img [ref=e215]

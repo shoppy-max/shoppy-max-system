@@ -233,6 +233,7 @@
                             </td>
                             <td class="px-6 py-4 text-right min-w-[340px]">
                                 <div class="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
+                                    @can('update order statuses')
                                     <template x-if="!isManualLocked && currentStatus === 'hold'">
                                         <button type="button" @click="updateStatus('pending')" :disabled="updating" class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-yellow-300 bg-yellow-50 px-2.5 py-1.5 text-xs font-medium text-yellow-800 hover:bg-yellow-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50" title="Move Back To Pending">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,6 +266,8 @@
                                             </svg>
                                         </span>
                                     </template>
+                                    @endcan
+                                    @can('edit orders')
                                     <template x-if="!isManualLocked && ['pending', 'hold'].includes(String(currentStatus || '').toLowerCase())">
                                         <a href="{{ route('orders.edit', $order) }}" class="shrink-0 text-blue-600 hover:text-blue-800" title="Edit Order">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -272,6 +275,7 @@
                                             </svg>
                                         </a>
                                     </template>
+                                    @endcan
                                     <button @click="viewOrder({{ json_encode($order) }})" class="shrink-0 text-green-600 hover:text-green-800" title="Quick View">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     </button>

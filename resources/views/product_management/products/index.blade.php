@@ -157,17 +157,21 @@
 
                 <!-- Page Actions -->
                 <div class="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+                    @can('import products')
                     <div class="inline-flex rounded-md shadow-sm" role="group">
                         <a href="{{ route('products.import.show') }}" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-blue-500 dark:focus:text-white">
                             <svg class="w-3 h-3 me-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                             Import
                         </a>
                     </div>
+                    @endcan
 
+                    @can('create products')
                     <a href="{{ route('products.create') }}" class="inline-flex items-center justify-center px-5 py-2 text-sm font-medium text-white transition-colors bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
                         <svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         New Product
                     </a>
+                    @endcan
                 </div>
             </div>
         </div>
@@ -274,16 +278,20 @@
                                      <button @click="viewProduct({{ $product->id }})" class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg dark:text-blue-400 dark:hover:bg-gray-700 transition-colors" title="View & Print Barcode">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     </button>
-                                    <a href="{{ route('products.edit', $product) }}" class="p-2 text-yellow-600 hover:bg-yellow-100 rounded-lg dark:text-yellow-400 dark:hover:bg-gray-700 transition-colors" title="Edit">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                    </a>
-                                    <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline-block" data-confirm-message="Are you sure you want to delete this product?">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="p-2 text-red-600 hover:bg-red-100 rounded-lg dark:text-red-400 dark:hover:bg-gray-700 transition-colors" title="Delete">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        </button>
-                                    </form>
+                                    @can('edit products')
+                                        <a href="{{ route('products.edit', $product) }}" class="p-2 text-yellow-600 hover:bg-yellow-100 rounded-lg dark:text-yellow-400 dark:hover:bg-gray-700 transition-colors" title="Edit">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        </a>
+                                    @endcan
+                                    @can('delete products')
+                                        <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline-block" data-confirm-message="Are you sure you want to delete this product?">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="p-2 text-red-600 hover:bg-red-100 rounded-lg dark:text-red-400 dark:hover:bg-gray-700 transition-colors" title="Delete">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </form>
+                                    @endcan
                                 </div>
                             </td>
                         </tr>
@@ -295,9 +303,11 @@
                                     <p class="text-lg font-medium">No products found</p>
                                     <p class="text-sm">Get started by adding a new product to your inventory.</p>
                                     <div class="mt-4">
+                                        @can('create products')
                                         <a href="{{ route('products.create') }}" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
                                             Add New Product
                                         </a>
+                                        @endcan
                                     </div>
                                 </div>
                             </td>
@@ -377,6 +387,7 @@
                         </div>
 <div class="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <h5 class="text-md font-semibold text-gray-900 dark:text-white">Product Variants</h5>
+    @can('print product barcodes')
     <div class="flex flex-wrap items-center gap-2">
         <button
             type="button"
@@ -395,6 +406,7 @@
             <span x-text="'Print All Labels (' + activeProductLabelCount() + ')'"></span>
         </button>
     </div>
+    @endcan
 </div>
                          <div class="relative overflow-x-auto border rounded-lg border-gray-200 dark:border-gray-700">
                             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
@@ -419,9 +431,11 @@
                                                  <span :class="variant.quantity <= (variant.alert_quantity || 0) ? 'text-red-600 bg-red-100' : 'text-green-600 bg-green-100'" class="px-2 py-0.5 rounded text-xs font-medium" x-text="variant.quantity"></span>
                                             </td>
                                             <td class="px-4 py-2 text-center">
+                                                @can('print product barcodes')
                                                 <a :href="'/admin/variants/' + variant.id + '/print-barcode'" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-xs">
                                                     <span x-text="productLabelCount(variant) === 1 ? 'Print 1 Label' : 'Print ' + productLabelCount(variant) + ' Labels'"></span>
                                                 </a>
+                                                @endcan
                                             </td>
                                         </tr>
                                     </template>
@@ -498,10 +512,13 @@
             </div>
             
             <div class="flex items-center gap-2">
+                @can('print product barcodes')
                 <button @click="bulkPrint()" class="flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:ring-gray-100 font-medium text-sm dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                     Print Labels
                 </button>
+                @endcan
+                @can('export products')
                 <button @click="bulkExportAll()" class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium text-sm dark:bg-green-500 dark:hover:bg-green-600">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     Export All
@@ -510,10 +527,13 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     Export Selected (<span x-text="selected.length"></span>)
                 </button>
+                @endcan
+                @can('delete products')
                 <button @click="confirmBulkDelete()" class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium text-sm dark:bg-red-500 dark:hover:bg-red-600">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     Delete Selected
                 </button>
+                @endcan
             </div>
         </div>
     </div>

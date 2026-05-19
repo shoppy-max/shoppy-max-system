@@ -68,7 +68,11 @@
                     $hasShortfall = (int) ($courier->printable_orders_count ?? 0) > (int) ($courier->available_waybills_count ?? 0);
                 @endphp
                 @if($canOpenWaybillQueue)
+                    @can('view waybills')
                     <a href="{{ route('orders.waybill.show', $courier) }}" class="courier-card block p-5 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:border-primary-300 dark:bg-gray-800 dark:border-gray-700 dark:hover:border-primary-700 transition-all">
+                    @else
+                    <div class="courier-card block p-5 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">
+                    @endcan
                 @else
                     <div class="courier-card block p-5 bg-gray-50 border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800/70 dark:border-gray-700 opacity-80">
                 @endif
@@ -99,7 +103,11 @@
                         <p class="mt-3 text-xs font-medium text-red-700 dark:text-red-300">No available waybill IDs. Add them from the courier list first.</p>
                     @endif
                 @if($canOpenWaybillQueue)
+                    @can('view waybills')
                     </a>
+                    @else
+                    </div>
+                    @endcan
                 @else
                     </div>
                 @endif

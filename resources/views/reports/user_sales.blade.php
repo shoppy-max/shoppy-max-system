@@ -40,8 +40,10 @@
                     <div class="flex flex-wrap gap-2">
                     <button class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Filter</button>
                     <a href="{{ route('reports.user-sales') }}" class="rounded-lg border border-gray-300 px-5 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200">Reset</a>
-                    <a href="{{ route('reports.user-sales', array_merge(request()->except(['page', 'export']), ['export' => 'pdf'])) }}" class="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100">PDF</a>
-                    <a href="{{ route('reports.user-sales', array_merge(request()->except(['page', 'export']), ['export' => 'excel'])) }}" class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Excel</a>
+                    @can('export reports')
+                        <a href="{{ route('reports.user-sales', array_merge(request()->except(['page', 'export']), ['export' => 'pdf'])) }}" class="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100">PDF</a>
+                        <a href="{{ route('reports.user-sales', array_merge(request()->except(['page', 'export']), ['export' => 'excel'])) }}" class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Excel</a>
+                    @endcan
                     </div>
                 </div>
             </form>

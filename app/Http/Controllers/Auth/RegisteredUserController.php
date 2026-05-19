@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Role;
 
 class RegisteredUserController extends Controller
 {
@@ -42,6 +43,10 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
+
+        if ($role = Role::where('name', 'user')->first()) {
+            $user->assignRole($role);
+        }
 
         Auth::login($user);
 

@@ -1,0 +1,821 @@
+- generic [ref=e1]:
+  - complementary [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - link [ref=e6] [cursor=pointer]:
+            - /url: http://127.0.0.1:8000/dashboard
+            - img [ref=e8]
+            - generic [ref=e10]: ShoppyMax
+          - button [ref=e11] [cursor=pointer]:
+            - img [ref=e12]
+        - list [ref=e14]:
+          - listitem [ref=e15]:
+            - link [ref=e16] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/dashboard
+              - img [ref=e17]
+              - generic [ref=e19]: Dashboard
+          - listitem [ref=e20]:
+            - button [ref=e21] [cursor=pointer]:
+              - img [ref=e22]
+              - generic [ref=e24]: Contact Management
+              - img [ref=e25]
+          - listitem [ref=e27]:
+            - button [ref=e28] [cursor=pointer]:
+              - img [ref=e29]
+              - generic [ref=e31]: Direct Resellers
+              - img [ref=e32]
+          - listitem [ref=e34]:
+            - button [ref=e35] [cursor=pointer]:
+              - img [ref=e36]
+              - generic [ref=e38]: Resellers
+              - img [ref=e39]
+          - listitem [ref=e41]:
+            - button [ref=e42] [cursor=pointer]:
+              - img [ref=e43]
+              - generic [ref=e45]: Products
+              - img [ref=e46]
+          - listitem [ref=e48]:
+            - button [ref=e49] [cursor=pointer]:
+              - img [ref=e50]
+              - generic [ref=e52]: Couriers
+              - img [ref=e53]
+          - listitem [ref=e55]:
+            - button [ref=e56] [cursor=pointer]:
+              - img [ref=e57]
+              - generic [ref=e59]: Orders
+              - img [ref=e60]
+          - listitem [ref=e62]:
+            - button [ref=e63] [cursor=pointer]:
+              - img [ref=e64]
+              - generic [ref=e66]: Purchases
+              - img [ref=e67]
+          - listitem [ref=e69]
+          - listitem [ref=e70]:
+            - button [ref=e71] [cursor=pointer]:
+              - img [ref=e72]
+              - generic [ref=e74]: Users
+              - img [ref=e75]
+            - list [ref=e77]:
+              - listitem [ref=e78]:
+                - link [ref=e79] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/admin/users
+                  - text: Users
+              - listitem [ref=e80]:
+                - link [ref=e81] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/admin/roles
+                  - text: Roles
+              - listitem [ref=e82]:
+                - link [ref=e83] [cursor=pointer]:
+                  - /url: http://127.0.0.1:8000/admin/permissions
+                  - text: Permissions
+          - listitem [ref=e84]:
+            - link [ref=e85] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/user-logs
+              - img [ref=e86]
+              - generic [ref=e88]: User Logs
+          - listitem [ref=e89]:
+            - link [ref=e90] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/reports
+              - img [ref=e91]
+              - generic [ref=e93]: Reports
+          - listitem [ref=e94]
+      - generic [ref=e95]:
+        - generic [ref=e96]:
+          - paragraph [ref=e97]: System Date & Time
+          - paragraph [ref=e98]: Wed, 20 May 2026
+          - paragraph [ref=e99]: 04:55:45
+          - paragraph [ref=e100]: Asia/Colombo
+        - generic [ref=e102]:
+          - generic [ref=e103]: Super Admin
+          - button [ref=e105] [cursor=pointer]: Log Out
+  - generic [ref=e106]:
+    - generic [ref=e108]:
+      - heading "Create New Role" [level=2] [ref=e109]
+      - navigation "Breadcrumb" [ref=e110]:
+        - list [ref=e111]:
+          - listitem [ref=e112]:
+            - link "Dashboard" [ref=e113] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/dashboard
+              - img [ref=e114]
+              - text: Dashboard
+          - listitem [ref=e116]:
+            - generic [ref=e117]:
+              - img [ref=e118]
+              - link "Roles" [ref=e120] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/admin/roles
+          - listitem [ref=e121]:
+            - generic [ref=e122]:
+              - img [ref=e123]
+              - generic [ref=e125]: Create
+    - main [ref=e126]:
+      - generic [ref=e131]:
+        - generic [ref=e132]:
+          - heading "1 Role Information" [level=3] [ref=e133]:
+            - generic [ref=e134]: "1"
+            - text: Role Information
+          - generic [ref=e135]:
+            - generic [ref=e136]: Role Name
+            - textbox "Role Name" [active] [ref=e137]:
+              - /placeholder: e.g., Manager, Editor
+        - generic [ref=e138]:
+          - heading "2 Assign Permissions" [level=3] [ref=e139]:
+            - generic [ref=e140]: "2"
+            - text: Assign Permissions
+          - paragraph [ref=e141]: Select what users with this role can do.
+          - generic [ref=e142]:
+            - generic [ref=e143]:
+              - generic [ref=e144]: Search permissions
+              - generic [ref=e145]:
+                - generic:
+                  - img
+                - searchbox "Search permissions" [ref=e146]
+            - generic [ref=e147]:
+              - generic [ref=e148]:
+                - generic [ref=e150]:
+                  - heading "Workspace" [level=4] [ref=e151]
+                  - paragraph [ref=e152]: 1 permissions
+                - generic [ref=e154] [cursor=pointer]:
+                  - checkbox "View dashboard view dashboard" [ref=e155]
+                  - generic [ref=e156]:
+                    - generic [ref=e157]: View dashboard
+                    - generic [ref=e158]: view dashboard
+              - generic [ref=e159]:
+                - generic [ref=e161]:
+                  - heading "Admin & RBAC" [level=4] [ref=e162]
+                  - paragraph [ref=e163]: 13 permissions
+                - generic [ref=e164]:
+                  - generic [ref=e165] [cursor=pointer]:
+                    - checkbox "View users view users" [ref=e166]
+                    - generic [ref=e167]:
+                      - generic [ref=e168]: View users
+                      - generic [ref=e169]: view users
+                  - generic [ref=e170] [cursor=pointer]:
+                    - checkbox "Create users create users" [ref=e171]
+                    - generic [ref=e172]:
+                      - generic [ref=e173]: Create users
+                      - generic [ref=e174]: create users
+                  - generic [ref=e175] [cursor=pointer]:
+                    - checkbox "Edit users edit users" [ref=e176]
+                    - generic [ref=e177]:
+                      - generic [ref=e178]: Edit users
+                      - generic [ref=e179]: edit users
+                  - generic [ref=e180] [cursor=pointer]:
+                    - checkbox "Delete users delete users" [ref=e181]
+                    - generic [ref=e182]:
+                      - generic [ref=e183]: Delete users
+                      - generic [ref=e184]: delete users
+                  - generic [ref=e185] [cursor=pointer]:
+                    - checkbox "View roles view roles" [ref=e186]
+                    - generic [ref=e187]:
+                      - generic [ref=e188]: View roles
+                      - generic [ref=e189]: view roles
+                  - generic [ref=e190] [cursor=pointer]:
+                    - checkbox "Create roles create roles" [ref=e191]
+                    - generic [ref=e192]:
+                      - generic [ref=e193]: Create roles
+                      - generic [ref=e194]: create roles
+                  - generic [ref=e195] [cursor=pointer]:
+                    - checkbox "Edit roles edit roles" [ref=e196]
+                    - generic [ref=e197]:
+                      - generic [ref=e198]: Edit roles
+                      - generic [ref=e199]: edit roles
+                  - generic [ref=e200] [cursor=pointer]:
+                    - checkbox "Assign role and user permissions assign permissions" [ref=e201]
+                    - generic [ref=e202]:
+                      - generic [ref=e203]: Assign role and user permissions
+                      - generic [ref=e204]: assign permissions
+                  - generic [ref=e205] [cursor=pointer]:
+                    - checkbox "Delete roles delete roles" [ref=e206]
+                    - generic [ref=e207]:
+                      - generic [ref=e208]: Delete roles
+                      - generic [ref=e209]: delete roles
+                  - generic [ref=e210] [cursor=pointer]:
+                    - checkbox "View permissions view permissions" [ref=e211]
+                    - generic [ref=e212]:
+                      - generic [ref=e213]: View permissions
+                      - generic [ref=e214]: view permissions
+                  - generic [ref=e215] [cursor=pointer]:
+                    - checkbox "Manage permissions manage permissions" [ref=e216]
+                    - generic [ref=e217]:
+                      - generic [ref=e218]: Manage permissions
+                      - generic [ref=e219]: manage permissions
+                  - generic [ref=e220] [cursor=pointer]:
+                    - checkbox "View user logs view user logs" [ref=e221]
+                    - generic [ref=e222]:
+                      - generic [ref=e223]: View user logs
+                      - generic [ref=e224]: view user logs
+                  - generic [ref=e225] [cursor=pointer]:
+                    - checkbox "Export user logs export user logs" [ref=e226]
+                    - generic [ref=e227]:
+                      - generic [ref=e228]: Export user logs
+                      - generic [ref=e229]: export user logs
+              - generic [ref=e230]:
+                - generic [ref=e232]:
+                  - heading "Contacts" [level=4] [ref=e233]
+                  - paragraph [ref=e234]: 15 permissions
+                - generic [ref=e235]:
+                  - generic [ref=e236] [cursor=pointer]:
+                    - checkbox "View Customers view customers" [ref=e237]
+                    - generic [ref=e238]:
+                      - generic [ref=e239]: View Customers
+                      - generic [ref=e240]: view customers
+                  - generic [ref=e241] [cursor=pointer]:
+                    - checkbox "Create Customers create customers" [ref=e242]
+                    - generic [ref=e243]:
+                      - generic [ref=e244]: Create Customers
+                      - generic [ref=e245]: create customers
+                  - generic [ref=e246] [cursor=pointer]:
+                    - checkbox "Edit Customers edit customers" [ref=e247]
+                    - generic [ref=e248]:
+                      - generic [ref=e249]: Edit Customers
+                      - generic [ref=e250]: edit customers
+                  - generic [ref=e251] [cursor=pointer]:
+                    - checkbox "Delete Customers delete customers" [ref=e252]
+                    - generic [ref=e253]:
+                      - generic [ref=e254]: Delete Customers
+                      - generic [ref=e255]: delete customers
+                  - generic [ref=e256] [cursor=pointer]:
+                    - checkbox "Export customers export customers" [ref=e257]
+                    - generic [ref=e258]:
+                      - generic [ref=e259]: Export customers
+                      - generic [ref=e260]: export customers
+                  - generic [ref=e261] [cursor=pointer]:
+                    - checkbox "View Suppliers view suppliers" [ref=e262]
+                    - generic [ref=e263]:
+                      - generic [ref=e264]: View Suppliers
+                      - generic [ref=e265]: view suppliers
+                  - generic [ref=e266] [cursor=pointer]:
+                    - checkbox "Create Suppliers create suppliers" [ref=e267]
+                    - generic [ref=e268]:
+                      - generic [ref=e269]: Create Suppliers
+                      - generic [ref=e270]: create suppliers
+                  - generic [ref=e271] [cursor=pointer]:
+                    - checkbox "Edit Suppliers edit suppliers" [ref=e272]
+                    - generic [ref=e273]:
+                      - generic [ref=e274]: Edit Suppliers
+                      - generic [ref=e275]: edit suppliers
+                  - generic [ref=e276] [cursor=pointer]:
+                    - checkbox "Delete Suppliers delete suppliers" [ref=e277]
+                    - generic [ref=e278]:
+                      - generic [ref=e279]: Delete Suppliers
+                      - generic [ref=e280]: delete suppliers
+                  - generic [ref=e281] [cursor=pointer]:
+                    - checkbox "Export suppliers export suppliers" [ref=e282]
+                    - generic [ref=e283]:
+                      - generic [ref=e284]: Export suppliers
+                      - generic [ref=e285]: export suppliers
+                  - generic [ref=e286] [cursor=pointer]:
+                    - checkbox "View Cities view cities" [ref=e287]
+                    - generic [ref=e288]:
+                      - generic [ref=e289]: View Cities
+                      - generic [ref=e290]: view cities
+                  - generic [ref=e291] [cursor=pointer]:
+                    - checkbox "Create Cities create cities" [ref=e292]
+                    - generic [ref=e293]:
+                      - generic [ref=e294]: Create Cities
+                      - generic [ref=e295]: create cities
+                  - generic [ref=e296] [cursor=pointer]:
+                    - checkbox "Edit Cities edit cities" [ref=e297]
+                    - generic [ref=e298]:
+                      - generic [ref=e299]: Edit Cities
+                      - generic [ref=e300]: edit cities
+                  - generic [ref=e301] [cursor=pointer]:
+                    - checkbox "Delete Cities delete cities" [ref=e302]
+                    - generic [ref=e303]:
+                      - generic [ref=e304]: Delete Cities
+                      - generic [ref=e305]: delete cities
+                  - generic [ref=e306] [cursor=pointer]:
+                    - checkbox "Export cities export cities" [ref=e307]
+                    - generic [ref=e308]:
+                      - generic [ref=e309]: Export cities
+                      - generic [ref=e310]: export cities
+              - generic [ref=e311]:
+                - generic [ref=e313]:
+                  - heading "Resellers" [level=4] [ref=e314]
+                  - paragraph [ref=e315]: 18 permissions
+                - generic [ref=e316]:
+                  - generic [ref=e317] [cursor=pointer]:
+                    - checkbox "View Direct Resellers view direct resellers" [ref=e318]
+                    - generic [ref=e319]:
+                      - generic [ref=e320]: View Direct Resellers
+                      - generic [ref=e321]: view direct resellers
+                  - generic [ref=e322] [cursor=pointer]:
+                    - checkbox "Create Direct Resellers create direct resellers" [ref=e323]
+                    - generic [ref=e324]:
+                      - generic [ref=e325]: Create Direct Resellers
+                      - generic [ref=e326]: create direct resellers
+                  - generic [ref=e327] [cursor=pointer]:
+                    - checkbox "Edit Direct Resellers edit direct resellers" [ref=e328]
+                    - generic [ref=e329]:
+                      - generic [ref=e330]: Edit Direct Resellers
+                      - generic [ref=e331]: edit direct resellers
+                  - generic [ref=e332] [cursor=pointer]:
+                    - checkbox "Delete Direct Resellers delete direct resellers" [ref=e333]
+                    - generic [ref=e334]:
+                      - generic [ref=e335]: Delete Direct Resellers
+                      - generic [ref=e336]: delete direct resellers
+                  - generic [ref=e337] [cursor=pointer]:
+                    - checkbox "Export direct resellers export direct resellers" [ref=e338]
+                    - generic [ref=e339]:
+                      - generic [ref=e340]: Export direct resellers
+                      - generic [ref=e341]: export direct resellers
+                  - generic [ref=e342] [cursor=pointer]:
+                    - checkbox "Reset direct reseller login passwords reset direct reseller passwords" [ref=e343]
+                    - generic [ref=e344]:
+                      - generic [ref=e345]: Reset direct reseller login passwords
+                      - generic [ref=e346]: reset direct reseller passwords
+                  - generic [ref=e347] [cursor=pointer]:
+                    - checkbox "View Resellers view resellers" [ref=e348]
+                    - generic [ref=e349]:
+                      - generic [ref=e350]: View Resellers
+                      - generic [ref=e351]: view resellers
+                  - generic [ref=e352] [cursor=pointer]:
+                    - checkbox "Create Resellers create resellers" [ref=e353]
+                    - generic [ref=e354]:
+                      - generic [ref=e355]: Create Resellers
+                      - generic [ref=e356]: create resellers
+                  - generic [ref=e357] [cursor=pointer]:
+                    - checkbox "Edit Resellers edit resellers" [ref=e358]
+                    - generic [ref=e359]:
+                      - generic [ref=e360]: Edit Resellers
+                      - generic [ref=e361]: edit resellers
+                  - generic [ref=e362] [cursor=pointer]:
+                    - checkbox "Delete Resellers delete resellers" [ref=e363]
+                    - generic [ref=e364]:
+                      - generic [ref=e365]: Delete Resellers
+                      - generic [ref=e366]: delete resellers
+                  - generic [ref=e367] [cursor=pointer]:
+                    - checkbox "Export resellers export resellers" [ref=e368]
+                    - generic [ref=e369]:
+                      - generic [ref=e370]: Export resellers
+                      - generic [ref=e371]: export resellers
+                  - generic [ref=e372] [cursor=pointer]:
+                    - checkbox "Reset reseller login passwords reset reseller passwords" [ref=e373]
+                    - generic [ref=e374]:
+                      - generic [ref=e375]: Reset reseller login passwords
+                      - generic [ref=e376]: reset reseller passwords
+                  - generic [ref=e377] [cursor=pointer]:
+                    - checkbox "View Reseller Targets view reseller targets" [ref=e378]
+                    - generic [ref=e379]:
+                      - generic [ref=e380]: View Reseller Targets
+                      - generic [ref=e381]: view reseller targets
+                  - generic [ref=e382] [cursor=pointer]:
+                    - checkbox "Create Reseller Targets create reseller targets" [ref=e383]
+                    - generic [ref=e384]:
+                      - generic [ref=e385]: Create Reseller Targets
+                      - generic [ref=e386]: create reseller targets
+                  - generic [ref=e387] [cursor=pointer]:
+                    - checkbox "Edit Reseller Targets edit reseller targets" [ref=e388]
+                    - generic [ref=e389]:
+                      - generic [ref=e390]: Edit Reseller Targets
+                      - generic [ref=e391]: edit reseller targets
+                  - generic [ref=e392] [cursor=pointer]:
+                    - checkbox "Delete Reseller Targets delete reseller targets" [ref=e393]
+                    - generic [ref=e394]:
+                      - generic [ref=e395]: Delete Reseller Targets
+                      - generic [ref=e396]: delete reseller targets
+                  - generic [ref=e397] [cursor=pointer]:
+                    - checkbox "View direct reseller dues view direct reseller dues" [ref=e398]
+                    - generic [ref=e399]:
+                      - generic [ref=e400]: View direct reseller dues
+                      - generic [ref=e401]: view direct reseller dues
+                  - generic [ref=e402] [cursor=pointer]:
+                    - checkbox "View reseller dues view reseller dues" [ref=e403]
+                    - generic [ref=e404]:
+                      - generic [ref=e405]: View reseller dues
+                      - generic [ref=e406]: view reseller dues
+              - generic [ref=e407]:
+                - generic [ref=e409]:
+                  - heading "Reseller Payments" [level=4] [ref=e410]
+                  - paragraph [ref=e411]: 12 permissions
+                - generic [ref=e412]:
+                  - generic [ref=e413] [cursor=pointer]:
+                    - checkbox "View Direct Reseller Payments view direct reseller payments" [ref=e414]
+                    - generic [ref=e415]:
+                      - generic [ref=e416]: View Direct Reseller Payments
+                      - generic [ref=e417]: view direct reseller payments
+                  - generic [ref=e418] [cursor=pointer]:
+                    - checkbox "Create Direct Reseller Payments create direct reseller payments" [ref=e419]
+                    - generic [ref=e420]:
+                      - generic [ref=e421]: Create Direct Reseller Payments
+                      - generic [ref=e422]: create direct reseller payments
+                  - generic [ref=e423] [cursor=pointer]:
+                    - checkbox "Edit Direct Reseller Payments edit direct reseller payments" [ref=e424]
+                    - generic [ref=e425]:
+                      - generic [ref=e426]: Edit Direct Reseller Payments
+                      - generic [ref=e427]: edit direct reseller payments
+                  - generic [ref=e428] [cursor=pointer]:
+                    - checkbox "Import direct reseller payments import direct reseller payments" [ref=e429]
+                    - generic [ref=e430]:
+                      - generic [ref=e431]: Import direct reseller payments
+                      - generic [ref=e432]: import direct reseller payments
+                  - generic [ref=e433] [cursor=pointer]:
+                    - checkbox "Download direct reseller payment vouchers download direct reseller payments" [ref=e434]
+                    - generic [ref=e435]:
+                      - generic [ref=e436]: Download direct reseller payment vouchers
+                      - generic [ref=e437]: download direct reseller payments
+                  - generic [ref=e438] [cursor=pointer]:
+                    - checkbox "Cancel direct reseller payments cancel direct reseller payments" [ref=e439]
+                    - generic [ref=e440]:
+                      - generic [ref=e441]: Cancel direct reseller payments
+                      - generic [ref=e442]: cancel direct reseller payments
+                  - generic [ref=e443] [cursor=pointer]:
+                    - checkbox "View Reseller Payments view reseller payments" [ref=e444]
+                    - generic [ref=e445]:
+                      - generic [ref=e446]: View Reseller Payments
+                      - generic [ref=e447]: view reseller payments
+                  - generic [ref=e448] [cursor=pointer]:
+                    - checkbox "Create Reseller Payments create reseller payments" [ref=e449]
+                    - generic [ref=e450]:
+                      - generic [ref=e451]: Create Reseller Payments
+                      - generic [ref=e452]: create reseller payments
+                  - generic [ref=e453] [cursor=pointer]:
+                    - checkbox "Edit Reseller Payments edit reseller payments" [ref=e454]
+                    - generic [ref=e455]:
+                      - generic [ref=e456]: Edit Reseller Payments
+                      - generic [ref=e457]: edit reseller payments
+                  - generic [ref=e458] [cursor=pointer]:
+                    - checkbox "Import reseller payments import reseller payments" [ref=e459]
+                    - generic [ref=e460]:
+                      - generic [ref=e461]: Import reseller payments
+                      - generic [ref=e462]: import reseller payments
+                  - generic [ref=e463] [cursor=pointer]:
+                    - checkbox "Download reseller payment vouchers download reseller payments" [ref=e464]
+                    - generic [ref=e465]:
+                      - generic [ref=e466]: Download reseller payment vouchers
+                      - generic [ref=e467]: download reseller payments
+                  - generic [ref=e468] [cursor=pointer]:
+                    - checkbox "Cancel reseller payments cancel reseller payments" [ref=e469]
+                    - generic [ref=e470]:
+                      - generic [ref=e471]: Cancel reseller payments
+                      - generic [ref=e472]: cancel reseller payments
+              - generic [ref=e473]:
+                - generic [ref=e475]:
+                  - heading "Product Management" [level=4] [ref=e476]
+                  - paragraph [ref=e477]: 26 permissions
+                - generic [ref=e478]:
+                  - generic [ref=e479] [cursor=pointer]:
+                    - checkbox "View Products view products" [ref=e480]
+                    - generic [ref=e481]:
+                      - generic [ref=e482]: View Products
+                      - generic [ref=e483]: view products
+                  - generic [ref=e484] [cursor=pointer]:
+                    - checkbox "Create Products create products" [ref=e485]
+                    - generic [ref=e486]:
+                      - generic [ref=e487]: Create Products
+                      - generic [ref=e488]: create products
+                  - generic [ref=e489] [cursor=pointer]:
+                    - checkbox "Edit Products edit products" [ref=e490]
+                    - generic [ref=e491]:
+                      - generic [ref=e492]: Edit Products
+                      - generic [ref=e493]: edit products
+                  - generic [ref=e494] [cursor=pointer]:
+                    - checkbox "Delete Products delete products" [ref=e495]
+                    - generic [ref=e496]:
+                      - generic [ref=e497]: Delete Products
+                      - generic [ref=e498]: delete products
+                  - generic [ref=e499] [cursor=pointer]:
+                    - checkbox "Export products export products" [ref=e500]
+                    - generic [ref=e501]:
+                      - generic [ref=e502]: Export products
+                      - generic [ref=e503]: export products
+                  - generic [ref=e504] [cursor=pointer]:
+                    - checkbox "Import products import products" [ref=e505]
+                    - generic [ref=e506]:
+                      - generic [ref=e507]: Import products
+                      - generic [ref=e508]: import products
+                  - generic [ref=e509] [cursor=pointer]:
+                    - checkbox "Print product barcodes print product barcodes" [ref=e510]
+                    - generic [ref=e511]:
+                      - generic [ref=e512]: Print product barcodes
+                      - generic [ref=e513]: print product barcodes
+                  - generic [ref=e514] [cursor=pointer]:
+                    - checkbox "View Categories view categories" [ref=e515]
+                    - generic [ref=e516]:
+                      - generic [ref=e517]: View Categories
+                      - generic [ref=e518]: view categories
+                  - generic [ref=e519] [cursor=pointer]:
+                    - checkbox "Create Categories create categories Create categories create categories" [ref=e520]
+                    - generic [ref=e521]:
+                      - generic [ref=e522]: Create Categories
+                      - generic [ref=e523]: create categories
+                  - generic [ref=e524] [cursor=pointer]:
+                    - checkbox "Edit Categories edit categories" [ref=e525]
+                    - generic [ref=e526]:
+                      - generic [ref=e527]: Edit Categories
+                      - generic [ref=e528]: edit categories
+                  - generic [ref=e529] [cursor=pointer]:
+                    - checkbox "Delete Categories delete categories" [ref=e530]
+                    - generic [ref=e531]:
+                      - generic [ref=e532]: Delete Categories
+                      - generic [ref=e533]: delete categories
+                  - generic [ref=e534] [cursor=pointer]:
+                    - checkbox "View Sub Categories view sub categories" [ref=e535]
+                    - generic [ref=e536]:
+                      - generic [ref=e537]: View Sub Categories
+                      - generic [ref=e538]: view sub categories
+                  - generic [ref=e539] [cursor=pointer]:
+                    - checkbox "Create Sub Categories create sub categories Create sub categories create sub categories" [ref=e540]
+                    - generic [ref=e541]:
+                      - generic [ref=e542]: Create Sub Categories
+                      - generic [ref=e543]: create sub categories
+                  - generic [ref=e544] [cursor=pointer]:
+                    - checkbox "Edit Sub Categories edit sub categories" [ref=e545]
+                    - generic [ref=e546]:
+                      - generic [ref=e547]: Edit Sub Categories
+                      - generic [ref=e548]: edit sub categories
+                  - generic [ref=e549] [cursor=pointer]:
+                    - checkbox "Delete Sub Categories delete sub categories" [ref=e550]
+                    - generic [ref=e551]:
+                      - generic [ref=e552]: Delete Sub Categories
+                      - generic [ref=e553]: delete sub categories
+                  - generic [ref=e554] [cursor=pointer]:
+                    - checkbox "View Units view units" [ref=e555]
+                    - generic [ref=e556]:
+                      - generic [ref=e557]: View Units
+                      - generic [ref=e558]: view units
+                  - generic [ref=e559] [cursor=pointer]:
+                    - checkbox "Create Units create units Create units create units" [ref=e560]
+                    - generic [ref=e561]:
+                      - generic [ref=e562]: Create Units
+                      - generic [ref=e563]: create units
+                  - generic [ref=e564] [cursor=pointer]:
+                    - checkbox "Edit Units edit units" [ref=e565]
+                    - generic [ref=e566]:
+                      - generic [ref=e567]: Edit Units
+                      - generic [ref=e568]: edit units
+                  - generic [ref=e569] [cursor=pointer]:
+                    - checkbox "Delete Units delete units" [ref=e570]
+                    - generic [ref=e571]:
+                      - generic [ref=e572]: Delete Units
+                      - generic [ref=e573]: delete units
+                  - generic [ref=e574] [cursor=pointer]:
+                    - checkbox "View Attributes view attributes" [ref=e575]
+                    - generic [ref=e576]:
+                      - generic [ref=e577]: View Attributes
+                      - generic [ref=e578]: view attributes
+                  - generic [ref=e579] [cursor=pointer]:
+                    - checkbox "Create Attributes create attributes" [ref=e580]
+                    - generic [ref=e581]:
+                      - generic [ref=e582]: Create Attributes
+                      - generic [ref=e583]: create attributes
+                  - generic [ref=e584] [cursor=pointer]:
+                    - checkbox "Edit Attributes edit attributes" [ref=e585]
+                    - generic [ref=e586]:
+                      - generic [ref=e587]: Edit Attributes
+                      - generic [ref=e588]: edit attributes
+                  - generic [ref=e589] [cursor=pointer]:
+                    - checkbox "Delete Attributes delete attributes" [ref=e590]
+                    - generic [ref=e591]:
+                      - generic [ref=e592]: Delete Attributes
+                      - generic [ref=e593]: delete attributes
+                  - generic [ref=e594] [cursor=pointer]:
+                    - checkbox [ref=e595]
+                    - generic [ref=e596]:
+                      - generic [ref=e597]: Create categories
+                      - generic [ref=e598]: create categories
+                  - generic [ref=e599] [cursor=pointer]:
+                    - checkbox [ref=e600]
+                    - generic [ref=e601]:
+                      - generic [ref=e602]: Create sub categories
+                      - generic [ref=e603]: create sub categories
+                  - generic [ref=e604] [cursor=pointer]:
+                    - checkbox [ref=e605]
+                    - generic [ref=e606]:
+                      - generic [ref=e607]: Create units
+                      - generic [ref=e608]: create units
+              - generic [ref=e609]:
+                - generic [ref=e611]:
+                  - heading "Order Management" [level=4] [ref=e612]
+                  - paragraph [ref=e613]: 15 permissions
+                - generic [ref=e614]:
+                  - generic [ref=e615] [cursor=pointer]:
+                    - checkbox "View orders view orders" [ref=e616]
+                    - generic [ref=e617]:
+                      - generic [ref=e618]: View orders
+                      - generic [ref=e619]: view orders
+                  - generic [ref=e620] [cursor=pointer]:
+                    - checkbox "Create orders create orders" [ref=e621]
+                    - generic [ref=e622]:
+                      - generic [ref=e623]: Create orders
+                      - generic [ref=e624]: create orders
+                  - generic [ref=e625] [cursor=pointer]:
+                    - checkbox "Edit orders edit orders" [ref=e626]
+                    - generic [ref=e627]:
+                      - generic [ref=e628]: Edit orders
+                      - generic [ref=e629]: edit orders
+                  - generic [ref=e630] [cursor=pointer]:
+                    - checkbox "Delete orders delete orders" [ref=e631]
+                    - generic [ref=e632]:
+                      - generic [ref=e633]: Delete orders
+                      - generic [ref=e634]: delete orders
+                  - generic [ref=e635] [cursor=pointer]:
+                    - checkbox "Update order statuses update order statuses" [ref=e636]
+                    - generic [ref=e637]:
+                      - generic [ref=e638]: Update order statuses
+                      - generic [ref=e639]: update order statuses
+                  - generic [ref=e640] [cursor=pointer]:
+                    - checkbox "Export orders export orders" [ref=e641]
+                    - generic [ref=e642]:
+                      - generic [ref=e643]: Export orders
+                      - generic [ref=e644]: export orders
+                  - generic [ref=e645] [cursor=pointer]:
+                    - checkbox "Print orders print orders" [ref=e646]
+                    - generic [ref=e647]:
+                      - generic [ref=e648]: Print orders
+                      - generic [ref=e649]: print orders
+                  - generic [ref=e650] [cursor=pointer]:
+                    - checkbox "View order call list view order call list" [ref=e651]
+                    - generic [ref=e652]:
+                      - generic [ref=e653]: View order call list
+                      - generic [ref=e654]: view order call list
+                  - generic [ref=e655] [cursor=pointer]:
+                    - checkbox "View waybill queues view waybills" [ref=e656]
+                    - generic [ref=e657]:
+                      - generic [ref=e658]: View waybill queues
+                      - generic [ref=e659]: view waybills
+                  - generic [ref=e660] [cursor=pointer]:
+                    - checkbox "Print and reprint waybills print waybills" [ref=e661]
+                    - generic [ref=e662]:
+                      - generic [ref=e663]: Print and reprint waybills
+                      - generic [ref=e664]: print waybills
+                  - generic [ref=e665] [cursor=pointer]:
+                    - checkbox "View waybill Excel export queues view waybill excel exports" [ref=e666]
+                    - generic [ref=e667]:
+                      - generic [ref=e668]: View waybill Excel export queues
+                      - generic [ref=e669]: view waybill excel exports
+                  - generic [ref=e670] [cursor=pointer]:
+                    - checkbox "Export waybill Excel files export waybill excel" [ref=e671]
+                    - generic [ref=e672]:
+                      - generic [ref=e673]: Export waybill Excel files
+                      - generic [ref=e674]: export waybill excel
+                  - generic [ref=e675] [cursor=pointer]:
+                    - checkbox "View packing queues view packing" [ref=e676]
+                    - generic [ref=e677]:
+                      - generic [ref=e678]: View packing queues
+                      - generic [ref=e679]: view packing
+                  - generic [ref=e680] [cursor=pointer]:
+                    - checkbox "Scan and process packing process packing" [ref=e681]
+                    - generic [ref=e682]:
+                      - generic [ref=e683]: Scan and process packing
+                      - generic [ref=e684]: process packing
+                  - generic [ref=e685] [cursor=pointer]:
+                    - checkbox "Mark packed orders dispatched dispatch orders" [ref=e686]
+                    - generic [ref=e687]:
+                      - generic [ref=e688]: Mark packed orders dispatched
+                      - generic [ref=e689]: dispatch orders
+              - generic [ref=e690]:
+                - generic [ref=e692]:
+                  - heading "Purchases & Stock Intake" [level=4] [ref=e693]
+                  - paragraph [ref=e694]: 12 permissions
+                - generic [ref=e695]:
+                  - generic [ref=e696] [cursor=pointer]:
+                    - checkbox "View purchases view purchases" [ref=e697]
+                    - generic [ref=e698]:
+                      - generic [ref=e699]: View purchases
+                      - generic [ref=e700]: view purchases
+                  - generic [ref=e701] [cursor=pointer]:
+                    - checkbox "Create purchases create purchases" [ref=e702]
+                    - generic [ref=e703]:
+                      - generic [ref=e704]: Create purchases
+                      - generic [ref=e705]: create purchases
+                  - generic [ref=e706] [cursor=pointer]:
+                    - checkbox "Edit purchases edit purchases" [ref=e707]
+                    - generic [ref=e708]:
+                      - generic [ref=e709]: Edit purchases
+                      - generic [ref=e710]: edit purchases
+                  - generic [ref=e711] [cursor=pointer]:
+                    - checkbox "Delete purchases delete purchases" [ref=e712]
+                    - generic [ref=e713]:
+                      - generic [ref=e714]: Delete purchases
+                      - generic [ref=e715]: delete purchases
+                  - generic [ref=e716] [cursor=pointer]:
+                    - checkbox "Print purchase PDFs and barcodes print purchases" [ref=e717]
+                    - generic [ref=e718]:
+                      - generic [ref=e719]: Print purchase PDFs and barcodes
+                      - generic [ref=e720]: print purchases
+                  - generic [ref=e721] [cursor=pointer]:
+                    - checkbox "View purchase moderation view purchase moderation" [ref=e722]
+                    - generic [ref=e723]:
+                      - generic [ref=e724]: View purchase moderation
+                      - generic [ref=e725]: view purchase moderation
+                  - generic [ref=e726] [cursor=pointer]:
+                    - checkbox "Approve purchase moderation stages approve purchases" [ref=e727]
+                    - generic [ref=e728]:
+                      - generic [ref=e729]: Approve purchase moderation stages
+                      - generic [ref=e730]: approve purchases
+                  - generic [ref=e731] [cursor=pointer]:
+                    - checkbox "Scan purchase GRN units scan purchase grn" [ref=e732]
+                    - generic [ref=e733]:
+                      - generic [ref=e734]: Scan purchase GRN units
+                      - generic [ref=e735]: scan purchase grn
+                  - generic [ref=e736] [cursor=pointer]:
+                    - checkbox "View store placement pages view store placement" [ref=e737]
+                    - generic [ref=e738]:
+                      - generic [ref=e739]: View store placement pages
+                      - generic [ref=e740]: view store placement
+                  - generic [ref=e741] [cursor=pointer]:
+                    - checkbox "Place stock into retail or warehouse racks place stock in stores" [ref=e742]
+                    - generic [ref=e743]:
+                      - generic [ref=e744]: Place stock into retail or warehouse racks
+                      - generic [ref=e745]: place stock in stores
+                  - generic [ref=e746] [cursor=pointer]:
+                    - checkbox "View retail and warehouse racks view store racks" [ref=e747]
+                    - generic [ref=e748]:
+                      - generic [ref=e749]: View retail and warehouse racks
+                      - generic [ref=e750]: view store racks
+                  - generic [ref=e751] [cursor=pointer]:
+                    - checkbox "Create retail and warehouse racks create store racks" [ref=e752]
+                    - generic [ref=e753]:
+                      - generic [ref=e754]: Create retail and warehouse racks
+                      - generic [ref=e755]: create store racks
+              - generic [ref=e756]:
+                - generic [ref=e758]:
+                  - heading "Courier & Bank Accounts" [level=4] [ref=e759]
+                  - paragraph [ref=e760]: 13 permissions
+                - generic [ref=e761]:
+                  - generic [ref=e762] [cursor=pointer]:
+                    - checkbox "View Couriers view couriers" [ref=e763]
+                    - generic [ref=e764]:
+                      - generic [ref=e765]: View Couriers
+                      - generic [ref=e766]: view couriers
+                  - generic [ref=e767] [cursor=pointer]:
+                    - checkbox "Create Couriers create couriers" [ref=e768]
+                    - generic [ref=e769]:
+                      - generic [ref=e770]: Create Couriers
+                      - generic [ref=e771]: create couriers
+                  - generic [ref=e772] [cursor=pointer]:
+                    - checkbox "Edit Couriers edit couriers" [ref=e773]
+                    - generic [ref=e774]:
+                      - generic [ref=e775]: Edit Couriers
+                      - generic [ref=e776]: edit couriers
+                  - generic [ref=e777] [cursor=pointer]:
+                    - checkbox "Delete Couriers delete couriers" [ref=e778]
+                    - generic [ref=e779]:
+                      - generic [ref=e780]: Delete Couriers
+                      - generic [ref=e781]: delete couriers
+                  - generic [ref=e782] [cursor=pointer]:
+                    - checkbox "Manage courier waybill number ranges manage courier waybills" [ref=e783]
+                    - generic [ref=e784]:
+                      - generic [ref=e785]: Manage courier waybill number ranges
+                      - generic [ref=e786]: manage courier waybills
+                  - generic [ref=e787] [cursor=pointer]:
+                    - checkbox "View receive courier payment flow view courier receive" [ref=e788]
+                    - generic [ref=e789]:
+                      - generic [ref=e790]: View receive courier payment flow
+                      - generic [ref=e791]: view courier receive
+                  - generic [ref=e792] [cursor=pointer]:
+                    - checkbox "Import and store courier receive payments process courier receive" [ref=e793]
+                    - generic [ref=e794]:
+                      - generic [ref=e795]: Import and store courier receive payments
+                      - generic [ref=e796]: process courier receive
+                  - generic [ref=e797] [cursor=pointer]:
+                    - checkbox "View courier payment records view courier payments" [ref=e798]
+                    - generic [ref=e799]:
+                      - generic [ref=e800]: View courier payment records
+                      - generic [ref=e801]: view courier payments
+                  - generic [ref=e802] [cursor=pointer]:
+                    - checkbox "Edit courier payment records edit courier payments" [ref=e803]
+                    - generic [ref=e804]:
+                      - generic [ref=e805]: Edit courier payment records
+                      - generic [ref=e806]: edit courier payments
+                  - generic [ref=e807] [cursor=pointer]:
+                    - checkbox "View Bank Accounts view bank accounts" [ref=e808]
+                    - generic [ref=e809]:
+                      - generic [ref=e810]: View Bank Accounts
+                      - generic [ref=e811]: view bank accounts
+                  - generic [ref=e812] [cursor=pointer]:
+                    - checkbox "Create Bank Accounts create bank accounts" [ref=e813]
+                    - generic [ref=e814]:
+                      - generic [ref=e815]: Create Bank Accounts
+                      - generic [ref=e816]: create bank accounts
+                  - generic [ref=e817] [cursor=pointer]:
+                    - checkbox "Edit Bank Accounts edit bank accounts" [ref=e818]
+                    - generic [ref=e819]:
+                      - generic [ref=e820]: Edit Bank Accounts
+                      - generic [ref=e821]: edit bank accounts
+                  - generic [ref=e822] [cursor=pointer]:
+                    - checkbox "Delete Bank Accounts delete bank accounts" [ref=e823]
+                    - generic [ref=e824]:
+                      - generic [ref=e825]: Delete Bank Accounts
+                      - generic [ref=e826]: delete bank accounts
+              - generic [ref=e827]:
+                - generic [ref=e829]:
+                  - heading "Reports" [level=4] [ref=e830]
+                  - paragraph [ref=e831]: 2 permissions
+                - generic [ref=e832]:
+                  - generic [ref=e833] [cursor=pointer]:
+                    - checkbox "View reports view reports" [ref=e834]
+                    - generic [ref=e835]:
+                      - generic [ref=e836]: View reports
+                      - generic [ref=e837]: view reports
+                  - generic [ref=e838] [cursor=pointer]:
+                    - checkbox "Export reports to PDF or Excel export reports" [ref=e839]
+                    - generic [ref=e840]:
+                      - generic [ref=e841]: Export reports to PDF or Excel
+                      - generic [ref=e842]: export reports
+        - generic [ref=e843]:
+          - link "Cancel" [ref=e844] [cursor=pointer]:
+            - /url: http://127.0.0.1:8000/admin/roles
+          - button "Create Role" [ref=e845] [cursor=pointer]

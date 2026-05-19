@@ -42,6 +42,7 @@
                 <a href="{{ route('orders.waybill.index') }}" class="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-800 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
                     Back
                 </a>
+                @can('print waybills')
                 <button
                     type="button"
                     id="printSelectedBtn"
@@ -50,6 +51,7 @@
                 >
                     Print Selected
                 </button>
+                @endcan
             </div>
         </div>
 
@@ -135,10 +137,14 @@
             </form>
         </div>
 
+        @can('print waybills')
         <form action="{{ route('orders.waybill.print') }}" method="POST" target="waybillDownloadFrame" id="waybillForm">
             @csrf
             <input type="hidden" name="courier_id" value="{{ $courier->id }}">
             <input type="hidden" name="paper_size" id="paperSizeInput" value="">
+        @else
+        <div>
+        @endcan
 
             <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div class="px-4 py-3 bg-gray-50 dark:bg-gray-900/30 border-b border-gray-200 dark:border-gray-700 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -152,9 +158,11 @@
                     <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
                             <tr>
+                                @can('print waybills')
                                 <th scope="col" class="px-4 py-3 w-4">
                                     <input type="checkbox" id="selectAll" class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600">
                                 </th>
+                                @endcan
                                 <th scope="col" class="px-4 py-3">Order ID</th>
                                 <th scope="col" class="px-4 py-3">Customer</th>
                                 <th scope="col" class="px-4 py-3">Mobile</th>
@@ -175,9 +183,11 @@
                                     ];
                                 @endphp
                                 <tr class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                    @can('print waybills')
                                     <td class="px-4 py-3">
                                         <input type="checkbox" name="order_ids[]" value="{{ $order->id }}" class="order-checkbox w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600">
                                     </td>
+                                    @endcan
                                     <td class="px-4 py-3">
                                         <div class="font-medium text-gray-900 dark:text-white">{{ $order->order_number }}</div>
                                         <div class="text-xs text-gray-500 dark:text-gray-400">{{ $order->order_date ? \Illuminate\Support\Carbon::parse($order->order_date)->format('d M Y') : '-' }}</div>
@@ -202,7 +212,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                                    <td colspan="@can('print waybills')7@else6@endcan" class="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                                         No orders found for this courier with current filters.
                                     </td>
                                 </tr>
@@ -211,13 +221,18 @@
                     </table>
                 </div>
             </div>
+        @can('print waybills')
         </form>
+        @else
+        </div>
+        @endcan
 
         <div class="mt-4">
             {{ $orders->withQueryString()->links() }}
         </div>
     </div>
 
+    @can('print waybills')
     <div id="paperSizeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
         <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
             <div class="flex items-start justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
@@ -266,6 +281,7 @@
             </div>
         </div>
     </div>
+    @endcan
 
     <iframe name="waybillDownloadFrame" class="hidden"></iframe>
 

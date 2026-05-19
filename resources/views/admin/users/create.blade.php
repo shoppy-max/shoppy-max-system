@@ -39,7 +39,7 @@
         <div class="max-w-3xl mx-auto">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg sm:rounded-xl border border-gray-200 dark:border-gray-700">
                 <div class="p-8 text-gray-900 dark:text-gray-100">
-                    
+
                     <form method="POST" action="{{ route('admin.users.store') }}">
                         @csrf
 
@@ -85,32 +85,44 @@
                             </div>
                         </div>
 
-                        <!-- Roles Section -->
-                        <div class="mb-8 border-t border-gray-200 dark:border-gray-700 pt-6">
-                             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                                <span class="bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">3</span>
-                                Roles & Permissions
-                            </h3>
-                            
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Assign valid roles to this user. This determines what they can access.</p>
+                        @can('assign permissions')
+                            <!-- Roles Section -->
+                            <div class="mb-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+                                 <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">3</span>
+                                    Roles & Permissions
+                                </h3>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                @foreach($roles as $role)
-                                    <div class="relative flex items-start py-3 px-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer" onclick="document.getElementById('role_{{ $role->id }}').click()">
-                                        <div class="min-w-0 flex-1 text-sm">
-                                            <label for="role_{{ $role->id }}" class="font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer">
-                                                {{ $role->name }}
-                                            </label>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Assign valid roles to this user. This determines what they can access.</p>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    @foreach($roles as $role)
+                                        <div class="relative flex items-start py-3 px-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer" onclick="document.getElementById('role_{{ $role->id }}').click()">
+                                            <div class="min-w-0 flex-1 text-sm">
+                                                <label for="role_{{ $role->id }}" class="font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer">
+                                                    {{ $role->name }}
+                                                </label>
+                                            </div>
+                                            <div class="ml-3 flex items-center h-5">
+                                                <input id="role_{{ $role->id }}" name="roles[]" value="{{ $role->name }}" type="checkbox" class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                                                {{ (is_array(old('roles')) && in_array($role->name, old('roles'))) ? 'checked' : '' }}>
+                                            </div>
                                         </div>
-                                        <div class="ml-3 flex items-center h-5">
-                                            <input id="role_{{ $role->id }}" name="roles[]" value="{{ $role->name }}" type="checkbox" class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                                            {{ (is_array(old('roles')) && in_array($role->name, old('roles'))) ? 'checked' : '' }}>
-                                        </div>
-                                    </div>
-                                @endforeach
+                                    @endforeach
+                                </div>
+                                 <x-input-error :messages="$errors->get('roles')" class="mt-2" />
                             </div>
-                             <x-input-error :messages="$errors->get('roles')" class="mt-2" />
-                        </div>
+
+                            <div class="mb-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">4</span>
+                                    Direct User Permissions
+                                </h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Use direct permissions only for exceptions. Roles should carry the normal access set.</p>
+                                @include('admin.partials.permission-groups', ['permissionGroups' => $permissionGroups])
+                                <x-input-error :messages="$errors->get('permissions')" class="mt-2" />
+                            </div>
+                        @endcan
 
                         <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
                              <a href="{{ route('admin.users.index') }}" class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white text-sm font-medium">Cancel</a>

@@ -16,6 +16,7 @@ use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Maatwebsite\Excel\Facades\Excel;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class ReportsTest extends TestCase
@@ -25,6 +26,7 @@ class ReportsTest extends TestCase
     public function test_stock_report_uses_available_inventory_units_and_fifo_value(): void
     {
         $user = User::factory()->create();
+        $this->grantPermissions($user, ['export reports']);
         [$product, $variant] = $this->makeProductWithVariant('Report Cream', 'RPT-CRM-100', '100 ml');
         [$purchase, $purchaseItem] = $this->makePurchaseItem($product, $variant, 4, 125);
         $this->makeInventoryUnit($variant, $purchase, $purchaseItem, InventoryUnit::STATUS_AVAILABLE, 'RPT-1');
@@ -445,5 +447,17 @@ class ReportsTest extends TestCase
         ]);
 
         return $order;
+    }
+
+    private function grantPermissions(User $user, array $permissions): void
+    {
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        $user->givePermissionTo($permissions);
     }
 }

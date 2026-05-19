@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Reseller;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class ResellerAccountService
@@ -137,14 +138,21 @@ class ResellerAccountService
 
     private function syncRole(User $user, Reseller $reseller): void
     {
-        Role::firstOrCreate([
+        $dashboardPermission = Permission::firstOrCreate([
+            'name' => 'view dashboard',
+            'guard_name' => 'web',
+        ]);
+
+        $resellerRole = Role::firstOrCreate([
             'name' => self::ROLE_RESELLER,
             'guard_name' => 'web',
         ]);
-        Role::firstOrCreate([
+        $directResellerRole = Role::firstOrCreate([
             'name' => self::ROLE_DIRECT_RESELLER,
             'guard_name' => 'web',
         ]);
+        $resellerRole->givePermissionTo($dashboardPermission);
+        $directResellerRole->givePermissionTo($dashboardPermission);
 
         $otherRole = $this->roleFor($reseller) === self::ROLE_RESELLER
             ? self::ROLE_DIRECT_RESELLER
