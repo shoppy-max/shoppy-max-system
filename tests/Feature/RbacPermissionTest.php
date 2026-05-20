@@ -174,6 +174,13 @@ class RbacPermissionTest extends TestCase
         $this->assertSame('create categories', RbacPermissions::permissionForRoute('quick.category.store'));
         $this->assertSame('create sub categories', RbacPermissions::permissionForRoute('quick.subcategory.store'));
         $this->assertSame('create units', RbacPermissions::permissionForRoute('quick.unit.store'));
+        $this->assertSame('view ready to pick orders', RbacPermissions::permissionForRoute('orders.packing.ready'));
+        $this->assertSame('view picking orders', RbacPermissions::permissionForRoute('orders.packing.picking'));
+        $this->assertSame('view packed orders', RbacPermissions::permissionForRoute('orders.packing.packed'));
+        $this->assertSame('view dispatched orders', RbacPermissions::permissionForRoute('orders.packing.dispatched'));
+        $this->assertSame('deliver orders', RbacPermissions::permissionForRoute('orders.packing.mark-delivered'));
+        $this->assertContains('view picking orders', RbacPermissions::alternativePermissionsForRoute('orders.packing.index'));
+        $this->assertContains('scan packing', RbacPermissions::alternativePermissionsForRoute('orders.packing.picking'));
     }
 
     public function test_role_assignment_through_admin_form_unlocks_only_selected_routes(): void
@@ -249,7 +256,7 @@ class RbacPermissionTest extends TestCase
         $this->actingAs($editor)
             ->put(route('admin.roles.update', $role), [
                 'name' => 'packing lead',
-                'permissions' => ['view packing'],
+                'permissions' => ['view ready to pick orders'],
             ])
             ->assertForbidden();
 

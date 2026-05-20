@@ -43,28 +43,42 @@
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $stageConfig['title'] }}</h3>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $stageConfig['description'] }}</p>
             </div>
-            <a href="{{ route('orders.index', ['view' => 'active']) }}" class="inline-flex w-full items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 sm:w-auto">
-                Orders
-            </a>
+            @canany(['view orders', 'view own orders'])
+                <a href="{{ route('orders.index', ['view' => 'active']) }}" class="inline-flex w-full items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 sm:w-auto">
+                    Orders
+                </a>
+            @endcanany
         </div>
 
-        <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            @can('view ready to pick orders')
             <a href="{{ $stageRoutes['ready'] }}" class="rounded-lg border p-4 transition {{ $stage === 'ready' ? 'border-indigo-300 bg-indigo-50 dark:border-indigo-700 dark:bg-indigo-900/20' : 'border-gray-200 bg-gray-50 hover:border-indigo-300 hover:bg-indigo-50 dark:border-gray-700 dark:bg-gray-900/20 dark:hover:border-indigo-700 dark:hover:bg-indigo-900/20' }}">
                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Ready To Pick</p>
                 <p class="mt-1 text-2xl font-bold text-indigo-700 dark:text-indigo-300">{{ number_format($stats['waybill_printed'] ?? 0) }}</p>
             </a>
+            @endcan
+            @canany(['view picking orders', 'scan packing'])
             <a href="{{ $stageRoutes['picking'] }}" class="rounded-lg border p-4 transition {{ $stage === 'picking' ? 'border-purple-300 bg-purple-50 dark:border-purple-700 dark:bg-purple-900/20' : 'border-gray-200 bg-gray-50 hover:border-purple-300 hover:bg-purple-50 dark:border-gray-700 dark:bg-gray-900/20 dark:hover:border-purple-700 dark:hover:bg-purple-900/20' }}">
                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Picking / Scanning</p>
                 <p class="mt-1 text-2xl font-bold text-purple-700 dark:text-purple-300">{{ number_format($stats['picked_from_rack'] ?? 0) }}</p>
             </a>
+            @endcanany
+            @can('view packed orders')
             <a href="{{ $stageRoutes['packed'] }}" class="rounded-lg border p-4 transition {{ $stage === 'packed' ? 'border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-900/20' : 'border-gray-200 bg-gray-50 hover:border-blue-300 hover:bg-blue-50 dark:border-gray-700 dark:bg-gray-900/20 dark:hover:border-blue-700 dark:hover:bg-blue-900/20' }}">
                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Packed</p>
                 <p class="mt-1 text-2xl font-bold text-blue-700 dark:text-blue-300">{{ number_format($stats['packed'] ?? 0) }}</p>
             </a>
+            @endcan
+            @can('view dispatched orders')
+            <a href="{{ $stageRoutes['dispatched'] }}" class="rounded-lg border p-4 transition {{ $stage === 'dispatched' ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20' : 'border-gray-200 bg-gray-50 hover:border-emerald-300 hover:bg-emerald-50 dark:border-gray-700 dark:bg-gray-900/20 dark:hover:border-emerald-700 dark:hover:bg-emerald-900/20' }}">
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Dispatched</p>
+                <p class="mt-1 text-2xl font-bold text-emerald-700 dark:text-emerald-300">{{ number_format($stats['dispatched'] ?? 0) }}</p>
+            </a>
+            @endcan
         </div>
 
         <div class="mb-6 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-            <form method="GET" action="{{ match ($stage) { 'picking' => route('orders.packing.picking'), 'packed' => route('orders.packing.packed'), default => route('orders.packing.ready') } }}" class="grid grid-cols-1 gap-3 lg:grid-cols-12">
+            <form method="GET" action="{{ match ($stage) { 'picking' => route('orders.packing.picking'), 'packed' => route('orders.packing.packed'), 'dispatched' => route('orders.packing.dispatched'), default => route('orders.packing.ready') } }}" class="grid grid-cols-1 gap-3 lg:grid-cols-12">
                 <div class="lg:col-span-8">
                     <label for="search" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
                     <input id="search" name="search" value="{{ $filters['search'] ?? '' }}" type="text" placeholder="Order, waybill, customer, SKU, label, rack, or GRN" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400">
@@ -81,7 +95,7 @@
                     <button type="submit" class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
                         Filter
                     </button>
-                    <a href="{{ match ($stage) { 'picking' => route('orders.packing.picking'), 'packed' => route('orders.packing.packed'), default => route('orders.packing.ready') } }}" class="inline-flex flex-1 items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+                    <a href="{{ match ($stage) { 'picking' => route('orders.packing.picking'), 'packed' => route('orders.packing.packed'), 'dispatched' => route('orders.packing.dispatched'), default => route('orders.packing.ready') } }}" class="inline-flex flex-1 items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
                         Reset
                     </a>
                 </div>
@@ -122,6 +136,9 @@
                                     ]))
                                     ->unique(fn ($entry) => $entry['location'] . '|' . $entry['source'])
                                     ->values();
+                                $requiresCourierReceive = trim((string) ($order->payment_method ?? 'COD')) === 'COD'
+                                    && blank($order->courier_payment_id)
+                                    && round((float) ($order->total_amount ?? 0), 2) > round((float) ($order->paid_amount ?? 0), 2);
                             @endphp
                             <tr class="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">
                                 <td class="px-4 py-3">
@@ -166,33 +183,76 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-right">
-                                    <div class="flex min-w-[300px] justify-end gap-2">
-                                        <a href="{{ route('orders.show', $order) }}" class="inline-flex min-w-[84px] items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
-                                            View
-                                        </a>
-                                        @if($order->pick_grn_number && $stage !== 'packed')
+                                    <div class="flex min-w-[360px] justify-end gap-2">
+                                        @canany(['view orders', 'view own orders'])
+                                            <a href="{{ route('orders.show', $order) }}" class="inline-flex min-w-[84px] items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                                                View
+                                            </a>
+                                        @endcanany
+                                        @if($order->pick_grn_number && $stage === 'picking')
                                             <button type="button" @click="activePickGrn = pickGrnPayloads[@js((string) $order->id)] || null" class="inline-flex min-w-[104px] items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40">
                                                 Pick GRN
                                             </button>
                                         @endif
                                         @if($stage === 'ready')
+                                            @can('create pick grns')
                                             <form action="{{ route('orders.packing.mark-picked', $order->id) }}" method="POST">
                                                 @csrf
                                                 <button type="submit" class="inline-flex min-w-[142px] items-center justify-center rounded-lg bg-blue-700 px-4 py-2 text-xs font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
                                                     Create Pick GRN
                                                 </button>
                                             </form>
+                                            @endcan
                                         @elseif($stage === 'packed')
+                                            @can('dispatch orders')
                                             <form action="{{ route('orders.packing.mark-dispatched', $order->id) }}" method="POST">
                                                 @csrf
                                                 <button type="submit" class="inline-flex min-w-[104px] items-center justify-center rounded-lg bg-cyan-600 px-4 py-2 text-xs font-medium text-white hover:bg-cyan-700 focus:ring-4 focus:ring-cyan-300">
                                                     Dispatch
                                                 </button>
                                             </form>
+                                            @endcan
+                                        @elseif($stage === 'dispatched')
+                                            @if($requiresCourierReceive)
+                                                @can('view courier receive')
+                                                    @if($order->courier_id)
+                                                        <a href="{{ route('courier-receive.show', $order->courier_id) }}" class="inline-flex min-w-[148px] items-center justify-center rounded-lg bg-amber-600 px-4 py-2 text-xs font-medium text-white hover:bg-amber-700 focus:ring-4 focus:ring-amber-300">
+                                                            Receive Payment
+                                                        </a>
+                                                    @else
+                                                        <span class="inline-flex min-w-[148px] items-center justify-center rounded-lg bg-amber-50 px-4 py-2 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                                                            Courier Missing
+                                                        </span>
+                                                    @endif
+                                                @else
+                                                    <span class="inline-flex min-w-[148px] items-center justify-center rounded-lg bg-gray-100 px-4 py-2 text-xs font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-300">
+                                                        Courier Receive Needed
+                                                    </span>
+                                                @endcan
+                                            @else
+                                                @can('deliver orders')
+                                                <form
+                                                    action="{{ route('orders.packing.mark-delivered', $order->id) }}"
+                                                    method="POST"
+                                                    data-confirm-title="Mark order delivered?"
+                                                    data-confirm-message="Mark {{ $order->order_number }} as delivered and close its allocated stock units?"
+                                                    data-confirm-icon="question"
+                                                    data-confirm-button-text="Mark Delivered"
+                                                    data-confirm-button-color="#047857"
+                                                >
+                                                    @csrf
+                                                    <button type="submit" class="inline-flex min-w-[132px] items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-300">
+                                                        Mark Delivered
+                                                    </button>
+                                                </form>
+                                                @endcan
+                                            @endif
                                         @else
+                                            @can('scan packing')
                                             <a href="{{ route('orders.packing.process', $order->id) }}" class="inline-flex min-w-[96px] items-center justify-center rounded-lg bg-blue-700 px-4 py-2 text-xs font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
                                                 Scan
                                             </a>
+                                            @endcan
                                         @endif
                                     </div>
                                 </td>
@@ -302,15 +362,17 @@
                         <a href="{{ $pickGrnModal['picking_url'] ?? route('orders.packing.picking') }}" class="inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
                             Go To Picking
                         </a>
+                        @canany(['view pick grns', 'create pick grns', 'scan packing'])
                         <a href="{{ $pickGrnModal['print_url'] ?? '#' }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
                             Print / Save PDF
                         </a>
+                        @endcanany
                     </div>
                 </div>
             </div>
         @endif
 
-        @if($stage !== 'packed')
+        @if($stage === 'picking')
             <div
                 x-show="activePickGrn"
                 x-cloak
@@ -396,9 +458,11 @@
                         <button type="button" @click="activePickGrn = null" class="inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
                             Close
                         </button>
+                        @canany(['view pick grns', 'create pick grns', 'scan packing'])
                         <a :href="activePickGrn?.print_url || '#'" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
                             Print / Save PDF
                         </a>
+                        @endcanany
                     </div>
                 </div>
             </div>

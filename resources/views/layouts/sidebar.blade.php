@@ -220,7 +220,7 @@
                 @endcanany
 
                 <!-- Orders -->
-                @canany(['view orders', 'view own orders', 'create orders', 'create own orders', 'view order call list', 'view waybills', 'view waybill excel exports', 'view packing'])
+                @canany(['view orders', 'view own orders', 'create orders', 'create own orders', 'view order call list', 'view waybills', 'view waybill excel exports', 'view ready to pick orders', 'view picking orders', 'view packed orders', 'view dispatched orders'])
                 <li>
                     <button type="button" class="flex items-center w-full p-2 text-base transition duration-75 rounded-lg group {{ request()->routeIs('orders.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}" aria-controls="dropdown-orders" data-collapse-toggle="dropdown-orders">
                         <svg class="flex-shrink-0 w-5 h-5 transition duration-75 {{ request()->routeIs('orders.*') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
@@ -255,11 +255,20 @@
                              <a href="{{ route('orders.waybill-excel.index') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.waybill-excel.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Excel Export</a>
                         </li>
                         @endcan
-                        @can('view packing')
+                        @canany(['view ready to pick orders', 'view picking orders', 'view packed orders', 'view dispatched orders'])
                         <li>
-                             <a href="{{ route('orders.packing.ready') }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.packing.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Packing</a>
+                            @php
+                                $packingRoute = match (true) {
+                                    auth()->user()?->can('view ready to pick orders') => route('orders.packing.ready'),
+                                    auth()->user()?->can('view picking orders') => route('orders.packing.picking'),
+                                    auth()->user()?->can('view packed orders') => route('orders.packing.packed'),
+                                    auth()->user()?->can('view dispatched orders') => route('orders.packing.dispatched'),
+                                    default => route('orders.packing.index'),
+                                };
+                            @endphp
+                             <a href="{{ $packingRoute }}" class="flex items-center w-full p-2 transition duration-75 rounded-lg pl-11 group {{ request()->routeIs('orders.packing.*') ? 'bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400' : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700' }}">Packing</a>
                         </li>
-                        @endcan
+                        @endcanany
                     </ul>
                 </li>
                 @endcanany

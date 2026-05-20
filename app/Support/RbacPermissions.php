@@ -145,6 +145,13 @@ class RbacPermissions
             'orders.pdf' => ['export own orders'],
             'orders.bulk-pdf' => ['export own orders'],
             'orders.print' => ['print own orders'],
+            'orders.packing.index' => [
+                'view picking orders',
+                'view packed orders',
+                'view dispatched orders',
+            ],
+            'orders.packing.picking' => ['scan packing'],
+            'orders.packing.pick-grn' => ['create pick grns', 'scan packing'],
         ];
     }
 
@@ -294,20 +301,22 @@ class RbacPermissions
                         'orders.waybill-excel.show',
                     ]),
                     self::permission('export waybill excel', 'Export waybill Excel files', ['orders.waybill-excel.export']),
-                    self::permission('view packing', 'View packing queues', [
+                    self::permission('view ready to pick orders', 'View ready to pick queue', [
                         'orders.packing.index',
                         'orders.packing.ready',
-                        'orders.packing.picking',
-                        'orders.packing.packed',
-                        'orders.packing.pick-grn',
+                    ]),
+                    self::permission('view picking orders', 'View picking queue', ['orders.packing.picking']),
+                    self::permission('view packed orders', 'View packed queue', ['orders.packing.packed']),
+                    self::permission('view dispatched orders', 'View dispatched queue', ['orders.packing.dispatched']),
+                    self::permission('view pick grns', 'View pick GRN sheets', ['orders.packing.pick-grn']),
+                    self::permission('create pick grns', 'Create pick GRNs', ['orders.packing.mark-picked']),
+                    self::permission('scan packing', 'Scan picked orders for packing', [
                         'orders.packing.process',
-                    ]),
-                    self::permission('process packing', 'Scan and process packing', [
                         'orders.packing.scan',
-                        'orders.packing.mark-picked',
-                        'orders.packing.mark-packed',
                     ]),
+                    self::permission('mark orders packed', 'Mark scanned orders packed', ['orders.packing.mark-packed']),
                     self::permission('dispatch orders', 'Mark packed orders dispatched', ['orders.packing.mark-dispatched']),
+                    self::permission('deliver orders', 'Mark dispatched orders delivered', ['orders.packing.mark-delivered']),
                 ],
             ],
             [

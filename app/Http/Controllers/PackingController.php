@@ -22,18 +22,28 @@ class PackingController extends Controller
             'title' => 'Ready To Pick',
             'description' => 'Create the pick GRN with rack locations before scanner picking starts.',
             'empty' => 'No waybill printed orders are waiting to be picked.',
+            'sort' => 'waybill_printed_at',
         ],
         'picking' => [
             'status' => 'picked_from_rack',
             'title' => 'Picking',
             'description' => 'Orders currently being scanned from rack labels.',
             'empty' => 'No orders are currently in picking.',
+            'sort' => 'picked_at',
         ],
         'packed' => [
             'status' => 'packed',
             'title' => 'Packed',
             'description' => 'Orders fully scanned and ready to dispatch.',
             'empty' => 'No packed orders are waiting for dispatch.',
+            'sort' => 'packed_at',
+        ],
+        'dispatched' => [
+            'status' => 'dispatched',
+            'title' => 'Dispatched',
+            'description' => 'Orders handed to the courier and waiting to be marked delivered.',
+            'empty' => 'No dispatched orders are waiting for delivery confirmation.',
+            'sort' => 'dispatched_at',
         ],
     ];
 
@@ -46,7 +56,18 @@ class PackingController extends Controller
      */
     public function index(Request $request)
     {
-        return redirect()->route('orders.packing.ready', $request->query());
+        $user = $request->user();
+        $route = match (true) {
+            $user?->can('view ready to pick orders') => 'orders.packing.ready',
+            $user?->can('view picking orders') => 'orders.packing.picking',
+            $user?->can('view packed orders') => 'orders.packing.packed',
+            $user?->can('view dispatched orders') => 'orders.packing.dispatched',
+            default => null,
+        };
+
+        abort_unless($route, 403);
+
+        return redirect()->route($route, $request->query());
     }
 
     public function ready(Request $request)
@@ -64,6 +85,11 @@ class PackingController extends Controller
         return $this->queue($request, 'packed');
     }
 
+    public function dispatched(Request $request)
+    {
+        return $this->queue($request, 'dispatched');
+    }
+
     private function queue(Request $request, string $stage)
     {
         $perPage = in_array((int) $request->input('per_page'), [15, 25, 50, 100], true)
@@ -73,7 +99,7 @@ class PackingController extends Controller
 
         $orders = $this->buildPackingQueueQuery($request, $stageConfig['status'])
             ->with(['customer', 'courier', 'items.inventoryUnits.purchase', 'items.inventoryUnits.storeRack'])
-            ->orderBy('waybill_printed_at')
+            ->orderBy($stageConfig['sort'] ?? 'waybill_printed_at')
             ->orderBy('id')
             ->paginate($perPage)
             ->withQueryString();
@@ -91,13 +117,14 @@ class PackingController extends Controller
 
         $statsBaseQuery = Order::query()
             ->where('call_status', 'confirm')
-            ->whereIn('delivery_status', ['waybill_printed', 'picked_from_rack', 'packed']);
+            ->whereIn('delivery_status', ['waybill_printed', 'picked_from_rack', 'packed', 'dispatched']);
 
         $stats = [
             'total' => (clone $statsBaseQuery)->count(),
             'waybill_printed' => (clone $statsBaseQuery)->where('delivery_status', 'waybill_printed')->count(),
             'picked_from_rack' => (clone $statsBaseQuery)->where('delivery_status', 'picked_from_rack')->count(),
             'packed' => (clone $statsBaseQuery)->where('delivery_status', 'packed')->count(),
+            'dispatched' => (clone $statsBaseQuery)->where('delivery_status', 'dispatched')->count(),
         ];
 
         $filters = [
@@ -108,6 +135,7 @@ class PackingController extends Controller
             'ready' => route('orders.packing.ready', request()->except(['page'])),
             'picking' => route('orders.packing.picking', request()->except(['page'])),
             'packed' => route('orders.packing.packed', request()->except(['page'])),
+            'dispatched' => route('orders.packing.dispatched', request()->except(['page'])),
         ];
 
         return view('orders.packing.index', compact('orders', 'stats', 'filters', 'stage', 'stageConfig', 'stageRoutes'));
@@ -338,7 +366,85 @@ class PackingController extends Controller
             'description' => 'Order marked as dispatched after packing.',
         ]);
 
-        return redirect()->route('orders.packing.packed')->with('success', 'Order marked as dispatched.');
+        return redirect()->route('orders.packing.dispatched')->with('success', 'Order marked as dispatched.');
+    }
+
+    public function markDelivered(Request $request, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $order = Order::query()
+                ->with(['items.inventoryUnits'])
+                ->whereKey($id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ((string) ($order->call_status ?? '') !== 'confirm' || (string) ($order->delivery_status ?? '') !== 'dispatched') {
+                DB::rollBack();
+
+                return redirect()->route('orders.packing.dispatched')->with('error', 'Only dispatched call-confirmed orders can be marked delivered.');
+            }
+
+            if ($this->requiresCourierReceiveBeforeDelivery($order)) {
+                DB::rollBack();
+
+                return redirect()
+                    ->route('orders.packing.dispatched')
+                    ->with('error', 'Outstanding COD orders must be completed through Receive Courier Payment so courier costs and settlement are recorded.');
+            }
+
+            $summaryItems = collect($this->buildPackingSummary($order)['items'] ?? []);
+            if ($summaryItems->isEmpty() || $summaryItems->sum('required_count') < 1) {
+                DB::rollBack();
+
+                return redirect()
+                    ->route('orders.packing.dispatched')
+                    ->with('error', 'Only dispatched orders with order items can be marked delivered.');
+            }
+
+            foreach ($summaryItems as $itemSummary) {
+                $requiredCount = (int) ($itemSummary['required_count'] ?? 0);
+                $allocatedCount = count($itemSummary['units'] ?? []);
+                $scannedCount = (int) ($itemSummary['scanned_count'] ?? 0);
+
+                if ($requiredCount < 1 || $allocatedCount < $requiredCount || $scannedCount < $requiredCount) {
+                    DB::rollBack();
+
+                    return redirect()
+                        ->route('orders.packing.dispatched')
+                        ->with('error', 'Only dispatched orders with all allocated labels scanned can be marked delivered.');
+                }
+            }
+
+            $order->delivery_status = 'delivered';
+            $order->status = 'confirm';
+            $order->payment_status = $this->resolveDeliveredPaymentStatus($order);
+            if (! $order->delivered_at) {
+                $order->delivered_at = now();
+            }
+            if (! $order->delivered_by) {
+                $order->delivered_by = Auth::id();
+            }
+            $order->save();
+
+            $this->inventoryUnits->markOrderUnitsDelivered($order, Auth::id());
+
+            OrderLog::create([
+                'order_id' => $order->id,
+                'user_id' => Auth::id(),
+                'action' => 'marked_delivered',
+                'description' => 'Order marked as delivered from the dispatched packing queue.',
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('orders.packing.dispatched')->with('success', 'Order marked as delivered.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect()->route('orders.packing.dispatched')->with('error', 'Unable to mark this order delivered.');
+        }
     }
 
     /**
@@ -354,7 +460,10 @@ class PackingController extends Controller
     {
         $items = $order->items->map(function ($item) {
             $units = $item->inventoryUnits
-                ->where('status', InventoryUnit::STATUS_ALLOCATED)
+                ->filter(fn ($unit) => in_array((string) $unit->status, [
+                    InventoryUnit::STATUS_ALLOCATED,
+                    InventoryUnit::STATUS_DELIVERED,
+                ], true) || ! empty($unit->packed_scan_at))
                 ->sortBy(fn ($unit) => sprintf(
                     '%02d|%s|%010d',
                     $this->storePriority((string) ($unit->store_type ?? '')),
@@ -506,5 +615,27 @@ class PackingController extends Controller
         } while (Order::query()->where('pick_grn_number', $number)->exists());
 
         return $number;
+    }
+
+    private function resolveDeliveredPaymentStatus(Order $order): string
+    {
+        $totalAmount = max(round((float) ($order->total_amount ?? 0), 2), 0);
+        $paidAmount = max(round((float) ($order->paid_amount ?? 0), 2), 0);
+
+        if (trim((string) ($order->payment_method ?? 'COD')) === 'COD') {
+            return 'paid';
+        }
+
+        return $totalAmount > 0 && $paidAmount >= $totalAmount ? 'paid' : 'pending';
+    }
+
+    private function requiresCourierReceiveBeforeDelivery(Order $order): bool
+    {
+        $totalAmount = max(round((float) ($order->total_amount ?? 0), 2), 0);
+        $paidAmount = max(round((float) ($order->paid_amount ?? 0), 2), 0);
+
+        return trim((string) ($order->payment_method ?? 'COD')) === 'COD'
+            && empty($order->courier_payment_id)
+            && $totalAmount > $paidAmount;
     }
 }

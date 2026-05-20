@@ -23,6 +23,15 @@ class OrderRoutingTest extends TestCase
         $this->assertSame('orders.packing.index', $route->getName());
     }
 
+    public function test_dispatched_packing_routes_are_not_captured_by_order_show_wildcard(): void
+    {
+        $getRoute = app('router')->getRoutes()->match(Request::create('/orders/packing/dispatched', 'GET'));
+        $postRoute = app('router')->getRoutes()->match(Request::create('/orders/packing/123/mark-delivered', 'POST'));
+
+        $this->assertSame('orders.packing.dispatched', $getRoute->getName());
+        $this->assertSame('orders.packing.mark-delivered', $postRoute->getName());
+    }
+
     public function test_reseller_named_routes_generate_matching_user_facing_paths(): void
     {
         $this->assertSame('/direct-resellers', route('resellers.index', [], false));

@@ -119,7 +119,7 @@ class OperationalTimestampTest extends TestCase
             ->where('delivery_status', 'waybill_printed')
             ->count(), 'Ready To Pick should have several seeded demo orders.');
 
-        foreach (['waybill_printed', 'picked_from_rack', 'packed'] as $deliveryStatus) {
+        foreach (['waybill_printed', 'picked_from_rack', 'packed', 'dispatched'] as $deliveryStatus) {
             $order = Order::query()
                 ->where('order_number', 'like', 'DEMO-ORD-%')
                 ->where('call_status', 'confirm')

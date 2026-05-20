@@ -513,7 +513,9 @@ Check:
   - `/orders/packing/ready` lists waybill-printed orders waiting for a pick GRN; creating the pick GRN validates rack locations, assigns a `PGRN-YYYYMMDD-####` number, opens the printable/save-as-PDF pick sheet, and moves the order to Picking
   - `/orders/packing/picking` lists picked-from-rack orders that are currently being scanned
   - `/orders/packing/packed` lists fully scanned packed orders ready for dispatch
+  - `/orders/packing/dispatched` lists dispatched orders waiting for final delivery confirmation
   - the per-order scanner accepts repeated SKU barcode scans, persists scan progress on inventory units, and automatically moves the order to `packed` on the final required scan
+  - the dispatched queue can mark non-COD / already-paid dispatched orders delivered; outstanding COD orders must still go through Receive Courier Payment so courier cost, commission, received amount, and settlement audit data are recorded correctly
   - packing is still a work-in-progress operational area; do not describe it as fully hardened or fully browser-QA-proven without a dedicated end-to-end verification pass
 - returns
   - backend logic for `returned` is implemented

@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Courier;
 use App\Models\InventoryUnit;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderLog;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Purchase;
@@ -16,6 +18,7 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Services\InventoryUnitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class PurchaseSkuBarcodeTest extends TestCase
@@ -278,12 +281,13 @@ class PurchaseSkuBarcodeTest extends TestCase
             ->assertDontSee('ORD-20260518-9004');
     }
 
-    public function test_packing_workflow_has_separate_ready_picking_and_packed_pages(): void
+    public function test_packing_workflow_has_separate_ready_picking_packed_and_dispatched_pages(): void
     {
         $user = User::factory()->create();
         $readyOrder = $this->makePackingOrder('ORD-20260518-9006', 'waybill_printed');
         $pickingOrder = $this->makePackingOrder('ORD-20260518-9007', 'picked_from_rack');
         $packedOrder = $this->makePackingOrder('ORD-20260518-9008', 'packed');
+        $dispatchedOrder = $this->makePackingOrder('ORD-20260518-9011', 'dispatched');
 
         $this->actingAs($user)
             ->get('/orders/packing/ready')
@@ -291,7 +295,8 @@ class PurchaseSkuBarcodeTest extends TestCase
             ->assertSee('Ready To Pick')
             ->assertSee($readyOrder->order_number)
             ->assertDontSee($pickingOrder->order_number)
-            ->assertDontSee($packedOrder->order_number);
+            ->assertDontSee($packedOrder->order_number)
+            ->assertDontSee($dispatchedOrder->order_number);
 
         $this->actingAs($user)
             ->get('/orders/packing/picking')
@@ -299,7 +304,8 @@ class PurchaseSkuBarcodeTest extends TestCase
             ->assertSee('Picking')
             ->assertSee($pickingOrder->order_number)
             ->assertDontSee($readyOrder->order_number)
-            ->assertDontSee($packedOrder->order_number);
+            ->assertDontSee($packedOrder->order_number)
+            ->assertDontSee($dispatchedOrder->order_number);
 
         $this->actingAs($user)
             ->get('/orders/packing/packed')
@@ -307,7 +313,17 @@ class PurchaseSkuBarcodeTest extends TestCase
             ->assertSee('Packed')
             ->assertSee($packedOrder->order_number)
             ->assertDontSee($readyOrder->order_number)
-            ->assertDontSee($pickingOrder->order_number);
+            ->assertDontSee($pickingOrder->order_number)
+            ->assertDontSee($dispatchedOrder->order_number);
+
+        $this->actingAs($user)
+            ->get('/orders/packing/dispatched')
+            ->assertOk()
+            ->assertSee('Dispatched')
+            ->assertSee($dispatchedOrder->order_number)
+            ->assertDontSee($readyOrder->order_number)
+            ->assertDontSee($pickingOrder->order_number)
+            ->assertDontSee($packedOrder->order_number);
     }
 
     public function test_final_packing_scan_automatically_marks_order_packed(): void
@@ -359,6 +375,14 @@ class PurchaseSkuBarcodeTest extends TestCase
     public function test_ready_to_pick_creates_pick_grn_before_scanning_starts(): void
     {
         $user = User::factory()->create();
+        $this->grantPermissions($user, [
+            'view ready to pick orders',
+            'create pick grns',
+            'view picking orders',
+            'scan packing',
+            'view packed orders',
+            'view pick grns',
+        ]);
         [$purchase, $variant] = $this->makePurchaseWithPendingUnits(0);
         $retailRack = StoreRack::create([
             'store_type' => StoreRack::STORE_RETAIL,
@@ -493,6 +517,91 @@ class PurchaseSkuBarcodeTest extends TestCase
             ->assertDontSee('READY-PICK-1');
     }
 
+    public function test_packed_queue_can_mark_order_dispatched(): void
+    {
+        $user = User::factory()->create();
+        $this->grantPermissions($user, ['dispatch orders']);
+        $order = $this->makePackingOrder('ORD-20260518-9012', 'packed');
+
+        $this->actingAs($user)
+            ->post(route('orders.packing.mark-dispatched', $order))
+            ->assertRedirect(route('orders.packing.dispatched'))
+            ->assertSessionHas('success');
+
+        $order->refresh();
+        $this->assertSame('dispatched', $order->delivery_status);
+        $this->assertNotNull($order->dispatched_at);
+        $this->assertSame($user->id, (int) $order->dispatched_by);
+        $this->assertDatabaseHas('order_logs', [
+            'order_id' => $order->id,
+            'user_id' => $user->id,
+            'action' => 'marked_dispatched',
+        ]);
+    }
+
+    public function test_dispatched_queue_blocks_outstanding_cod_delivery_to_preserve_courier_receive(): void
+    {
+        $user = User::factory()->create();
+        $this->grantPermissions($user, ['view dispatched orders', 'deliver orders', 'view courier receive']);
+        $courier = Courier::create(['name' => 'Delivery Courier', 'is_active' => true]);
+        [$order, $unit] = $this->makeDispatchedOrderWithAllocatedUnit(
+            'ORD-20260518-9013',
+            paymentMethod: 'COD',
+            totalAmount: 200,
+            paidAmount: 0,
+            courierId: $courier->id
+        );
+
+        $this->actingAs($user)
+            ->get(route('orders.packing.dispatched'))
+            ->assertOk()
+            ->assertSee($order->order_number)
+            ->assertSee('Receive Payment')
+            ->assertDontSee('Mark Delivered');
+
+        $this->actingAs($user)
+            ->post(route('orders.packing.mark-delivered', $order))
+            ->assertRedirect(route('orders.packing.dispatched'))
+            ->assertSessionHas('error');
+
+        $order->refresh();
+        $unit->refresh();
+
+        $this->assertSame('dispatched', $order->delivery_status);
+        $this->assertNull($order->delivered_at);
+        $this->assertNull($order->delivered_by);
+        $this->assertSame(InventoryUnit::STATUS_ALLOCATED, $unit->status);
+    }
+
+    public function test_dispatched_queue_can_mark_paid_non_cod_order_delivered(): void
+    {
+        $user = User::factory()->create();
+        $this->grantPermissions($user, ['deliver orders']);
+        [$order, $unit] = $this->makeDispatchedOrderWithAllocatedUnit(
+            'ORD-20260518-9014',
+            paymentMethod: 'Online Payment',
+            totalAmount: 200,
+            paidAmount: 200
+        );
+
+        $this->actingAs($user)
+            ->post(route('orders.packing.mark-delivered', $order))
+            ->assertRedirect(route('orders.packing.dispatched'))
+            ->assertSessionHas('success');
+
+        $order->refresh();
+        $unit->refresh();
+
+        $this->assertSame('delivered', $order->delivery_status);
+        $this->assertSame('confirm', $order->status);
+        $this->assertSame('paid', $order->payment_status);
+        $this->assertNotNull($order->delivered_at);
+        $this->assertSame($user->id, (int) $order->delivered_by);
+        $this->assertSame(InventoryUnit::STATUS_DELIVERED, $unit->status);
+        $this->assertNotNull($unit->delivered_at);
+        $this->assertSame(1, OrderLog::where('order_id', $order->id)->where('action', 'marked_delivered')->count());
+    }
+
     private function makePurchaseWithPendingUnits(int $quantity): array
     {
         $supplier = Supplier::create([
@@ -557,5 +666,66 @@ class PurchaseSkuBarcodeTest extends TestCase
             'payment_status' => 'pending',
             'total_amount' => 200,
         ]);
+    }
+
+    private function makeDispatchedOrderWithAllocatedUnit(
+        string $orderNumber,
+        string $paymentMethod,
+        float $totalAmount,
+        float $paidAmount,
+        ?int $courierId = null
+    ): array {
+        [, $variant] = $this->makePurchaseWithPendingUnits(0);
+        $order = Order::forceCreate([
+            'order_number' => $orderNumber,
+            'order_date' => now()->toDateString(),
+            'status' => 'confirm',
+            'call_status' => 'confirm',
+            'delivery_status' => 'dispatched',
+            'waybill_number' => 'WB-'.substr($orderNumber, -4),
+            'waybill_printed_at' => now()->subHours(3),
+            'picked_at' => now()->subHours(2),
+            'packed_at' => now()->subHour(),
+            'dispatched_at' => now()->subMinutes(30),
+            'courier_id' => $courierId,
+            'payment_method' => $paymentMethod,
+            'payment_status' => $paidAmount >= $totalAmount ? 'paid' : 'pending',
+            'total_amount' => $totalAmount,
+            'paid_amount' => $paidAmount,
+        ]);
+        $orderItem = OrderItem::create([
+            'order_id' => $order->id,
+            'product_id' => $variant->product_id,
+            'product_variant_id' => $variant->id,
+            'product_name' => 'SKU Barcode Product',
+            'sku' => $variant->sku,
+            'quantity' => 1,
+            'unit_price' => $totalAmount,
+            'base_price' => $totalAmount,
+            'cost_price' => 50,
+            'total_price' => $totalAmount,
+        ]);
+        $unit = InventoryUnit::create([
+            'product_variant_id' => $variant->id,
+            'order_id' => $order->id,
+            'order_item_id' => $orderItem->id,
+            'unit_code' => 'DELIVER-'.$orderNumber,
+            'status' => InventoryUnit::STATUS_ALLOCATED,
+            'sku_snapshot' => $variant->sku,
+            'allocated_at' => now()->subHours(2),
+            'packed_scan_at' => now()->subHour(),
+            'last_event_at' => now()->subHour(),
+        ]);
+
+        return [$order, $unit];
+    }
+
+    private function grantPermissions(User $user, array $permissions): void
+    {
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+        }
+
+        $user->givePermissionTo($permissions);
     }
 }

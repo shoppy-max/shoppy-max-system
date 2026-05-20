@@ -104,12 +104,14 @@ Route::middleware(['auth'])->prefix('orders')->name('orders.')->group(function (
     Route::get('/packing/ready', [\App\Http\Controllers\PackingController::class, 'ready'])->name('packing.ready');
     Route::get('/packing/picking', [\App\Http\Controllers\PackingController::class, 'picking'])->name('packing.picking');
     Route::get('/packing/packed', [\App\Http\Controllers\PackingController::class, 'packed'])->name('packing.packed');
+    Route::get('/packing/dispatched', [\App\Http\Controllers\PackingController::class, 'dispatched'])->name('packing.dispatched');
     Route::get('/packing/{id}/pick-grn', [\App\Http\Controllers\PackingController::class, 'pickGrn'])->name('packing.pick-grn');
     Route::get('/packing/{id}/process', [\App\Http\Controllers\PackingController::class, 'process'])->name('packing.process');
     Route::post('/packing/{id}/scan', [\App\Http\Controllers\PackingController::class, 'scan'])->name('packing.scan');
     Route::post('/packing/{id}/mark-picked', [\App\Http\Controllers\PackingController::class, 'markPicked'])->name('packing.mark-picked');
     Route::post('/packing/{id}/mark-packed', [\App\Http\Controllers\PackingController::class, 'markPacked'])->name('packing.mark-packed');
     Route::post('/packing/{id}/mark-dispatched', [\App\Http\Controllers\PackingController::class, 'markDispatched'])->name('packing.mark-dispatched');
+    Route::post('/packing/{id}/mark-delivered', [\App\Http\Controllers\PackingController::class, 'markDelivered'])->name('packing.mark-delivered');
 
     // CRUD & PDF
     Route::get('/{order}/print', [\App\Http\Controllers\OrderController::class, 'printView'])->name('print');
