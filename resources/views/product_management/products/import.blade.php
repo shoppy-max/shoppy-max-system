@@ -1,4 +1,10 @@
 <x-app-layout>
+    @php
+        $canManageDirectProductPrices = auth()->user()?->can('manage direct product prices') ?? false;
+        $canManageResellerProductPrices = auth()->user()?->can('manage reseller product prices') ?? false;
+        $previewTableColumns = 7 + (int) $canManageResellerProductPrices;
+    @endphp
+
     <x-slot name="header">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
@@ -50,6 +56,11 @@
                 </div>
             </div>
 
+            @if(! $canManageDirectProductPrices)
+                <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+                    Direct product price permission is required before product import can run.
+                </div>
+            @else
             <div class="flex justify-center mb-8">
                 <a href="{{ route('products.import.template') }}" class="flex items-center px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 focus:ring-4 focus:ring-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -67,6 +78,7 @@
                     Preview & Validate
                 </button>
             </form>
+            @endif
         </div>
         @endif
 
@@ -91,7 +103,10 @@
                             <th scope="col" class="px-6 py-3">Category</th>
                             <th scope="col" class="px-6 py-3">Variant (Unit)</th>
                             <th scope="col" class="px-6 py-3">SKU (Auto)</th>
-                            <th scope="col" class="px-6 py-3">Price</th>
+                            <th scope="col" class="px-6 py-3">Direct Price</th>
+                            @if($canManageResellerProductPrices)
+                                <th scope="col" class="px-6 py-3">Reseller Limit</th>
+                            @endif
                             <th scope="col" class="px-6 py-3">Stock</th>
                             <th scope="col" class="px-6 py-3">Result</th>
                         </tr>
@@ -109,7 +124,7 @@
                         <!-- Product Group Header if New Product -->
                         @if($isNewProduct)
                             <tr class="bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600">
-                                <td colspan="7" class="px-6 py-2 font-bold text-gray-800 dark:text-gray-200">
+                                <td colspan="{{ $previewTableColumns }}" class="px-6 py-2 font-bold text-gray-800 dark:text-gray-200">
                                     <div class="flex items-center gap-3">
                                         @if(!empty($row['image_url']))
                                             <img src="{{ $row['image_url'] }}" class="w-8 h-8 rounded object-cover border border-gray-300 bg-white" alt="img" onerror="this.onerror=null;this.src='';this.style.display='none'">
@@ -169,6 +184,11 @@
                             </td>
                             <td class="px-6 py-4 font-mono text-xs">{{ $row['sku'] }}</td>
                             <td class="px-6 py-4">{{ number_format($row['selling_price'], 2) }}</td>
+                            @if($canManageResellerProductPrices)
+                                <td class="px-6 py-4">
+                                    {{ $row['limit_price'] !== null ? number_format($row['limit_price'], 2) : 'N/A' }}
+                                </td>
+                            @endif
                             <td class="px-6 py-4">
                                 <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-200">0 (Auto)</span>
                             </td>
@@ -188,7 +208,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-4 text-center">No valid rows found.</td>
+                            <td colspan="{{ $previewTableColumns }}" class="px-6 py-4 text-center">No valid rows found.</td>
                         </tr>
                         @endforelse
                     </tbody>

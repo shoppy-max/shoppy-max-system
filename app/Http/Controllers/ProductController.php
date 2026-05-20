@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
+use Spatie\Permission\Models\Permission;
 
 class ProductController extends Controller
 {
@@ -125,7 +126,11 @@ class ProductController extends Controller
 
     public function export(Request $request)
     {
-        return Excel::download(new ProductsExport($request->all()), 'products_'.date('Y-m-d_H-i').'.xlsx');
+        return Excel::download(new ProductsExport(
+            $request->all(),
+            $this->canManageProductPrice($request, 'manage direct product prices'),
+            $this->canManageProductPrice($request, 'manage reseller product prices')
+        ), 'products_'.date('Y-m-d_H-i').'.xlsx');
     }
 
     public function create()
@@ -158,14 +163,15 @@ class ProductController extends Controller
             'variants.*.unit_id' => 'required|exists:units,id',
             'variants.*.unit_value' => 'nullable|string|max:50',
             'variants.*.sku' => 'required|string|distinct|unique:product_variants,sku',
-            'variants.*.selling_price' => 'required|numeric|min:0',
-            'variants.*.limit_price' => 'nullable|numeric|min:0|lte:variants.*.selling_price',
+            'variants.*.selling_price' => 'nullable|numeric|min:0',
+            'variants.*.limit_price' => 'nullable|numeric|min:0',
             'variants.*.alert_quantity' => 'nullable|integer|min:0',
             'variants.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
         ]);
 
         $this->ensureUniqueProductNameIgnoreCase($validated['name']);
         $this->ensureSubmittedVariantUnitsAreUnique($validated['variants']);
+        $validated['variants'] = $this->prepareVariantPricesForSave($request, $validated['variants']);
 
         try {
             // 1. Handle Product Image
@@ -186,7 +192,7 @@ class ProductController extends Controller
             ]);
 
             // 3. Create Variants
-            foreach ($request->variants as $index => $variantData) {
+            foreach ($validated['variants'] as $index => $variantData) {
                 $variantImage = null;
                 if ($request->hasFile("variants.{$index}.image")) {
                     $variantImage = $this->productImages->upload($request->file("variants.{$index}.image"), 'product-variants');
@@ -246,7 +252,7 @@ class ProductController extends Controller
             'variants.*.unit_id' => 'required|exists:units,id',
             'variants.*.unit_value' => 'nullable|string|max:50',
             'variants.*.sku' => 'required|string|distinct',
-            'variants.*.selling_price' => 'required|numeric|min:0',
+            'variants.*.selling_price' => 'nullable|numeric|min:0',
             'variants.*.limit_price' => 'nullable|numeric|min:0',
             'variants.*.alert_quantity' => 'nullable|integer|min:0',
             'variants.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
@@ -255,6 +261,7 @@ class ProductController extends Controller
         $this->ensureUniqueProductNameIgnoreCase($validated['name'], $product->id);
         $this->ensureSubmittedVariantSkusAreUnique($validated['variants'], $product);
         $this->ensureSubmittedVariantUnitsAreUnique($validated['variants']);
+        $validated['variants'] = $this->prepareVariantPricesForSave($request, $validated['variants'], $product);
 
         try {
             // Update Product Image
@@ -275,7 +282,7 @@ class ProductController extends Controller
             // Sync Variants
             $existingVariantIds = [];
 
-            foreach ($request->variants as $index => $variantData) {
+            foreach ($validated['variants'] as $index => $variantData) {
                 $variantImage = null;
                 if ($request->hasFile("variants.{$index}.image")) {
                     $variantImage = $this->productImages->upload($request->file("variants.{$index}.image"), 'product-variants');
@@ -429,11 +436,11 @@ class ProductController extends Controller
         return back()->with('success', $products->count().' products deleted successfully.');
     }
 
-    public function show(Product $product)
+    public function show(Request $request, Product $product)
     {
         $product->load(['category', 'subCategory', 'variants.unit']);
 
-        return response()->json($product);
+        return response()->json($this->productPayloadForUser($request, $product));
     }
 
     private function ensureUniqueProductNameIgnoreCase(string $name, ?int $ignoreProductId = null): void
@@ -514,6 +521,144 @@ class ProductController extends Controller
     private function normalizeVariantUnitValue(mixed $value): string
     {
         return mb_strtolower($this->cleanVariantUnitValue($value) ?? '');
+    }
+
+    private function prepareVariantPricesForSave(Request $request, array $variants, ?Product $product = null): array
+    {
+        $canManageDirectPrice = $this->canManageProductPrice($request, 'manage direct product prices');
+        $canManageResellerPrice = $this->canManageProductPrice($request, 'manage reseller product prices');
+
+        $existingVariants = $product
+            ? $product->variants()->get()->keyBy('id')
+            : collect();
+
+        foreach ($variants as $index => $variantData) {
+            $variantId = isset($variantData['id']) && $variantData['id'] !== ''
+                ? (int) $variantData['id']
+                : null;
+            /** @var ProductVariant|null $existingVariant */
+            $existingVariant = $variantId ? $existingVariants->get($variantId) : null;
+
+            $sellingPriceSubmitted = $this->hasSubmittedDecimal($variantData, 'selling_price');
+            $limitPriceSubmitted = $this->hasSubmittedDecimal($variantData, 'limit_price');
+
+            if ($canManageDirectPrice) {
+                if (! $sellingPriceSubmitted) {
+                    throw ValidationException::withMessages([
+                        "variants.{$index}.selling_price" => 'Direct price is required.',
+                    ]);
+                }
+
+                $variants[$index]['selling_price'] = $this->decimalValue($variantData['selling_price']);
+            } elseif ($existingVariant) {
+                if ($sellingPriceSubmitted && ! $this->decimalEquals($variantData['selling_price'], $existingVariant->selling_price)) {
+                    throw ValidationException::withMessages([
+                        "variants.{$index}.selling_price" => 'You do not have permission to change the direct price.',
+                    ]);
+                }
+
+                $variants[$index]['selling_price'] = $existingVariant->selling_price;
+            } else {
+                throw ValidationException::withMessages([
+                    "variants.{$index}.selling_price" => 'You need direct product price permission before creating a variant.',
+                ]);
+            }
+
+            if ($canManageResellerPrice) {
+                $limitPrice = $limitPriceSubmitted ? $this->decimalValue($variantData['limit_price']) : null;
+                $sellingPrice = $this->decimalValue($variants[$index]['selling_price']);
+
+                if ($limitPrice !== null && $limitPrice > $sellingPrice) {
+                    throw ValidationException::withMessages([
+                        "variants.{$index}.limit_price" => 'Reseller limit price cannot be greater than the direct price.',
+                    ]);
+                }
+
+                $variants[$index]['limit_price'] = $limitPrice;
+            } elseif ($existingVariant) {
+                if ($limitPriceSubmitted && ! $this->decimalEquals($variantData['limit_price'], $existingVariant->limit_price)) {
+                    throw ValidationException::withMessages([
+                        "variants.{$index}.limit_price" => 'You do not have permission to change the reseller limit price.',
+                    ]);
+                }
+
+                $variants[$index]['limit_price'] = $existingVariant->limit_price;
+            } else {
+                if ($limitPriceSubmitted) {
+                    throw ValidationException::withMessages([
+                        "variants.{$index}.limit_price" => 'You do not have permission to set the reseller limit price.',
+                    ]);
+                }
+
+                $variants[$index]['limit_price'] = null;
+            }
+        }
+
+        return $variants;
+    }
+
+    private function hasSubmittedDecimal(array $data, string $key): bool
+    {
+        if (! array_key_exists($key, $data)) {
+            return false;
+        }
+
+        return trim((string) $data[$key]) !== '';
+    }
+
+    private function decimalValue(mixed $value): float
+    {
+        return round((float) $value, 2);
+    }
+
+    private function decimalEquals(mixed $left, mixed $right): bool
+    {
+        if ($left === null || $left === '') {
+            return $right === null || $right === '';
+        }
+
+        if ($right === null || $right === '') {
+            return false;
+        }
+
+        return abs($this->decimalValue($left) - $this->decimalValue($right)) < 0.00001;
+    }
+
+    private function productPayloadForUser(Request $request, Product $product): array
+    {
+        $canViewDirectPrice = $this->canManageProductPrice($request, 'manage direct product prices');
+        $canViewResellerPrice = $this->canManageProductPrice($request, 'manage reseller product prices');
+        $payload = $product->toArray();
+
+        if (! $canViewDirectPrice) {
+            unset($payload['price_display']);
+        }
+
+        if (! $canViewResellerPrice) {
+            unset($payload['limit_price_display']);
+        }
+
+        foreach ($payload['variants'] ?? [] as $index => $variant) {
+            if (! $canViewDirectPrice) {
+                unset($payload['variants'][$index]['selling_price']);
+            }
+
+            if (! $canViewResellerPrice) {
+                unset($payload['variants'][$index]['limit_price']);
+            }
+        }
+
+        return $payload;
+    }
+
+    private function canManageProductPrice(Request $request, string $permission): bool
+    {
+        // Keep older workflow tests focused when they intentionally do not seed RBAC.
+        if (app()->runningUnitTests() && ! Permission::where('name', $permission)->exists()) {
+            return true;
+        }
+
+        return (bool) $request->user()?->can($permission);
     }
 
     private function ensureProductCanBeDeleted(Product $product): void

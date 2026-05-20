@@ -73,7 +73,7 @@
                         @endcan
 
                         <div class="flex items-center justify-between gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
-                            @if (!in_array($role->name, ['super admin', 'admin', 'user']))
+                            @if (!in_array($role->name, ['super admin', 'manager', 'admin', 'user']))
                                 <button type="submit" form="delete-role-form-{{ $role->id }}" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800">
                                     Delete Role
                                 </button>
@@ -88,7 +88,7 @@
                             </div>
                         </div>
                     </form>
-                    @if (!in_array($role->name, ['super admin', 'admin', 'user']))
+                    @if (!in_array($role->name, ['super admin', 'manager', 'admin', 'user']))
                         <form id="delete-role-form-{{ $role->id }}" action="{{ route('admin.roles.destroy', $role) }}" method="POST" class="hidden" data-confirm-message="Are you sure you want to delete this role?">
                             @csrf
                             @method('DELETE')

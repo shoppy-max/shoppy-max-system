@@ -92,13 +92,13 @@ class DemoSystemSeeder extends Seeder
         );
 
         $superAdminRole = \Spatie\Permission\Models\Role::query()->where('name', 'super admin')->first();
-        $adminRole = \Spatie\Permission\Models\Role::query()->where('name', 'admin')->first();
+        $managerRole = \Spatie\Permission\Models\Role::query()->where('name', 'manager')->first();
 
         if ($superAdminRole) {
             $superAdmin->syncRoles([$superAdminRole->name]);
         }
-        if ($adminRole) {
-            $manager->syncRoles([$adminRole->name]);
+        if ($managerRole) {
+            $manager->syncRoles([$managerRole->name]);
         }
 
         return [

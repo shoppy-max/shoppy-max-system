@@ -1,6 +1,7 @@
 <x-app-layout>
     @php
         $systemPermissionNames = $systemPermissionNames ?? [];
+        $permissionMeta = collect($permissionMeta ?? []);
     @endphp
 
     <x-slot name="header">
@@ -45,14 +46,8 @@
                 </form>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="flex flex-wrap items-center gap-3">
-                @can('manage permissions')
-                    <a href="{{ route('admin.permissions.create') }}" class="flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800 transition-transform transform hover:scale-105 shadow-lg">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        Create Permission
-                    </a>
-                @endcan
+            <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+                Permissions are controlled by the RBAC catalog. Assign them from Roles or Users.
             </div>
         </div>
         
@@ -72,52 +67,38 @@
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
-                        <th scope="col" class="px-6 py-4">Permission Name</th>
-                        <th scope="col" class="px-6 py-4 text-center">Actions</th>
+                        <th scope="col" class="px-6 py-4">Permission</th>
+                        <th scope="col" class="px-6 py-4">Group</th>
+                        <th scope="col" class="px-6 py-4 text-center">Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($permissions as $permission)
+                        @php($meta = $permissionMeta->get($permission->name, []))
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                            <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 flex items-center justify-center text-green-600 dark:text-green-300 font-bold text-sm">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                                     </div>
                                     <div>
-                                        {{ $permission->name }}
-                                        @if(in_array($permission->name, $systemPermissionNames, true))
-                                            <span class="ml-2 bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300 border border-gray-500">System</span>
-                                        @endif
+                                        <div>{{ $meta['label'] ?? str($permission->name)->title() }}</div>
+                                        <div class="mt-1 text-xs font-normal text-gray-500 dark:text-gray-400">{{ $permission->name }}</div>
                                     </div>
                                 </div>
                             </td>
+                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">
+                                {{ $meta['group'] ?? 'RBAC Catalog' }}
+                            </td>
                             <td class="px-6 py-4 text-center">
-                                <div class="flex items-center justify-center space-x-2">
-                                    @can('manage permissions')
-                                        @if(!in_array($permission->name, $systemPermissionNames, true))
-                                            <a href="{{ route('admin.permissions.edit', $permission) }}" class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg dark:text-blue-400 dark:hover:bg-gray-700 transition-colors" title="Edit">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                            </a>
-                                            <form action="{{ route('admin.permissions.destroy', $permission) }}" method="POST" class="inline-block" data-confirm-message="Are you sure you want to delete this permission?">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="p-2 text-red-600 hover:bg-red-100 rounded-lg dark:text-red-400 dark:hover:bg-gray-700 transition-colors" title="Delete">
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                                </button>
-                                            </form>
-                                        @else
-                                            <span class="p-2 text-gray-400 cursor-not-allowed" title="Protected system permission">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                                            </span>
-                                        @endif
-                                    @endcan
-                                </div>
+                                <span class="inline-flex items-center rounded-full border border-gray-300 bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                    System
+                                </span>
                             </td>
                         </tr>
                     @empty
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                            <td colspan="2" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="3" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                 <div class="flex flex-col items-center justify-center py-6">
                                     <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                                     <p class="text-base">No permissions found.</p>

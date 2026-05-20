@@ -4,22 +4,25 @@ namespace App\Exports;
 
 use App\Models\Product;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
-class ProductsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class ProductsExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping
 {
     protected $request;
 
-    public function __construct($request)
-    {
+    public function __construct(
+        $request,
+        private bool $includeDirectPrice = true,
+        private bool $includeResellerPrice = true
+    ) {
         $this->request = $request;
     }
 
     /**
-    * @return \Illuminate\Support\Collection
-    */
+     * @return \Illuminate\Support\Collection
+     */
     public function collection()
     {
         $query = \App\Models\ProductVariant::query()->with(['product.category', 'product.subCategory', 'unit']);
@@ -33,23 +36,23 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
 
         if (isset($this->request['search']) && $this->request['search']) {
             $search = $this->request['search'];
-            $query->where(function($q) use ($search) {
-                $q->whereHas('product', function($pq) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('product', function ($pq) use ($search) {
                     $pq->where('name', 'like', "%{$search}%")
-                       ->orWhere('barcode_data', 'like', "%{$search}%");
+                        ->orWhere('barcode_data', 'like', "%{$search}%");
                 })
-                ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
         if (isset($this->request['category_id']) && $this->request['category_id']) {
-            $query->whereHas('product', function($q) {
+            $query->whereHas('product', function ($q) {
                 $q->where('category_id', $this->request['category_id']);
             });
         }
 
         if (isset($this->request['sub_category_id']) && $this->request['sub_category_id']) {
-            $query->whereHas('product', function($q) {
+            $query->whereHas('product', function ($q) {
                 $q->where('sub_category_id', $this->request['sub_category_id']);
             });
         }
@@ -76,7 +79,7 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
 
     public function headings(): array
     {
-        return [
+        $headings = [
             'Product ID',
             'Variant ID',
             'Product Name',
@@ -84,17 +87,27 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
             'Sub Category',
             'Unit',
             'SKU',
-            'Selling Price',
-            'Limit Price',
+        ];
+
+        if ($this->includeDirectPrice) {
+            $headings[] = 'Direct Price';
+        }
+
+        if ($this->includeResellerPrice) {
+            $headings[] = 'Reseller Limit Price';
+        }
+
+        return [
+            ...$headings,
             'Quantity',
             'Alert Quantity',
-            'Product Created At'
+            'Product Created At',
         ];
     }
 
     public function map($variant): array
     {
-        return [
+        $row = [
             $variant->product->id,
             $variant->id,
             $variant->product->name,
@@ -102,8 +115,18 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
             $variant->product->subCategory->name ?? '',
             $variant->unit->name ?? '',
             $variant->sku,
-            number_format($variant->selling_price, 2),
-            number_format($variant->limit_price, 2),
+        ];
+
+        if ($this->includeDirectPrice) {
+            $row[] = number_format($variant->selling_price, 2);
+        }
+
+        if ($this->includeResellerPrice) {
+            $row[] = $variant->limit_price !== null ? number_format($variant->limit_price, 2) : '';
+        }
+
+        return [
+            ...$row,
             $variant->quantity,
             $variant->alert_quantity,
             $variant->product->created_at->format('Y-m-d H:i:s'),
@@ -112,7 +135,7 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
 
     private function resolveVariantUnitFilter(): array
     {
-        if (!empty($this->request['variant_unit'])) {
+        if (! empty($this->request['variant_unit'])) {
             [$rawUnitId, $encodedValue] = array_pad(explode('::', (string) $this->request['variant_unit'], 2), 2, '');
 
             if (ctype_digit($rawUnitId)) {
@@ -120,7 +143,7 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping, Shoul
             }
         }
 
-        if (!empty($this->request['unit_id'])) {
+        if (! empty($this->request['unit_id'])) {
             return [(int) $this->request['unit_id'], null, false];
         }
 

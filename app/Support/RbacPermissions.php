@@ -80,7 +80,6 @@ class RbacPermissions
             'edit roles',
             'delete roles',
             'view permissions',
-            'manage permissions',
             'assign permissions',
             'view user logs',
             'export user logs',
@@ -121,14 +120,7 @@ class RbacPermissions
                     self::permission('edit roles', 'Edit roles', ['admin.roles.edit', 'admin.roles.update']),
                     self::permission('assign permissions', 'Assign role and user permissions'),
                     self::permission('delete roles', 'Delete roles', ['admin.roles.destroy']),
-                    self::permission('view permissions', 'View permissions', ['admin.permissions.index', 'admin.permissions.show']),
-                    self::permission('manage permissions', 'Manage permissions', [
-                        'admin.permissions.create',
-                        'admin.permissions.store',
-                        'admin.permissions.edit',
-                        'admin.permissions.update',
-                        'admin.permissions.destroy',
-                    ]),
+                    self::permission('view permissions', 'View permission catalog', ['admin.permissions.index']),
                     self::permission('view user logs', 'View user logs', ['user-logs.index']),
                     self::permission('export user logs', 'Export user logs', ['user-logs.export']),
                 ],
@@ -195,6 +187,8 @@ class RbacPermissions
                 'label' => 'Product Management',
                 'permissions' => [
                     ...self::resourcePermissions('products', 'products', includeShow: true),
+                    self::permission('manage direct product prices', 'Manage direct product prices'),
+                    self::permission('manage reseller product prices', 'Manage reseller limit prices'),
                     self::permission('export products', 'Export products', ['products.export']),
                     self::permission('import products', 'Import products', [
                         'products.import.show',

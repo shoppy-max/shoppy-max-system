@@ -32,8 +32,32 @@
             <h2 class="mt-4 text-2xl font-bold text-gray-900 dark:text-white">Add New Product</h2>
         </div>
 
+        @php
+            $canManageDirectProductPrices = auth()->user()?->can('manage direct product prices') ?? false;
+            $canManageResellerProductPrices = auth()->user()?->can('manage reseller product prices') ?? false;
+            $initialVariants = collect(old('variants', [[
+                'unit_id' => '',
+                'unit_value' => '',
+                'sku' => '',
+                'selling_price' => '',
+                'limit_price' => '',
+                'quantity' => 0,
+                'alert_quantity' => 5,
+            ]]))->map(function ($variant) use ($canManageDirectProductPrices, $canManageResellerProductPrices) {
+                if (! $canManageDirectProductPrices) {
+                    unset($variant['selling_price']);
+                }
+
+                if (! $canManageResellerProductPrices) {
+                    unset($variant['limit_price']);
+                }
+
+                return $variant;
+            })->values();
+        @endphp
+
         <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" @submit="handleSubmit"
-              x-data="productForm({{ json_encode($units) }}, {{ json_encode(old('variants', [['unit_id' => '', 'unit_value' => '', 'sku' => '', 'selling_price' => '', 'limit_price' => '', 'quantity' => 0, 'alert_quantity' => 5]])) }})">
+              x-data="productForm({{ json_encode($units) }}, {{ json_encode($initialVariants) }})">
             @csrf
             
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -160,9 +184,10 @@
                                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">SKU is auto-generated based on product and variant details.</p>
                                         </div>
 
-                                        <!-- Selling Price -->
+                                        @if($canManageDirectProductPrices)
+                                        <!-- Direct Price -->
                                         <div>
-                                            <label :for="'variant_price_'+index" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Price <span class="text-red-500">*</span></label>
+                                            <label :for="'variant_price_'+index" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Direct Price <span class="text-red-500">*</span></label>
                                             <div class="relative">
                                                  <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                                     <span class="text-gray-500 dark:text-gray-400">Rs.</span>
@@ -170,12 +195,15 @@
                                                 <input type="number" step="0.01" :id="'variant_price_'+index" :name="'variants['+index+'][selling_price]'" x-model="variant.selling_price" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" placeholder="0.00" required>
                                             </div>
                                         </div>
+                                        @endif
 
-                                        <!-- Limit Price -->
+                                        @if($canManageResellerProductPrices)
+                                        <!-- Reseller Limit Price -->
                                         <div>
-                                            <label :for="'variant_limit_'+index" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Limit Price</label>
+                                            <label :for="'variant_limit_'+index" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Reseller Limit Price</label>
                                             <input type="number" step="0.01" :id="'variant_limit_'+index" :name="'variants['+index+'][limit_price]'" x-model="variant.limit_price" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" placeholder="0.00">
                                         </div>
+                                        @endif
 
                                         <!-- Quantity -->
                                         <div>

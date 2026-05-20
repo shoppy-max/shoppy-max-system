@@ -116,7 +116,7 @@
                                         </a>
                                     @endcan
                                     @can('delete roles')
-                                        @if (!in_array($role->name, ['super admin', 'admin', 'user']))
+                                        @if (!in_array($role->name, ['super admin', 'manager', 'admin', 'user']))
                                             <form action="{{ route('admin.roles.destroy', $role) }}" method="POST" class="inline-block" data-confirm-message="Are you sure you want to delete this role?">
                                                 @csrf
                                                 @method('DELETE')

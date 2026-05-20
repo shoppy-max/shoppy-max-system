@@ -27,7 +27,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('users', UserManagementController::class);
     Route::resource('roles', RoleManagementController::class);
-    Route::resource('permissions', PermissionManagementController::class);
+    Route::resource('permissions', PermissionManagementController::class)->only(['index']);
 });
 
 Route::middleware('auth')->group(function () {

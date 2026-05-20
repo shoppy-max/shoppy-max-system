@@ -1,4 +1,10 @@
 <x-app-layout>
+    @php
+        $canManageDirectProductPrices = auth()->user()?->can('manage direct product prices') ?? false;
+        $canManageResellerProductPrices = auth()->user()?->can('manage reseller product prices') ?? false;
+        $productTableColumns = 5 + (int) $canManageDirectProductPrices + (int) $canManageResellerProductPrices;
+    @endphp
+
     <x-slot name="header">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
@@ -200,8 +206,12 @@
                         </th>
                         <th scope="col" class="px-6 py-3">Product Info</th>
                         <th scope="col" class="px-6 py-3">Details</th>
-                        <th scope="col" class="px-6 py-3 text-right">Price</th>
-                        <th scope="col" class="px-6 py-3 text-right">Limit Price</th>
+                        @if($canManageDirectProductPrices)
+                            <th scope="col" class="px-6 py-3 text-right">Direct Price</th>
+                        @endif
+                        @if($canManageResellerProductPrices)
+                            <th scope="col" class="px-6 py-3 text-right">Reseller Limit</th>
+                        @endif
                         <th scope="col" class="px-6 py-3 text-right">Stock</th>
                         <th scope="col" class="px-6 py-3 text-center">Action</th>
                     </tr>
@@ -254,12 +264,16 @@
                                     </span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">
-                                {{ $product->price_display }}
-                            </td>
-                            <td class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">
-                                {{ $product->limit_price_display }}
-                            </td>
+                            @if($canManageDirectProductPrices)
+                                <td class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">
+                                    {{ $product->price_display }}
+                                </td>
+                            @endif
+                            @if($canManageResellerProductPrices)
+                                <td class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">
+                                    {{ $product->limit_price_display }}
+                                </td>
+                            @endif
                             <td class="px-6 py-4 text-right">
                                 @php
                                     $status = $product->stock_status;
@@ -297,7 +311,7 @@
                         </tr>
                     @empty
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                            <td colspan="7" class="px-6 py-8 text-center">
+                            <td colspan="{{ $productTableColumns }}" class="px-6 py-8 text-center">
                                 <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                                     <svg class="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                                     <p class="text-lg font-medium">No products found</p>
@@ -372,14 +386,18 @@
                                 <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Stock</p>
                                 <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.total_quantity ?? '0'"></p>
                             </div>
-                            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
-                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Selling Price Range</p>
-                                <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.price_display ? 'Rs. ' + activeProduct.price_display : 'N/A'"></p>
-                            </div>
-                            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
-                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Limit Price Range</p>
-                                <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.limit_price_display && activeProduct.limit_price_display !== 'N/A' ? 'Rs. ' + activeProduct.limit_price_display : 'N/A'"></p>
-                            </div>
+                            @if($canManageDirectProductPrices)
+                                <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                                    <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Direct Price Range</p>
+                                    <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.price_display ? 'Rs. ' + activeProduct.price_display : 'N/A'"></p>
+                                </div>
+                            @endif
+                            @if($canManageResellerProductPrices)
+                                <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                                    <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Reseller Limit Range</p>
+                                    <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.limit_price_display && activeProduct.limit_price_display !== 'N/A' ? 'Rs. ' + activeProduct.limit_price_display : 'N/A'"></p>
+                                </div>
+                            @endif
                             <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
                                 <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Variants</p>
                                 <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white" x-text="activeProduct?.variants?.length ?? 0"></p>
@@ -414,8 +432,12 @@
                                     <tr>
                                         <th scope="col" class="px-4 py-2">Unit</th>
                                         <th scope="col" class="px-4 py-2">SKU</th>
-                                        <th scope="col" class="px-4 py-2 text-right">Price</th>
-                                        <th scope="col" class="px-4 py-2 text-right">Limit Price</th>
+                                        @if($canManageDirectProductPrices)
+                                            <th scope="col" class="px-4 py-2 text-right">Direct Price</th>
+                                        @endif
+                                        @if($canManageResellerProductPrices)
+                                            <th scope="col" class="px-4 py-2 text-right">Reseller Limit</th>
+                                        @endif
                                         <th scope="col" class="px-4 py-2 text-right">Stock</th>
                                         <th scope="col" class="px-4 py-2 text-center">Action</th>
                                     </tr>
@@ -425,8 +447,12 @@
                                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 last:border-b-0">
                                             <td class="px-4 py-2" x-text="(variant.unit_value ? variant.unit_value + ' ' : '') + variant.unit.short_name + ' (' + variant.unit.name + ')'"></td>
                                             <td class="px-4 py-2 font-mono text-xs" x-text="variant.sku"></td>
-                                            <td class="px-4 py-2 text-right" x-text="'Rs. ' + parseFloat(variant.selling_price).toFixed(2)"></td>
-                                            <td class="px-4 py-2 text-right" x-text="variant.limit_price !== null ? 'Rs. ' + parseFloat(variant.limit_price).toFixed(2) : 'N/A'"></td>
+                                            @if($canManageDirectProductPrices)
+                                                <td class="px-4 py-2 text-right" x-text="'Rs. ' + parseFloat(variant.selling_price).toFixed(2)"></td>
+                                            @endif
+                                            @if($canManageResellerProductPrices)
+                                                <td class="px-4 py-2 text-right" x-text="variant.limit_price !== null ? 'Rs. ' + parseFloat(variant.limit_price).toFixed(2) : 'N/A'"></td>
+                                            @endif
                                             <td class="px-4 py-2 text-right">
                                                  <span :class="variant.quantity <= (variant.alert_quantity || 0) ? 'text-red-600 bg-red-100' : 'text-green-600 bg-green-100'" class="px-2 py-0.5 rounded text-xs font-medium" x-text="variant.quantity"></span>
                                             </td>

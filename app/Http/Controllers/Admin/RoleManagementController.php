@@ -98,7 +98,7 @@ class RoleManagementController extends Controller
 
     public function destroy(Role $role)
     {
-        if (in_array($role->name, ['super admin', 'admin', 'user'])) {
+        if (in_array($role->name, ['super admin', 'manager', 'admin', 'user'])) {
             return redirect()->route('admin.roles.index')
                 ->with('error', 'Cannot delete default roles.');
         }

@@ -31,10 +31,33 @@ class RolesAndPermissionsSeeder extends Seeder
             'name' => 'super admin',
             'guard_name' => 'web',
         ]);
-        $adminRole = Role::firstOrCreate([
-            'name' => 'admin',
-            'guard_name' => 'web',
-        ]);
+        $legacyAdminRole = Role::query()
+            ->where('name', 'admin')
+            ->where('guard_name', 'web')
+            ->first();
+        $managerRole = Role::query()
+            ->where('name', 'manager')
+            ->where('guard_name', 'web')
+            ->first();
+
+        if ($legacyAdminRole && ! $managerRole) {
+            $legacyAdminRole->forceFill(['name' => 'manager'])->save();
+            $managerRole = $legacyAdminRole;
+        } else {
+            $managerRole = Role::firstOrCreate([
+                'name' => 'manager',
+                'guard_name' => 'web',
+            ]);
+
+            if ($legacyAdminRole && $legacyAdminRole->id !== $managerRole->id) {
+                $legacyAdminRole->users->each(function (User $user) use ($legacyAdminRole, $managerRole): void {
+                    $user->assignRole($managerRole);
+                    $user->removeRole($legacyAdminRole);
+                });
+
+                $legacyAdminRole->delete();
+            }
+        }
         $userRole = Role::firstOrCreate([
             'name' => 'user',
             'guard_name' => 'web',
@@ -50,8 +73,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $superAdminRole->syncPermissions(RbacPermissions::allPermissionNames());
 
-        // Assign some permissions to admin
-        $adminRole->syncPermissions([
+        // Assign baseline back-office permissions to manager.
+        $managerRole->syncPermissions([
             'view dashboard',
             'view users',
             'create users',

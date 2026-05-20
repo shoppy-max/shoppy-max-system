@@ -1,4 +1,8 @@
 <x-app-layout>
+    @php
+        $canManageDirectProductPrices = auth()->user()?->can('manage direct product prices') ?? false;
+    @endphp
+
     <div class="py-12">
         <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
             <div class="overflow-hidden rounded-lg bg-white shadow-sm dark:bg-gray-800">
@@ -35,7 +39,9 @@
                                 <tr>
                                     <th class="px-6 py-3">Variant</th>
                                     <th class="px-6 py-3">SKU</th>
-                                    <th class="px-6 py-3 text-right">Price</th>
+                                    @if($canManageDirectProductPrices)
+                                        <th class="px-6 py-3 text-right">Direct Price</th>
+                                    @endif
                                     <th class="px-6 py-3 text-center">Barcode</th>
                                 </tr>
                             </thead>
@@ -46,7 +52,9 @@
                                             {{ $variant->unit_value ? $variant->unit_value . ' ' : '' }}{{ $variant->unit->name }}{{ $variant->unit->short_name ? ' (' . $variant->unit->short_name . ')' : '' }}
                                         </td>
                                         <td class="px-6 py-4 font-mono text-xs">{{ $variant->sku }}</td>
-                                        <td class="px-6 py-4 text-right">Rs. {{ number_format((float) $variant->selling_price, 2) }}</td>
+                                        @if($canManageDirectProductPrices)
+                                            <td class="px-6 py-4 text-right">Rs. {{ number_format((float) $variant->selling_price, 2) }}</td>
+                                        @endif
                                         <td class="px-6 py-4 text-center">
                                             <a href="{{ route('products.barcode.print', $variant->id) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-lg bg-blue-700 px-4 py-2 text-xs font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
                                                 Print {{ max((int) $variant->quantity, 1) }} {{ max((int) $variant->quantity, 1) === 1 ? 'Label' : 'Labels' }}

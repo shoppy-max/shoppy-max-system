@@ -45,7 +45,7 @@ Authentication is provided by Laravel Breeze, and permissions are handled by Spa
 - Product variants with:
   - unit + unit value
   - unique SKU
-  - selling price + limit price
+  - direct price + reseller limit price, each controlled by its own RBAC permission
   - stock quantity and alert quantity
 - Product import with preview validation:
   - auto SKU generation
@@ -210,7 +210,7 @@ Default users:
 - Manager
   - Email: `manager@shoppy-max.com`
   - Password: `password`
-  - Role: `admin`
+  - Role: `manager`
 
 Seed data includes:
 
@@ -265,6 +265,10 @@ These are current implemented behaviors.
 ### Inventory
 
 - Product and variant creation starts stock at `0`.
+- Product pricing has two independent RBAC-controlled fields:
+  - Direct Price uses `manage direct product prices` and feeds direct-order pricing.
+  - Reseller Limit Price uses `manage reseller product prices` and feeds reseller minimum-price/commission rules.
+- Product create/edit forms, detail JSON, product success/details screens, imports, templates, and exports must not expose or change either price without the matching permission.
 - Purchases do not create stock or inventory units automatically.
 - Stock is added only when a verified purchase item is scanned into a selected Retail Store or Warehouse Store rack row.
 - Orders allocate real inventory units, not only aggregate stock counts.

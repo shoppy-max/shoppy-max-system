@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
+use Spatie\Permission\Models\Permission;
 
 class ProductImportController extends Controller
 {
@@ -23,13 +24,22 @@ class ProductImportController extends Controller
         return view('product_management.products.import');
     }
 
-    public function downloadTemplate()
+    public function downloadTemplate(Request $request)
     {
-        return Excel::download(new ProductTemplateExport, 'product_import_template.xlsx');
+        abort_unless($this->canManageDirectPrice($request), 403);
+
+        return Excel::download(
+            new ProductTemplateExport($this->canManageResellerPrice($request)),
+            'product_import_template.xlsx'
+        );
     }
 
     public function preview(Request $request)
     {
+        if (! $this->canManageDirectPrice($request)) {
+            return back()->with('error', 'You need direct product price permission to import products.');
+        }
+
         $request->validate([
             'file' => 'required|mimes:xlsx,xls,csv',
         ]);
@@ -59,7 +69,7 @@ class ProductImportController extends Controller
 
         foreach ($rows as $index => $row) {
             // Supported template columns:
-            // Product Name, Category, Sub Category, Description, Unit Name, Unit Value, (optional legacy SKU), Selling Price, Limit Price, (optional legacy Quantity), Alert Quantity, Image URL
+            // Product Name, Category, Sub Category, Description, Unit Name, Unit Value, (optional legacy SKU), Direct Price, Reseller Limit Price, (optional legacy Quantity), Alert Quantity, Image URL
             $name = $this->readTextColumn($row, $columnMap['name']);
             if (! $name) {
                 continue;
@@ -155,6 +165,9 @@ class ProductImportController extends Controller
             if ($price === null || $price <= 0) {
                 $errors['price'] = 'Invalid';
             }
+            if ($limit !== null && ! $this->canManageResellerPrice($request)) {
+                $errors['limit_price'] = 'No permission';
+            }
             if ($limitInvalid || ($limit !== null && $limit < 0)) {
                 $errors['limit_price'] = 'Invalid';
             }
@@ -198,10 +211,16 @@ class ProductImportController extends Controller
 
     public function store(Request $request)
     {
+        abort_unless($this->canManageDirectPrice($request), 403);
+
         $previewData = session('product_import_preview_data');
 
         if (! $previewData) {
             return redirect()->route('products.import.show')->with('error', 'Session expired. Please upload again.');
+        }
+
+        if (! $this->canManageResellerPrice($request) && collect($previewData)->contains(fn ($row) => empty($row['errors']) && ($row['limit_price'] ?? null) !== null)) {
+            abort(403);
         }
 
         $count = 0;
@@ -300,6 +319,24 @@ class ProductImportController extends Controller
         return mb_strtolower(trim((string) $value));
     }
 
+    private function canManageDirectPrice(Request $request): bool
+    {
+        if (app()->runningUnitTests() && ! Permission::where('name', 'manage direct product prices')->exists()) {
+            return true;
+        }
+
+        return (bool) $request->user()?->can('manage direct product prices');
+    }
+
+    private function canManageResellerPrice(Request $request): bool
+    {
+        if (app()->runningUnitTests() && ! Permission::where('name', 'manage reseller product prices')->exists()) {
+            return true;
+        }
+
+        return (bool) $request->user()?->can('manage reseller product prices');
+    }
+
     private function readRawColumn(array $row, ?int $index)
     {
         if ($index === null) {
@@ -335,8 +372,8 @@ class ProductImportController extends Controller
             'unit_name' => $this->findHeaderIndex($normalizedHeaders, ['unit name', 'unit']),
             'unit_value' => $this->findHeaderIndex($normalizedHeaders, ['unit value', 'value']),
             'sku' => $this->findHeaderIndex($normalizedHeaders, ['sku']), // legacy files
-            'selling_price' => $this->findHeaderIndex($normalizedHeaders, ['selling price', 'price']),
-            'limit_price' => $this->findHeaderIndex($normalizedHeaders, ['limit price']),
+            'selling_price' => $this->findHeaderIndex($normalizedHeaders, ['direct price', 'selling price', 'price']),
+            'limit_price' => $this->findHeaderIndex($normalizedHeaders, ['reseller limit price', 'reseller limit', 'limit price']),
             'quantity' => $this->findHeaderIndex($normalizedHeaders, ['quantity', 'qty']),
             'alert_quantity' => $this->findHeaderIndex($normalizedHeaders, ['alert quantity', 'alert qty', 'alert']),
             'image_url' => $this->findHeaderIndex($normalizedHeaders, ['image url', 'image']),

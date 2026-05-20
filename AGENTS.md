@@ -75,6 +75,12 @@ These are not suggestions. Preserve them when changing code.
 - product/variant stock is not manually edited from product CRUD
 - stock comes from manual retail/warehouse store placement and leaves through orders
 - product list filters must work cleanly on both SQLite and MySQL
+- direct product price and reseller limit price are separate RBAC-controlled fields:
+  - `manage direct product prices` controls direct/selling price visibility and writes
+  - `manage reseller product prices` controls reseller limit price visibility and writes
+  - product create/edit, detail JSON, success/details screens, import/template, and export flows must not leak or change either price without the matching permission
+- creating a new variant requires direct product price permission because direct price is required for direct-order pricing
+- users without a price permission may edit other product fields; existing price values must be preserved and tampered submitted values must be rejected
 
 Barcode behavior:
 
