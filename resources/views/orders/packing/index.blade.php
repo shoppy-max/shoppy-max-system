@@ -31,10 +31,18 @@
     </x-slot>
 
     @php
-        $pickGrnPayloads = $orders->getCollection()
-            ->filter(fn ($order) => filled($order->pick_grn_number) && $order->pick_grn_modal_payload)
-            ->mapWithKeys(fn ($order) => [(string) $order->id => $order->pick_grn_modal_payload])
-            ->all();
+        $canUsePickGrnModal = $stage === 'picking'
+            && (
+                auth()->user()?->can('view pick grns')
+                || auth()->user()?->can('create pick grns')
+                || auth()->user()?->can('scan packing')
+            );
+        $pickGrnPayloads = $canUsePickGrnModal
+            ? $orders->getCollection()
+                ->filter(fn ($order) => filled($order->pick_grn_number) && $order->pick_grn_modal_payload)
+                ->mapWithKeys(fn ($order) => [(string) $order->id => $order->pick_grn_modal_payload])
+                ->all()
+            : [];
     @endphp
 
     <div class="rounded-md bg-white p-6 shadow-md dark:bg-gray-800" x-data="{ activePickGrn: null, pickGrnPayloads: @js($pickGrnPayloads) }">
@@ -189,7 +197,7 @@
                                                 View
                                             </a>
                                         @endcanany
-                                        @if($order->pick_grn_number && $stage === 'picking')
+                                        @if($order->pick_grn_number && $canUsePickGrnModal)
                                             <button type="button" @click="activePickGrn = pickGrnPayloads[@js((string) $order->id)] || null" class="inline-flex min-w-[104px] items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40">
                                                 Pick GRN
                                             </button>
